@@ -1,35 +1,62 @@
-/**
- * TypeScript types for every table and view in the database.
- * Gives autocomplete and type errors for supabase.from('…') calls.
- *
- * Generated from the migrations applied to a scratch Postgres database (same
- * shape as `supabase gen types typescript`), NOT from the live Supabase project.
- * After `npm run db:push`, replace this file with `npm run db:types`.
- */
-
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.18"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       checklist_completions: {
         Row: {
-          user_id: string
           checklist_item_id: string
           completed_at: string
           photo_url: string | null
+          user_id: string
         }
         Insert: {
-          user_id: string
           checklist_item_id: string
           completed_at?: string
           photo_url?: string | null
+          user_id: string
         }
         Update: {
-          user_id?: string
           checklist_item_id?: string
           completed_at?: string
           photo_url?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -45,39 +72,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       checklist_items: {
         Row: {
+          created_at: string
           id: string
+          is_checkpoint: boolean
+          item_order: number
+          item_type: string
+          label: string
           sidequest_id: string
           stop_id: string | null
-          label: string
-          item_type: string
-          item_order: number
-          is_checkpoint: boolean
-          created_at: string
         }
         Insert: {
+          created_at?: string
           id?: string
+          is_checkpoint?: boolean
+          item_order?: number
+          item_type?: string
+          label: string
           sidequest_id: string
           stop_id?: string | null
-          label: string
-          item_type?: string
-          item_order?: number
-          is_checkpoint?: boolean
-          created_at?: string
         }
         Update: {
+          created_at?: string
           id?: string
+          is_checkpoint?: boolean
+          item_order?: number
+          item_type?: string
+          label?: string
           sidequest_id?: string
           stop_id?: string | null
-          label?: string
-          item_type?: string
-          item_order?: number
-          is_checkpoint?: boolean
-          created_at?: string
         }
         Relationships: [
           {
@@ -93,36 +120,36 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sidequest_stops"
             referencedColumns: ["id", "sidequest_id"]
-          }
+          },
         ]
       }
       communities: {
         Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
           id: string
           name: string
-          university: string | null
-          description: string | null
-          created_by: string | null
-          created_at: string
           slug: string | null
+          university: string | null
         }
         Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
           id?: string
           name: string
-          university?: string | null
-          description?: string | null
-          created_by?: string | null
-          created_at?: string
           slug?: string | null
+          university?: string | null
         }
         Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
           id?: string
           name?: string
-          university?: string | null
-          description?: string | null
-          created_by?: string | null
-          created_at?: string
           slug?: string | null
+          university?: string | null
         }
         Relationships: [
           {
@@ -131,27 +158,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       creator_ratings: {
         Row: {
-          rater_id: string
-          creator_id: string
-          rating: number
           created_at: string
+          creator_id: string
+          rater_id: string
+          rating: number
         }
         Insert: {
-          rater_id: string
-          creator_id: string
-          rating: number
           created_at?: string
+          creator_id: string
+          rater_id: string
+          rating: number
         }
         Update: {
-          rater_id?: string
-          creator_id?: string
-          rating?: number
           created_at?: string
+          creator_id?: string
+          rater_id?: string
+          rating?: number
         }
         Relationships: [
           {
@@ -167,72 +194,72 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       experiences: {
         Row: {
-          id: string
-          name: string
-          description: string | null
-          category: string
-          neighborhood: string | null
           address: string | null
+          category: string
+          created_at: string
+          description: string | null
+          estimated_cost: number | null
+          id: string
+          image_url: string | null
           latitude: number
           longitude: number
-          estimated_cost: number | null
+          name: string
           nearest_station: string | null
+          neighborhood: string | null
           open_late: boolean
-          image_url: string | null
-          created_at: string
         }
         Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          category: string
-          neighborhood?: string | null
           address?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          estimated_cost?: number | null
+          id?: string
+          image_url?: string | null
           latitude: number
           longitude: number
-          estimated_cost?: number | null
+          name: string
           nearest_station?: string | null
+          neighborhood?: string | null
           open_late?: boolean
-          image_url?: string | null
-          created_at?: string
         }
         Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          category?: string
-          neighborhood?: string | null
           address?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          estimated_cost?: number | null
+          id?: string
+          image_url?: string | null
           latitude?: number
           longitude?: number
-          estimated_cost?: number | null
+          name?: string
           nearest_station?: string | null
+          neighborhood?: string | null
           open_late?: boolean
-          image_url?: string | null
-          created_at?: string
         }
         Relationships: []
       }
       follows: {
         Row: {
+          created_at: string
           follower_id: string
           following_id: string
-          created_at: string
         }
         Insert: {
+          created_at?: string
           follower_id: string
           following_id: string
-          created_at?: string
         }
         Update: {
+          created_at?: string
           follower_id?: string
           following_id?: string
-          created_at?: string
         }
         Relationships: [
           {
@@ -248,39 +275,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       profiles: {
         Row: {
-          id: string
-          username: string | null
-          display_name: string | null
           avatar_url: string | null
           bio: string | null
-          university: string | null
-          created_at: string
           community_id: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          university: string | null
+          username: string | null
         }
         Insert: {
-          id: string
-          username?: string | null
-          display_name?: string | null
           avatar_url?: string | null
           bio?: string | null
-          university?: string | null
-          created_at?: string
           community_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          university?: string | null
+          username?: string | null
         }
         Update: {
-          id?: string
-          username?: string | null
-          display_name?: string | null
           avatar_url?: string | null
           bio?: string | null
-          university?: string | null
-          created_at?: string
           community_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          university?: string | null
+          username?: string | null
         }
         Relationships: [
           {
@@ -289,33 +316,33 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "communities"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       quest_photos: {
         Row: {
-          id: string
-          user_id: string
-          sidequest_id: string
-          photo_url: string
           caption: string | null
           created_at: string
+          id: string
+          photo_url: string
+          sidequest_id: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          sidequest_id: string
-          photo_url: string
           caption?: string | null
           created_at?: string
+          id?: string
+          photo_url: string
+          sidequest_id: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          sidequest_id?: string
-          photo_url?: string
           caption?: string | null
           created_at?: string
+          id?: string
+          photo_url?: string
+          sidequest_id?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -331,45 +358,45 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       sidequest_ratings: {
         Row: {
-          id: string
-          user_id: string
-          sidequest_id: string
-          price_rating: number
-          time_rating: number
-          enjoyment_rating: number
-          memorability_rating: number
-          review_text: string | null
           created_at: string
+          enjoyment_rating: number
+          id: string
+          memorability_rating: number
+          price_rating: number
+          review_text: string | null
+          sidequest_id: string
+          time_rating: number
           updated_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          sidequest_id: string
-          price_rating: number
-          time_rating: number
-          enjoyment_rating: number
-          memorability_rating: number
-          review_text?: string | null
           created_at?: string
+          enjoyment_rating: number
+          id?: string
+          memorability_rating: number
+          price_rating: number
+          review_text?: string | null
+          sidequest_id: string
+          time_rating: number
           updated_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          sidequest_id?: string
-          price_rating?: number
-          time_rating?: number
-          enjoyment_rating?: number
-          memorability_rating?: number
-          review_text?: string | null
           created_at?: string
+          enjoyment_rating?: number
+          id?: string
+          memorability_rating?: number
+          price_rating?: number
+          review_text?: string | null
+          sidequest_id?: string
+          time_rating?: number
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -385,57 +412,57 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       sidequest_stops: {
         Row: {
-          id: string
-          sidequest_id: string
-          place_name: string
           address: string | null
-          latitude: number | null
-          longitude: number | null
-          stop_order: number
+          created_at: string
           description: string | null
           estimated_cost: number | null
-          created_at: string
           experience_id: string | null
-          planned_activity: string | null
-          travel_mode_to_stop: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
           notes: string | null
+          place_name: string
+          planned_activity: string | null
+          sidequest_id: string
+          stop_order: number
+          travel_mode_to_stop: string | null
         }
         Insert: {
-          id?: string
-          sidequest_id: string
-          place_name: string
           address?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          stop_order: number
+          created_at?: string
           description?: string | null
           estimated_cost?: number | null
-          created_at?: string
           experience_id?: string | null
-          planned_activity?: string | null
-          travel_mode_to_stop?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
           notes?: string | null
+          place_name: string
+          planned_activity?: string | null
+          sidequest_id: string
+          stop_order: number
+          travel_mode_to_stop?: string | null
         }
         Update: {
-          id?: string
-          sidequest_id?: string
-          place_name?: string
           address?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          stop_order?: number
+          created_at?: string
           description?: string | null
           estimated_cost?: number | null
-          created_at?: string
           experience_id?: string | null
-          planned_activity?: string | null
-          travel_mode_to_stop?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
           notes?: string | null
+          place_name?: string
+          planned_activity?: string | null
+          sidequest_id?: string
+          stop_order?: number
+          travel_mode_to_stop?: string | null
         }
         Relationships: [
           {
@@ -451,63 +478,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sidequests"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       sidequests: {
         Row: {
-          id: string
-          creator_id: string
-          title: string
-          description: string | null
-          cover_image_url: string | null
           category: string | null
+          community_id: string | null
+          cover_image_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
           estimated_cost: number | null
           estimated_duration_minutes: number | null
+          id: string
+          is_curated: boolean
           neighborhood: string | null
+          primary_line: string | null
           scheduled_at: string | null
           status: string
-          created_at: string
+          title: string
           updated_at: string
-          community_id: string | null
-          primary_line: string | null
-          is_curated: boolean
         }
         Insert: {
-          id?: string
-          creator_id: string
-          title: string
-          description?: string | null
-          cover_image_url?: string | null
           category?: string | null
+          community_id?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
           estimated_cost?: number | null
           estimated_duration_minutes?: number | null
+          id?: string
+          is_curated?: boolean
           neighborhood?: string | null
+          primary_line?: string | null
           scheduled_at?: string | null
           status?: string
-          created_at?: string
+          title: string
           updated_at?: string
-          community_id?: string | null
-          primary_line?: string | null
-          is_curated?: boolean
         }
         Update: {
-          id?: string
-          creator_id?: string
-          title?: string
-          description?: string | null
-          cover_image_url?: string | null
           category?: string | null
+          community_id?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
           estimated_cost?: number | null
           estimated_duration_minutes?: number | null
+          id?: string
+          is_curated?: boolean
           neighborhood?: string | null
+          primary_line?: string | null
           scheduled_at?: string | null
           status?: string
-          created_at?: string
+          title?: string
           updated_at?: string
-          community_id?: string | null
-          primary_line?: string | null
-          is_curated?: boolean
         }
         Relationships: [
           {
@@ -523,36 +550,36 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       user_sidequests: {
         Row: {
-          user_id: string
-          sidequest_id: string
-          status: string
-          started_at: string | null
           completed_at: string | null
           created_at: string
+          sidequest_id: string
+          started_at: string | null
+          status: string
           updated_at: string
+          user_id: string
         }
         Insert: {
-          user_id: string
-          sidequest_id: string
-          status: string
-          started_at?: string | null
           completed_at?: string | null
           created_at?: string
+          sidequest_id: string
+          started_at?: string | null
+          status: string
           updated_at?: string
+          user_id: string
         }
         Update: {
-          user_id?: string
-          sidequest_id?: string
-          status?: string
-          started_at?: string | null
           completed_at?: string | null
           created_at?: string
+          sidequest_id?: string
+          started_at?: string | null
+          status?: string
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -568,50 +595,182 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
     }
     Views: {
       questgiver_ratings: {
         Row: {
+          avg_overall: number | null
           creator_id: string | null
           rating_count: number | null
-          avg_overall: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sidequests_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sidequest_rating_stats: {
         Row: {
-          sidequest_id: string | null
-          rating_count: number | null
-          avg_price: number | null
-          avg_time: number | null
           avg_enjoyment: number | null
           avg_memorability: number | null
           avg_overall: number | null
+          avg_price: number | null
+          avg_time: number | null
+          rating_count: number | null
+          sidequest_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sidequest_ratings_sidequest_id_fkey"
+            columns: ["sidequest_id"]
+            isOneToOne: false
+            referencedRelation: "sidequests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
-    Functions: { [_ in never]: never }
-    Enums: { [_ in never]: never }
-    CompositeTypes: { [_ in never]: never }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
 
-type PublicSchema = Database['public']
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-/** Row type of a table or view, e.g. `Tables<'sidequests'>`. */
-export type Tables<T extends keyof (PublicSchema['Tables'] & PublicSchema['Views'])> =
-  (PublicSchema['Tables'] & PublicSchema['Views'])[T] extends { Row: infer R } ? R : never
-export type TablesInsert<T extends keyof PublicSchema['Tables']> = PublicSchema['Tables'][T]['Insert']
-export type TablesUpdate<T extends keyof PublicSchema['Tables']> = PublicSchema['Tables'][T]['Update']
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-// Allowed values enforced by CHECK constraints (Postgres reports these columns as plain text).
-export type SidequestStatus = 'draft' | 'published' | 'archived'
-export type UserSidequestStatus = 'saved' | 'signed_up' | 'in_progress' | 'completed' | 'aborted'
-export type Category = 'food_drink' | 'outdoors' | 'arts_culture' | 'shopping' | 'attractions' | 'affordable'
-export type TravelMode = 'walk' | 'bike' | 'bus' | 'train'
-export type TransitLine = 'rl' | 'gl' | 'bl' | 'ol' | 'sl' | 'cr'
-export type ChecklistItemType = 'see' | 'do'
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {},
+  },
+} as const

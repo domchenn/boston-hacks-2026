@@ -10,9 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "db:new": "supabase migration new",
-    "db:push": "supabase db push",
-    "db:status": "supabase migration list",
-    "db:types": "supabase gen types typescript --linked > src/types/database.types.ts"
+    "db:push": "supabase db push --remote",
+    "db:status": "supabase migration list --remote",
+    "db:types": "supabase gen types typescript --remote > src/types/database.types.tmp && mv src/types/database.types.tmp src/types/database.types.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
