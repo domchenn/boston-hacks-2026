@@ -221,3 +221,10 @@
 
 /* .auth-link used on a <button> */
 button.auth-link { padding: 0; border: 0; background: none; font: inherit; font-weight: var(--weight-semibold); cursor: pointer; }
+
+/* ---------- Single-card pages (/onboarding) ------------------------------ */
+@media (min-width: 1024px) {
+  .auth--solo { max-width: 440px; grid-template-columns: minmax(0, 1fr); }
+}
+.auth-loading { display: flex; align-items: center; gap: var(--space-2); }
+.auth-loading svg { width: 18px; height: 18px; }

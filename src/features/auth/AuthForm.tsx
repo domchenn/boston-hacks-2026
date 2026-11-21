@@ -275,7 +275,7 @@ type AuthFieldProps = {
 }
 
 /** Label + bordered input box + hint or error (rendered as `${id}-message`). */
-function AuthField({ id, label, error, hint, aside, children }: AuthFieldProps) {
+export function AuthField({ id, label, error, hint, aside, children }: AuthFieldProps) {
   const messageId = `${id}-message`
   return (
     <div className="auth-field">
