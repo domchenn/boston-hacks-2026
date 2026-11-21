@@ -78,19 +78,21 @@ If you need a contract changed, ask its owner. Don't edit their folder.
 | C | Port the style guide: import `tokens.css`/`components.css`, build `AppShell`, `Button`, `Pill`, `Chip`, `SidequestCard`, `EmptyState`. | Placeholder pages render inside the shell on desktop and mobile |
 | D | Seed content sheet (no code): **25–40 real experiences** and **8–10 sidequests** built from them, each with stops, a planned activity, travel mode per leg, 2–4 checklist items, a nearby T station. | Sheet shared; A turns it into `seed.sql` |
 
-Route table (A adds these in Phase 0):
+Route table (all routes exist in `App.tsx` with placeholder pages; replace the placeholder, don't edit `App.tsx`):
 
-| Path | Screen | Owner |
-|---|---|---|
-| `/` | For You | C |
-| `/q/:id` | Detail | C |
-| `/q/:id/rate` | Rate | C |
-| `/q/:id/play` | Quest mode | A |
-| `/create` | Create | B |
-| `/map` | Map tab (P1) | B |
-| `/login`, `/signup` | Auth | D |
-| `/me` | Profile tabs (own) | D |
-| `/u/:username` | Public profile | D |
+| Path | Screen | Owner | File |
+|---|---|---|---|
+| `/` | Explore ("Trails for you") | Jason | `src/features/explore/ExplorePage.tsx` |
+| `/trails/:id` | Trail detail | Jason | `src/features/trail/TrailDetailPage.tsx` |
+| `/trails/:id/go` | Active trail (Start trail) | Jason (later) | `src/features/trail/ActiveTrailPage.tsx` |
+| `/make` | Make a trail | Dom | `src/features/make/MakeTrailPage.tsx` |
+| `/saved` | Saved | Gio | `src/features/saved/SavedPage.tsx` |
+| `/me`, `/u/:username` | You / profile | Gio | `src/features/profile/ProfilePage.tsx` |
+| `/onboarding` | Pick a username | Gio | `src/features/auth/OnboardingPage.tsx` |
+| `/login`, `/signup` | Auth | Gio | `src/features/auth/AuthPage.tsx` |
+| `/map` | Map tab (P1) | later | `src/features/map/MapPage.tsx` |
+
+Words: **trail** = `sidequests`, **stop** = `sidequest_stops`, **crumb** = `checklist_items`. Screens say trail/crumb; code keeps the table names.
 
 ## 4. Lanes (P0 first, P1 after)
 
