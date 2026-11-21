@@ -48,7 +48,7 @@ Every route already exists in `src/App.tsx` and points at a placeholder page. **
 | Supabase client | `@/lib/supabase` | ✅ done |
 | Table types `Tables<'sidequests'>` etc. | `@/types/database.types` | ✅ done (regenerate with `npm run db:types`) |
 | Allowed values (statuses, categories, T lines…) | `@/types/db-values` | ✅ done |
-| `getFeed()`, `getTrail()` | `@/lib/api/trails` | ⏳ task D1 |
+| `getFeed()`, `getTrail()` + types `FeedTrail`, `TrailDetail` | `@/lib/api/trails` | ✅ done (D1) |
 | `saveTrail`, `unsaveTrail`, `joinTrail`, `startTrail`, `finishTrail`, `abortTrail`, `toggleCrumb`, `getMyStatus` | `@/lib/api/progress` | ⏳ stubs exist; filled in by task G2 |
 
 Call shared functions by these names even before they're finished, so nobody waits.
