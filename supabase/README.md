@@ -23,6 +23,8 @@ npx supabase link --project-ref <project-ref>    # asks for the database passwor
 
 ## Everyday commands
 
+The CLI targets a *local* database by default. The npm scripts add `--remote` so they act on the linked Supabase project. If you run `npx supabase …` directly, add `--remote` yourself.
+
 | Command | What it does |
 |---|---|
 | `npm run db:new -- <name>` | Create a new empty migration, e.g. `npm run db:new -- add_quest_photo_storage_bucket` |
@@ -35,7 +37,7 @@ npx supabase link --project-ref <project-ref>    # asks for the database passwor
 1. Branch: `git checkout -b db/<description>`.
 2. `npm run db:new -- <verb>_<what>`. Name it for what it does, starting with a verb: `add_quest_photo_storage_bucket`, `allow_editing_published_stops`. Never `update_schema` or `v3_changes`. The CLI adds the timestamp prefix.
 3. Write the SQL. **Start the file with a header comment** (copy one from an existing migration) saying what it changes, why, what it runs after, and which features use it.
-4. Enable RLS and add policies for every new table in the same file.
+4. Enable RLS and add policies for every new table in the same file. (API access grants for new tables are automatic, via the `grant_api_access_to_app_tables` migration.)
 5. Open a PR. **Person A** reviews every `db/…` PR.
 6. After it's approved, Person A runs `npm run db:push`, then `npm run db:types`, and commits the regenerated types to the same PR before merging.
 
@@ -54,12 +56,12 @@ The shared project still has tables from an early schema that was pasted into th
 
 ```bash
 npx supabase link --project-ref <project-ref>
-npx supabase db reset --linked     # wipes the public schema, then applies all migrations + seed.sql
+npx supabase db reset --remote     # wipes the public schema, then applies all migrations + seed.sql
 npm run db:status                  # every migration should show as applied
 npm run db:types
 ```
 
-- `db reset --linked` asks you to confirm. It deletes all data in the app's tables, which is fine now and **never OK after launch**.
+- `db reset --remote` asks you to confirm. It deletes all data in the app's tables, which is fine now and **never OK after launch**.
 - Anyone who already signed up (e.g. OAuth testing) automatically gets a fresh profile row: the first migration backfills profiles for existing users.
 - From then on, use `npm run db:push` for new migrations. Never reset the shared project again.
 
@@ -71,5 +73,6 @@ npm run db:types
 | `20261121120002_create_sidequests_stops_and_places` | `experiences` (curated place library), `sidequests`, `sidequest_stops`, visibility/ownership helpers |
 | `20261121120003_create_quest_progress_and_checklists` | `checklist_items`, `user_sidequests` (saved / signed_up / in_progress / completed / aborted), `checklist_completions`, `quest_photos` |
 | `20261121120004_create_ratings` | `sidequest_ratings` (price/time/enjoyment/memorability), `creator_ratings`, rating average views |
+| `20261121220540_grant_api_access_to_app_tables` | Lets the app's API roles reach the tables (newer Supabase projects don't do this automatically); RLS still controls rows |
 
 Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.

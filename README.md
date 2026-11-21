@@ -64,7 +64,7 @@ First-time setup for the shared project (done once, by Person A):
 ```bash
 npx supabase login
 npx supabase link --project-ref <project-ref>   # the xxxx in https://xxxx.supabase.co
-npx supabase db reset --linked                   # one time only: clears hand-made tables, applies all migrations
+npx supabase db reset --remote                   # one time only: clears hand-made tables, applies all migrations
 npm run db:types                                 # regenerates src/types/database.types.ts
 ```
 
@@ -86,7 +86,7 @@ Migrations run in timestamp order; [`supabase/README.md`](supabase/README.md) li
 
 ### Database types
 
-`src/types/database.types.ts` gives TypeScript types for every table. After any migration is pushed, regenerate it with `npm run db:types` and commit the result. The current file was generated from the migrations applied to a scratch database, not the live project, so run `npm run db:types` after the first `db:push`.
+`src/types/database.types.ts` gives TypeScript types for every table, generated from the live project. After any migration is pushed, regenerate it with `npm run db:types` and commit the result. Don't edit it by hand. Allowed values for restricted text columns (statuses, categories, T lines…) live in `src/types/db-values.ts`.
 
 ## Folder structure
 
