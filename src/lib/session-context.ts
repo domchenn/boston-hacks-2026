@@ -18,6 +18,12 @@ export type SessionState = {
   profile: SessionProfile | null
   /** True until the first session check finishes. Don't redirect while this is true. */
   loading: boolean
+  /**
+   * True while a logged-in user's profile is being fetched. `profile` is null both
+   * while loading and when it couldn't be loaded; this tells the two apart (e.g.
+   * before deciding a user without a username needs onboarding).
+   */
+  profileLoading: boolean
   /** Logs out everywhere in the app. */
   signOut: () => Promise<void>
   /** Re-reads the profile, e.g. after onboarding sets a username. */

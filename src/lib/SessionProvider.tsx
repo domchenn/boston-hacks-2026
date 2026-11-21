@@ -30,6 +30,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const userId = session?.user.id ?? null
   const profile = loaded && loaded.userId === userId ? loaded.profile : null
+  const profileLoading = userId !== null && loaded?.userId !== userId
 
   // Track the session. onAuthStateChange fires once on load (INITIAL_SESSION)
   // and again on every login, logout and token refresh.
@@ -64,8 +65,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [userId])
 
   const value = useMemo<SessionState>(
-    () => ({ session, profile, loading, signOut, refreshProfile }),
-    [session, profile, loading, signOut, refreshProfile],
+    () => ({ session, profile, loading, profileLoading, signOut, refreshProfile }),
+    [session, profile, loading, profileLoading, signOut, refreshProfile],
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

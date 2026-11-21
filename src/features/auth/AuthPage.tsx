@@ -7,14 +7,16 @@
  * ./api), shows loading and errors, then redirects or asks the user to confirm
  * their email. Google uses one handler for both views.
  *
- * On load it also waits for the shared client's session: a user who is already
- * signed in, or who just came back from Google or a confirmation link, is sent on
- * to `next`; a failed redirect shows its error here.
+ * Who is signed in comes from useSession(). Once there's a session (already
+ * signed in, just logged in, or back from Google / a confirmation link) the user is
+ * sent on: to /onboarding if they haven't picked a username yet, otherwise to
+ * `next`. A failed redirect (canceled, expired link…) shows its error here.
  */
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { MailCheck } from 'lucide-react'
 import logoMark from '../../../docs/assets/svg/logo-mark.svg'
+import { useSession } from '@/lib/useSession'
 import {
   isAuthRedirectUrl,
   resolveSessionOnLoad,
@@ -28,6 +30,7 @@ import './auth.css'
 
 export function AuthPage({ mode }: { mode: AuthMode }) {
   const navigate = useNavigate()
+  const { session, profile, loading, profileLoading } = useSession()
   const [searchParams] = useSearchParams()
   const nextPath = safeRedirectPath(searchParams.get('next'))
   // While a redirect's session is being read, lock the form (shown on the Google button).
@@ -47,23 +50,28 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     currentMode.current = mode
   }, [mode])
 
-  // Already signed in, or back from Google / a confirmation link: forward to `next`.
-  // A failed redirect (canceled, expired link…) shows its error, and its params are
-  // stripped from the URL so a refresh doesn't show it again.
+  // Signed in: continue to onboarding (no username yet) or `next`. Waits for the
+  // profile so a returning user isn't sent to onboarding by mistake. If the profile
+  // couldn't be loaded, onboarding shows the error with a retry.
   useEffect(() => {
+    if (loading || !session || profileLoading) return
+    const destination = profile?.username
+      ? nextPath
+      : `/onboarding${nextPath === '/' ? '' : `?next=${encodeURIComponent(nextPath)}`}`
+    navigate(destination, { replace: true })
+  }, [loading, session, profile, profileLoading, nextPath, navigate])
+
+  // Back from a redirect that didn't produce a session (canceled on Google, expired
+  // link…): unlock, show why, and strip the error from the URL so a refresh doesn't
+  // repeat it. Successful redirects are handled by the effect above.
+  useEffect(() => {
+    if (!isAuthRedirectUrl()) return
     let cancelled = false
-    const fromRedirect = isAuthRedirectUrl()
     resolveSessionOnLoad().then(({ signedIn, redirectError }) => {
-      if (cancelled) return
-      if (signedIn) {
-        navigate(nextPath, { replace: true })
-        return
-      }
-      if (fromRedirect) {
-        setPending(null)
-        if (redirectError) setError(redirectError)
-        navigate(nextPath === '/' ? '.' : `.?next=${encodeURIComponent(nextPath)}`, { replace: true })
-      }
+      if (cancelled || signedIn) return
+      setPending(null)
+      if (redirectError) setError(redirectError)
+      navigate(nextPath === '/' ? '.' : `.?next=${encodeURIComponent(nextPath)}`, { replace: true })
     })
     return () => {
       cancelled = true
@@ -99,13 +107,14 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 
     const result = requestMode === 'login' ? await signInWithEmail(values) : await signUpWithEmail(values)
 
+    // Signed in: stay locked; the session effect above moves on once useSession() has it.
+    if (result.status === 'signed_in') return
+
     inFlight.current = false
     setPending(null)
     if (currentMode.current !== requestMode) return
 
-    if (result.status === 'signed_in') {
-      navigate(nextPath, { replace: true })
-    } else if (result.status === 'confirm_email') {
+    if (result.status === 'confirm_email') {
       setConfirmEmailFor(values.email)
     } else {
       setError(result.message)
