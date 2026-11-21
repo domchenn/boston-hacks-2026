@@ -2,12 +2,66 @@
  * /login and /signup. Both routes render this page with a different `mode`, so
  * React keeps the same AuthForm instance and the switch animates in place.
  * On desktop an intro column sits beside the card; phones and tablets get the card only.
+ *
+ * Owns the email/password requests: AuthForm validates, this page calls Supabase
+ * (through ./api), shows loading and errors, then redirects or asks the user to
+ * confirm their email.
  */
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
+import { MailCheck } from 'lucide-react'
 import logoMark from '../../../docs/assets/svg/logo-mark.svg'
-import { AuthForm, type AuthMode } from './AuthForm'
+import { safeRedirectPath, signInWithEmail, signUpWithEmail } from './api'
+import { AuthForm, type AuthMode, type AuthValues } from './AuthForm'
 import './auth.css'
 
 export function AuthPage({ mode }: { mode: AuthMode }) {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [pending, setPending] = useState<'email' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  /** Set after a sign up that needs email confirmation: the address the link went to. */
+  const [confirmEmailFor, setConfirmEmailFor] = useState<string | null>(null)
+
+  // Blocks a second request while one is in flight (state updates aren't synchronous).
+  const inFlight = useRef(false)
+  // The view a request was started from; a result that comes back after the user
+  // switched views (e.g. with the back button) is dropped.
+  const currentMode = useRef(mode)
+  useEffect(() => {
+    currentMode.current = mode
+  }, [mode])
+
+  // Switching views clears the previous view's error and confirmation screen.
+  const [prevMode, setPrevMode] = useState(mode)
+  if (mode !== prevMode) {
+    setPrevMode(mode)
+    setError(null)
+    setConfirmEmailFor(null)
+  }
+
+  async function handleSubmit(values: AuthValues) {
+    if (inFlight.current) return
+    inFlight.current = true
+    const requestMode = mode
+    setPending('email')
+    setError(null)
+
+    const result = requestMode === 'login' ? await signInWithEmail(values) : await signUpWithEmail(values)
+
+    inFlight.current = false
+    setPending(null)
+    if (currentMode.current !== requestMode) return
+
+    if (result.status === 'signed_in') {
+      navigate(safeRedirectPath(searchParams.get('next')), { replace: true })
+    } else if (result.status === 'confirm_email') {
+      setConfirmEmailFor(values.email)
+    } else {
+      setError(result.message)
+    }
+  }
+
   return (
     <div className="auth">
       <div className="auth__intro">
@@ -42,7 +96,53 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
         </ol>
       </div>
 
-      <AuthForm mode={mode} />
+      {/* Kept mounted while hidden so the typed email survives "Use a different email". */}
+      <div hidden={confirmEmailFor !== null}>
+        <AuthForm mode={mode} pending={pending} error={error} onSubmit={handleSubmit} />
+      </div>
+      {confirmEmailFor !== null && (
+        <CheckInbox email={confirmEmailFor} onUseDifferentEmail={() => setConfirmEmailFor(null)} />
+      )}
     </div>
+  )
+}
+
+/** Shown after sign up when the project requires email confirmation. */
+function CheckInbox({ email, onUseDifferentEmail }: { email: string; onUseDifferentEmail: () => void }) {
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  // Move focus to the new heading so screen readers announce the change.
+  useEffect(() => {
+    titleRef.current?.focus()
+  }, [])
+
+  return (
+    <section className="auth-card" aria-labelledby="check-inbox-title">
+      <header className="auth-card__head">
+        <span className="auth-card__icon" aria-hidden="true">
+          <MailCheck />
+        </span>
+        <p className="eyebrow">Almost there</p>
+        <h1 id="check-inbox-title" ref={titleRef} tabIndex={-1} className="font-title auth-card__title">
+          Check your inbox
+        </h1>
+        <p className="auth-card__sub">
+          We sent a confirmation link to <b className="auth-card__email">{email}</b>. Open it to finish
+          setting up your account.
+        </p>
+      </header>
+      <p className="auth-card__note">
+        Not there after a few minutes? Check your spam folder. If you already have an account with this
+        email, log in instead.
+      </p>
+      <Link className="btn btn--block" to="/login">
+        Back to log in
+      </Link>
+      <p className="auth-switch">
+        Wrong email?{' '}
+        <button type="button" className="auth-link" onClick={onUseDifferentEmail}>
+          Use a different one
+        </button>
+      </p>
+    </section>
   )
 }

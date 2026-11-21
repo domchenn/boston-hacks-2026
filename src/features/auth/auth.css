@@ -202,3 +202,22 @@
   text-align: center;
   color: var(--color-text-2);
 }
+
+/* ---------- "Check your inbox" (sign up with email confirmation on) ----- */
+.auth-card__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--space-4);
+  border-radius: 50%;
+  background: var(--color-crumb-tint);
+  color: var(--color-accent);
+}
+.auth-card__icon svg { width: 22px; height: 22px; stroke-width: 2; }
+.auth-card__title:focus { outline: none; }
+.auth-card__email { font-weight: var(--weight-semibold); color: var(--color-ink); overflow-wrap: anywhere; }
+.auth-card__note { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--color-text-muted); }
+
+/* .auth-link used on a <button> */
+button.auth-link { padding: 0; border: 0; background: none; font: inherit; font-weight: var(--weight-semibold); cursor: pointer; }
