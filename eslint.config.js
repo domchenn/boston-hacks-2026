@@ -1,3 +1,8 @@
+/**
+ * ESLint rules for the project (TypeScript, React hooks, fast refresh).
+ * Run with `npm run lint`.
+ */
+
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

@@ -34,10 +34,25 @@ AI agents: when a task is done, open the PR and report its link. Don't merge it.
 
 ## Database
 
-- Only change the schema through a **new** numbered migration in `supabase/migrations/` (e.g. `003_add_quest_photos.sql`), in its own `db/…` PR. Follow `supabase/README.md`.
+- Only change the schema through a **new**, descriptively named migration in `supabase/migrations/` (e.g. `010_add_quest_photo_storage_bucket.sql`), in its own `db/…` PR. Follow `supabase/README.md`.
 - Never edit a migration that has been applied. Never run SQL against the shared Supabase project from an agent.
 - Every new table gets RLS enabled with policies in the same migration.
 - After a migration is applied, regenerate `src/types/database.types.ts` in the same PR.
+
+## Naming and file headers
+
+There isn't much backend route code to read in this project, so **file names and header comments are the documentation**.
+
+- **Name files for what they do.** Components and pages: `SidequestCard.tsx`, `QuestChecklist.tsx`, not `Card2.tsx` or `utils2.ts`. Migrations: `<number>_<verb>_<what>.sql`, e.g. `010_add_quest_photo_storage_bucket.sql`, never `update.sql` or `v3_changes.sql`.
+- **Start every file with a short header comment** (2–5 lines) saying what the file does, what uses it, and anything non-obvious. For example:
+  ```ts
+  /**
+   * Quest mode checklist: shows a sidequest's checklist items grouped by stop and
+   * saves each tick to checklist_completions. Used by the /q/:id/play page.
+   */
+  ```
+- SQL migrations use the header template in `supabase/README.md`: what it changes, why, what it runs after, and which features use it.
+- Keep the header up to date when the file's job changes.
 
 ## Code conventions
 

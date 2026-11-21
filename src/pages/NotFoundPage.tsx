@@ -1,3 +1,7 @@
+/**
+ * 404 page shown for any URL that doesn't match a route in App.tsx.
+ */
+
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 

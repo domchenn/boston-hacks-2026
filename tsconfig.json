@@ -1,3 +1,7 @@
+/**
+ * Root TypeScript config. Just points at the app config (tsconfig.app.json)
+ * and the build-tools config (tsconfig.node.json).
+ */
 {
   "files": [],
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],

@@ -1,3 +1,8 @@
+/**
+ * Vite build/dev-server config: React plugin, Tailwind plugin, and the '@/'
+ * import alias that points at src/.
+ */
+
 import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'

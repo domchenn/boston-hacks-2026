@@ -1,5 +1,6 @@
 /**
- * Database types for migrations 001 + 002.
+ * TypeScript types for every table and view in the database (migrations 001–009).
+ * Gives autocomplete and type errors for supabase.from('…') calls.
  *
  * Generated from the migrations applied to a scratch Postgres database (same
  * shape as `supabase gen types typescript`), NOT from the live Supabase project.

@@ -1,3 +1,8 @@
+/**
+ * App shell shared by every page: the top header with the Breadcrumb logo,
+ * and an <Outlet /> where the current route's page renders.
+ */
+
 import { Compass } from 'lucide-react'
 import { Link, Outlet } from 'react-router'
 

@@ -1,11 +1,24 @@
 -- =============================================================================
--- Sidequests — 001_initial_schema.sql
+-- Breadcrumb — 001_create_profiles_sidequests_and_stops.sql
 --
--- Initial schema, constraints, indexes, triggers and Row Level Security.
--- Paste into the Supabase SQL Editor of a FRESH project and run once.
+-- The base schema: user profiles, sidequests and their ordered stops, plus the
+-- security helpers and triggers everything else builds on.
 --
--- Treat this file as immutable once applied. Make any later change in a new
--- migration (002_..., 003_...). Never edit this file and re-run it.
+-- Still in use after later migrations:
+-- - profiles: auto-created on signup by a trigger (username starts empty)
+-- - sidequests: an outing; status draft/published/archived; scheduled_at
+--   null = anytime. updated_at kept current by a trigger.
+-- - sidequest_stops: ordered stops (place, address, lat/lng, order)
+-- - follows, communities: social basics
+-- - private.can_view_sidequest / private.owns_sidequest: visibility and
+--   ownership checks reused by every child table's RLS policies
+--
+-- Created here but replaced in 002 (see that file): saved_sidequests,
+-- sidequest_participants, completed_sidequests, sidequest_reviews,
+-- community_members.
+--
+-- Runs first, on a fresh Supabase project. Immutable once applied: change
+-- things in a new numbered migration, never by editing this file.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------

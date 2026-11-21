@@ -1,3 +1,9 @@
+/**
+ * The one shared Supabase client for the whole app. Import `supabase` from
+ * here; never call createClient elsewhere. Reads the project URL and
+ * publishable key from .env and stops with a setup message if they're missing.
+ */
+
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database.types'
 

@@ -1,3 +1,9 @@
+/*
+ * Global styles: loads Tailwind, defines the theme colour tokens used by
+ * shadcn/ui components (light + dark), and sets base page styles.
+ */
+
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
