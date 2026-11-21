@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sidequests Screen Mockups</title>
+<title>Breadcrumb Screen Mockups</title>
 <link rel="stylesheet" href="styles/tokens.css">
 <link rel="stylesheet" href="styles/components.css">
 <style>
@@ -364,7 +364,7 @@
 <div class="page">
   <div class="page-head">
     <div>
-      <p class="eyebrow" style="margin:0;color:var(--color-text-muted)">Sidequests · style guide v0.2</p>
+      <p class="eyebrow" style="margin:0;color:var(--color-text-muted)">Breadcrumb · style guide v0.2</p>
       <h1 class="font-display">Web + mobile mockups</h1>
       <p>Each P0 page from the PRD, drawn at desktop width (left) and phone width (right) with the style guide's own classes. It's one web app, but the phone version is designed for phones on its own terms (bottom sheets, swipe gestures, step-by-step flows) rather than being the desktop page shrunk down. Red boxes list what's mobile-specific and any backend it needs. The blue box lists what the page needs from the backend; <b style="color:var(--color-red-strong)">red</b> items aren't in the schema yet. The white box describes the layout at both sizes.</p>
     </div>
@@ -376,10 +376,10 @@
   <section class="screen" id="feed">
     <header><p class="eyebrow">1 · Discovery · Person C</p><h2>For You feed</h2><code>/</code></header>
     <div class="pair"><div class="browser">
-      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">sidequests.app/</span></div>
+      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">breadcrumb.app/</span></div>
       <div class="browser__viewport">
         <div class="appbar">
-          <img src="assets/svg/logo-wordmark.svg" alt="Sidequests">
+          <img src="assets/svg/logo-wordmark.svg" alt="Breadcrumb">
           <nav><a class="is-active"><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav>
           <div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div>
           <span class="avatar">MK</span>
@@ -450,13 +450,13 @@
   <section class="screen" id="detail">
     <header><p class="eyebrow">2 · Discovery · Person C (+ B's map)</p><h2>Sidequest detail</h2><code>/q/:id</code></header>
     <div class="pair"><div class="browser">
-      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">sidequests.app/q/sunday-cafe-hop</span></div>
+      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">breadcrumb.app/q/sunday-cafe-hop</span></div>
       <div class="browser__viewport">
-        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Sidequests"><nav><a class="is-active"><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
+        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Breadcrumb"><nav><a class="is-active"><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
         <div class="hero"><div class="hero__inner">
           <div class="hero__meta"><span class="pill pill--rl">RL</span><span>Anytime</span><span class="curated"><i data-lucide="badge-check" style="width:12px;height:12px"></i>Curated</span></div>
           <h1 class="font-display">Sunday Café Hop</h1>
-          <div class="byline" style="color:#fff"><span class="avatar">ST</span>Sidequests Team</div>
+          <div class="byline" style="color:#fff"><span class="avatar">ST</span>Breadcrumb Team</div>
         </div></div>
         <div class="content">
           <div class="two-col">
@@ -526,9 +526,9 @@
   <section class="screen" id="play">
     <header><p class="eyebrow">3 · Quest · Person A (+ B's map)</p><h2>Active quest</h2><code>/q/:id/play</code></header>
     <div class="pair"><div class="browser">
-      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">sidequests.app/q/sunday-cafe-hop/play</span></div>
+      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">breadcrumb.app/q/sunday-cafe-hop/play</span></div>
       <div class="browser__viewport">
-        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Sidequests"><span class="font-display" style="font-size:var(--text-md)">Sunday Café Hop</span><a class="btn btn--ghost btn--sm" href="#detail" style="margin-left:auto"><i data-lucide="x"></i>Exit</a></div>
+        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Breadcrumb"><span class="font-display" style="font-size:var(--text-md)">Sunday Café Hop</span><a class="btn btn--ghost btn--sm" href="#detail" style="margin-left:auto"><i data-lucide="x"></i>Exit</a></div>
         <div class="split">
           <div class="map">
             <div class="park" style="left:34%;top:34%"></div>
@@ -589,7 +589,7 @@
   <section class="screen" id="rate">
     <header><p class="eyebrow">4 · Reviews · Person C</p><h2>Rate after completing</h2><code>dialog over /q/:id</code></header>
     <div class="pair"><div class="browser">
-      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">sidequests.app/q/sunday-cafe-hop</span></div>
+      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">breadcrumb.app/q/sunday-cafe-hop</span></div>
       <div class="browser__viewport" style="height:600px">
         <div class="scrim">
           <div class="dialog" role="dialog" aria-label="Rate this sidequest">
@@ -632,9 +632,9 @@
   <section class="screen" id="create">
     <header><p class="eyebrow">5 · Create · Person B</p><h2>Create a sidequest</h2><code>/create</code></header>
     <div class="pair"><div class="browser">
-      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">sidequests.app/create</span></div>
+      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">breadcrumb.app/create</span></div>
       <div class="browser__viewport">
-        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Sidequests"><nav><a><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a class="is-active"><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
+        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Breadcrumb"><nav><a><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a class="is-active"><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
         <div class="content">
           <div class="two-col" style="grid-template-columns:minmax(0,1fr) 420px">
             <div class="stack">
@@ -693,9 +693,9 @@
   <section class="screen" id="activity">
     <header><p class="eyebrow">6 · Activity · Person D</p><h2>My activity</h2><code>/me</code></header>
     <div class="pair"><div class="browser">
-      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">sidequests.app/me?tab=in-progress</span></div>
+      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">breadcrumb.app/me?tab=in-progress</span></div>
       <div class="browser__viewport" style="height:600px">
-        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Sidequests"><nav><a><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a class="is-active"><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
+        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Breadcrumb"><nav><a><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a class="is-active"><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
         <div class="content">
           <h1 class="font-display" style="margin:0 0 var(--space-4);font-size:var(--text-2xl)">My activity</h1>
           <div class="tabs"><span>Saved<b>4</b></span><span>Joined<b>1</b></span><span class="is-on">In progress<b>2</b></span><span>Completed<b>14</b></span><span>Created<b>3</b></span></div>
@@ -731,9 +731,9 @@
   <section class="screen" id="profile">
     <header><p class="eyebrow">7 · Profile · Person D</p><h2>Public profile</h2><code>/u/:username</code></header>
     <div class="pair"><div class="browser">
-      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">sidequests.app/u/maya_k</span></div>
+      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">breadcrumb.app/u/maya_k</span></div>
       <div class="browser__viewport" style="height:640px">
-        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Sidequests"><nav><a><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
+        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Breadcrumb"><nav><a><i data-lucide="house"></i>For You</a><a><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
         <div class="content">
           <div class="profile">
             <div class="panel profile-card"><span class="avatar avatar--lg">MK</span><h2>Maya K.</h2><p>@maya_k · Boston University</p><p>Loves cheap eats &amp; long walks.</p><div class="stats"><div><b>14</b><span>Completed</span></div><div><b>3</b><span>Created</span></div><div><b>9</b><span>Reviews</span></div></div><a class="btn btn--sm btn--straight" href="#"><i data-lucide="user-plus"></i>Follow</a></div>
@@ -775,9 +775,9 @@
   <section class="screen" id="map">
     <header><p class="eyebrow">8 · Maps · Person B · P1</p><h2>Explore map</h2><code>/map</code></header>
     <div class="pair"><div class="browser">
-      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">sidequests.app/map</span></div>
+      <div class="browser__chrome"><span class="browser__dots"><i></i><i></i><i></i></span><span class="browser__url">breadcrumb.app/map</span></div>
       <div class="browser__viewport" style="height:600px">
-        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Sidequests"><nav><a><i data-lucide="house"></i>For You</a><a class="is-active"><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
+        <div class="appbar"><img src="assets/svg/logo-wordmark.svg" alt="Breadcrumb"><nav><a><i data-lucide="house"></i>For You</a><a class="is-active"><i data-lucide="map"></i>Map</a><a><i data-lucide="circle-plus"></i>Create</a><a><i data-lucide="bookmark"></i>Activity</a></nav><div class="input search"><i data-lucide="search"></i><span class="ph">Search sidequests…</span></div><span class="avatar">MK</span></div>
         <div class="explore">
           <div class="explore__list">
             <span class="eyebrow" style="color:var(--color-text-muted)">4 sidequests in view</span>

@@ -1,4 +1,4 @@
-# Detour — Product Requirements Document
+# Breadcrumb — Product Requirements Document
 
 - **Version:** 3.0 — BostonHacks MVP (revised)
 - **Track:** Bos(tons) of Eats and Streets
@@ -27,11 +27,11 @@
 
 ## 1. Product Vision
 
-Detour helps Boston college students make the most of the city they live in, without a car.
+Breadcrumb helps Boston college students make the most of the city they live in, without a car.
 
 Boston students move by the T, bus, bike, and on foot. Whether it is a matcha run, a cheap meal off the Orange Line, or the one place open past 3:00am during finals week, the MBTA is how students get around. Yet many spend four years in the same few neighborhoods, and when a weekend arrives or friends visit, they struggle to think of something worth doing.
 
-Detour solves that with **sidequests**: student-made, shareable outings that string together real Boston places into a route. Each sidequest shows the full path on a stylized map, tells you exactly how to get there by T and on foot, and turns the outing into a scavenger-hunt style checklist you can complete, photograph, and rate.
+Breadcrumb solves that with **sidequests**: student-made, shareable outings that string together real Boston places into a route. Each sidequest shows the full path on a stylized map, tells you exactly how to get there by T and on foot, and turns the outing into a scavenger-hunt style checklist you can complete, photograph, and rate.
 
 Think Beli × Strava × a student-made Boston city guide.
 
@@ -213,7 +213,7 @@ MVP note: no comments, private messages, or push notifications are required.
 
 ### Flow A: Discover and complete a sidequest
 
-1. User opens Detour and sees the For You page.
+1. User opens Breadcrumb and sees the For You page.
 2. Browses sidequest cards (title, time, cost, description).
 3. Opens "Sunday Cafe Hopping" and reviews the route map, stops, and transit directions.
 4. Taps **Start quest** (or **Save for later**).
@@ -241,10 +241,10 @@ MVP note: no comments, private messages, or push notifications are required.
 
 | Component | Technology |
 | --- | --- |
-| Frontend | Next.js + TypeScript |
+| Frontend | React 19 + Vite + TypeScript, React Router |
 | Styling | Tailwind CSS |
 | UI components | shadcn/ui + Lucide |
-| Backend | Next.js Route Handlers |
+| Backend | Supabase called directly from the browser, protected by Row Level Security (Supabase Edge Functions only if a secret key is ever needed) |
 | Database | Supabase PostgreSQL |
 | Authentication | Supabase Auth |
 | Maps and routes | Google Maps JavaScript API with custom map styling, plus the Directions API for transit, walking, and bicycling |
@@ -255,7 +255,7 @@ MVP note: no comments, private messages, or push notifications are required.
 | Hosting | Vercel |
 | Collaboration | GitHub |
 
-**Technical architecture.** Next.js serves the mobile-first frontend and backend endpoints. Supabase stores profiles, places, sidequests, stops, checklists, progress, photos, and ratings. Google Maps renders the stylized route map and supplies directions; the MBTA API supplies station and line data. The browser Geolocation API powers live location during a quest.
+**Technical architecture.** A Vite + React single-page app serves the mobile-first frontend and talks to Supabase directly; Row Level Security in the database enforces who can read and write what. There is no separate app server. Supabase stores profiles, places, sidequests, stops, checklists, progress, photos, and ratings. Google Maps renders the stylized route map and supplies directions; the MBTA API supplies station and line data. The browser Geolocation API powers live location during a quest.
 
 **Maps decision to confirm.** v2.0 used MapLibre with MapTiler tiles. This revision uses Google Maps because the team wants Google-style transit directions. Google's terms generally expect Directions results to be shown on a Google map, so mixing Google routes with MapLibre may not be allowed (verify the current terms). If cost or terms become a problem, fall back to MapLibre plus MBTA data and Google Maps deep links.
 
@@ -437,7 +437,7 @@ Initial categories:
 
 ## 12. Suggested Build Sequence
 
-**Phase 1 — Foundation.** Set up Next.js, Supabase, UI components, the schema, and seed data for experiences and sidequests.
+**Phase 1 — Foundation.** Set up Vite + React, Supabase, UI components, the schema, and seed data for experiences and sidequests.
 
 **Phase 2 — Feed and Detail.** Build sidequest cards, the For You page, and the detail page without maps.
 
@@ -457,7 +457,7 @@ Initial categories:
 
 **Demo sequence:**
 
-1. Open Detour to the For You page and scroll the sidequest cards.
+1. Open Breadcrumb to the For You page and scroll the sidequest cards.
 2. Open "Sunday Cafe Hopping" and show the stylized route map and transit directions by T and walking.
 3. Tap **Start quest** and show live location on the path and the checklist.
 4. Check off sights and activities and add a photo.
@@ -466,7 +466,7 @@ Initial categories:
 7. Create a new sidequest from curated places and publish it.
 8. (If built) Switch communities between BU and BC on the For You page.
 
-**Closing message:** "College only lasts four years. Detour helps you make the most of the city you're spending them in, no car required."
+**Closing message:** "College only lasts four years. Breadcrumb helps you make the most of the city you're spending them in, no car required."
 
 ## 14. Success Criteria
 
@@ -482,7 +482,7 @@ The hackathon MVP is successful if:
 
 ## 15. Product Positioning
 
-Detour is a social exploration app that helps Boston college students discover student-made sidequests, follow transit-first routes, complete them like a scavenger hunt, and rate and share them with friends.
+Breadcrumb is a social exploration app that helps Boston college students discover student-made sidequests, follow transit-first routes, complete them like a scavenger hunt, and rate and share them with friends.
 
 **Core hook:** You've lived here. Have you explored it?
 
@@ -497,6 +497,8 @@ Detour is a social exploration app that helps Boston college students discover s
 - **Moved following to cherry on top** and added communities (BU, BC), checkpoints, and creator ratings.
 - **Changed the maps stack** from MapLibre to Google Maps for transit directions.
 - **Rebuilt the schema** around sidequests, stops, checklists, user progress, photos, and ratings.
+- **Stayed on Vite + React** instead of Next.js: the foundation was already built, and nothing in P0 needs a server (team decision).
+- **Renamed the product to Breadcrumb.** "Sidequest" remains the name of the content type.
 
 
 ## notes

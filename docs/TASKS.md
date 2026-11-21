@@ -1,183 +1,165 @@
-# Sidequests — Implementation Plan (4 people)
+# Breadcrumb — Feature Split (4 people)
 
-Source of truth: [PRD.md](PRD.md). Schema of record: [`supabase/migrations/`](../supabase/migrations/).
+Sources: [PRD.md](PRD.md) (v3.0) · [mockup.html](mockup.html) (screens) · [STYLE_GUIDE.md](STYLE_GUIDE.md) · schema in [`supabase/migrations/`](../supabase/migrations/)
 
-Each person owns **one feature area** and the folders for it. Work happens on separate branches and merges through PRs. See §3 for who does what.
-
-Build order follows the PRD priority: get **browse → detail → start → checklist → complete → rate** working end to end before any P1 work.
+**The rule that prevents overlap:** each person owns whole screens *and* the folder they live in. You only edit your own folder. Anything you need from someone else, you get through a **contract**: a component or function with agreed props that the owner publishes as a stub on day one, then fills in.
 
 ---
 
-## 1. PRD vs. current schema: mismatches
+## 0. Decisions
 
-Compared [PRD §9](PRD.md) with `001_initial_schema.sql`.
+| # | Topic | Decision |
+|---|---|---|
+| D1 | Framework | ✅ **Stay on Vite + React + React Router.** Supabase is called from the browser and RLS protects data. PRD §8 updated. |
+| D2 | Schema | ✅ **Iterate with numbered migrations.** PRD §9 is the first pass. Tables and columns get added as features need them, each in its own migration PR. Process: [`supabase/README.md`](../supabase/README.md). Person A owns migrations. |
+| D3 | Name | ✅ **Breadcrumb** is the product/app name. "Sidequest" stays the name of the content type (a Breadcrumb user does sidequests). |
+| D4 | Maps key | ⏳ Someone sets up a Google Cloud project with the Maps JS + Directions APIs and shares a referrer-restricted key as `VITE_GOOGLE_MAPS_API_KEY` in `.env`. |
+| D5 | Workflow | ✅ **Every change goes through a pull request.** No direct pushes to `main`. Rules for people and AI agents: [`AGENTS.md`](../AGENTS.md). |
 
-### Must fix before feature work (blocking)
+## 1. Who owns what
 
-| # | Mismatch | Impact | Proposed fix (migration `002`) |
+Split by **screen** (see `mockup.html`). Each row is one person's lane, end to end: UI, data calls, and states.
+
+| Person | Lane | Mockup screens | Owns folders |
 |---|---|---|---|
-| M1 | **`quest_runs` is missing.** The PRD models progress as per-user runs (`status`, `started_at`, `completed_at`). The schema only has `completed_sidequests`, which has no "in progress" state. | We can't show the **In Progress** list or Start Quest. Completion is stored in the wrong place. | Add `quest_runs` (`id`, `user_id`, `sidequest_id`, `status in ('in_progress','completed','abandoned')`, `started_at`, `completed_at`). Add a CHECK that `completed_at` is set exactly when `status = 'completed'`. Add a partial unique index allowing **at most one `in_progress` run per user per sidequest**. Owner-only writes. |
-| M2 | **`quest_checkpoints` is missing.** These are creator-defined checklist items and are P0. | No checklist for the active quest. | Add `quest_checkpoints` (`id`, `sidequest_id`, nullable `stop_id`, `label`, `sort_order`). The stop must belong to the same sidequest (composite FK or trigger). Visibility and ownership follow the parent sidequest, like stops. |
-| M3 | **`checkpoint_completions` is missing.** | Checked/unchecked state doesn't persist. | Add `checkpoint_completions` (`quest_run_id`, `checkpoint_id`, `completed_at`), PK on the pair. Users write only to their own runs. A trigger checks that the checkpoint belongs to the run's sidequest. |
-| M4 | **The review rule points at the wrong table.** Reviews currently FK to `completed_sidequests`. The PRD says "require completed runs". | Once runs exist, reviews must check runs instead. | Drop the FK. Add a `SECURITY DEFINER` trigger that requires an `exists` completed `quest_run` for (user, sidequest). Keep one review per user per sidequest. |
-| M5 | **`completed_sidequests` duplicates run state.** | Two sources of truth for "completed" break the PRD rule "don't infer one state from another". | Drop `completed_sidequests` in `002`. **Completed** means "has a run with `status = 'completed'`". |
-| M6 | **Seeding needs an owner.** `sidequests.creator_id → profiles → auth.users`, so 8–12 seeded quests need a real auth user. The PRD also says to "label demo content". | `seed.sql` can't run as written today. | Create one "Sidequests Team" account in Supabase Auth. Seed against its UUID. Add `sidequests.is_curated boolean not null default false` so the UI can badge curated content. |
+| **A** · Claude Code | **Platform + Quest mode** | 3 · Active quest | `supabase/`, `src/lib/`, `src/types/`, `src/features/quest/` |
+| **B** · Claude Code | **Maps & Transit + Create** | 5 · Create, 8 · Map tab (P1), the map inside 2 and 3 | `src/features/maps/`, `src/features/create/` |
+| **C** · Intermediate | **Discovery + Ratings + UI kit** | 1 · For You, 2 · Detail, 4 · Rate | `src/features/discovery/`, `src/features/ratings/`, `src/components/` |
+| **D** · Beginner | **Accounts + Profile + Content** | 6 · Activity tabs, 7 · Profile, login/signup | `src/features/auth/`, `src/features/profile/`, `supabase/seed-content/` |
 
-### Should fix (non-blocking, but cheap now)
+Why this shape: the two riskiest pieces (database/security and Google Maps/Directions) go to the Claude Code users. C gets standard React + Supabase work that is the heart of the demo. D gets small, self-contained screens plus the seed content, which the demo depends on heavily (PRD §10) and needs no code to start.
 
-| # | Mismatch | Proposed fix |
+### Folder layout
+
+```text
+src/
+├── App.tsx                 ← route table (A, edited once in Phase 0)
+├── components/             ← C: shared UI kit from the style guide
+│   ├── ui/                 ← shadcn primitives
+│   ├── AppShell.tsx        ← top bar (desktop) + bottom tab bar (mobile)
+│   ├── SidequestCard.tsx
+│   └── Button.tsx, Pill.tsx, Chip.tsx, EmptyState.tsx
+├── lib/                    ← A: supabase client, shared queries, useSession
+│   └── api/                ← sidequests.ts, progress.ts, ratings.ts, profiles.ts
+├── types/                  ← A: generated database types
+└── features/
+    ├── auth/      (D)   ├── profile/  (D)
+    ├── discovery/ (C)   ├── ratings/  (C)
+    ├── maps/      (B)   ├── create/   (B)
+    └── quest/     (A)
+```
+
+## 2. Contracts (the only places lanes touch)
+
+Each owner pushes a **stub** of their contract in their first PR: real props and types, placeholder output. Everyone else builds against the stub and never waits.
+
+| Contract | Owner → used by | Signature |
 |---|---|---|
-| M7 | **Ratings summary.** The PRD wants averages and a review count. PostgREST aggregates are off by default. | Add a view `sidequest_rating_stats` (`security_invoker = true`) with `avg_fun`, `avg_value`, `avg_travel`, `review_count`. |
-| M8 | **Joining past outings.** The PRD doesn't say. Today you can join a scheduled quest whose date has passed. | Extend `validate_participation` to reject `scheduled_at < now()`. Needs team decision D3. |
-| M9 | **Run visibility.** The PRD shows Completed history on profiles, but in-progress runs are private by nature. | RLS: users see all of their own runs. Everyone else sees only `completed` runs on visible sidequests, for profile history and "N people completed". |
-| M10 | **Naming differences.** PRD `estimated_duration` = schema `estimated_duration_minutes`. PRD `participants` has no `id`; the schema has one. The schema also has extra `neighborhood`, `updated_at` and `stops.estimated_cost`. | No change. The schema is the implementation source of truth (PRD §9). Just be aware of it. |
-| M11 | **Cover images.** No Storage bucket exists. | Use image URLs only for the MVP. Add a `covers` bucket and policies in a later migration if uploads become a goal. |
-| M12 | **Location privacy.** The PRD says not to store location history. The schema stores none. ✅ | Keep it that way. Geolocation stays in client memory only. |
+| Data types | A → all | `Tables<'sidequests'>` etc. from `@/types/database.types` |
+| `useSession()` | A → all | `{ session, profile, loading }` |
+| Sidequest queries | A → C, D, B | `getFeed(filters)`, `getSidequest(id)` (with stops, checklist, creator, rating stats), `getQuestgiverRating(userId)` |
+| Progress API | A → C, D | `getMyProgress(status?)`, `setStatus(sidequestId, 'saved' \| 'signed_up' \| 'in_progress' \| 'completed' \| 'aborted')`, `toggleChecklistItem(itemId)` |
+| `<RouteMap>` | B → C (detail), A (quest), B (create) | `stops`, `legs`, `mode: 'preview' \| 'live'`, `userLocation?`, `selectedStopId?`, `onSelectStop?` |
+| `<LegDirections>` | B → C, A | `from`, `to`, `mode` → renders T line/bus/walk + time + "Open in Google Maps" |
+| `<NearbyStations>` | B → C | `lat`, `lng` → MBTA stations list |
+| `<SidequestCard>` | C → D (profile tabs), B (map tab) | `sidequest`, `viewerStatus?` |
+| `<RatingForm>` | C → A (after Completed) | `sidequestId`, `onDone` |
+| `AppShell`, `Button`, `Pill`, `Chip`, `EmptyState` | C → all | Style-guide classes (`.btn`, `.pill`, `.chip`…) wrapped as React components |
 
-### Already aligned ✅
+If you need a contract changed, ask its owner. Don't edit their folder.
 
-RLS on owned records, published-only visibility for stops, 1–5 ratings, coordinate and cost checks, unique stop order, scheduled-only joins (trigger), one review per user, auto profile on signup, P1 `follows`/`communities` tables.
+## 3. Phase 0 — unblock (first ~2 hours, all in parallel)
 
-### Docs/config mismatches
-
-- The README folder ownership doesn't match §3 below. Update it in Task S3.
-- `src/types/database.types.ts` is hand-written and provisional. Regenerate it after `002` (Task S2).
-
----
-
-## 2. Team decisions needed (resolve before S1)
-
-| ID | Question | Recommendation |
+| Who | Task | Done when |
 |---|---|---|
-| D1 | Has `001` already been run on our Supabase project? | **If not:** we may still fold the `002` changes into `001`. **If yes:** `001` is frozen, so use `002`. Either way, one person applies migrations. |
-| D2 | Places input for creation: curated list, a places API (e.g. Photon/Nominatim geocoding), or both? | Use a **geocoding search (Photon, free, no key)** plus pinning on the map as fallback. Never ask for raw coordinates. |
-| D3 | Block joining outings in the past? | Yes. |
-| D4 | Routing provider for walk/transit directions. | Start with **external Google/Apple Maps links** (always works). Add MBTA V3 stops/predictions near each stop as the real transit data. Spike OpenTripPlanner/MBTA trip planning only if time allows (PRD §12, highest risk). |
-| D5 | Map tiles. | MapLibre GL JS + a free tile style (OpenFreeMap or MapTiler free key). |
-| D6 | Can a run be completed with unchecked checkpoints? | Yes, allow it. Checkpoints are fun, not gates. |
+| A | First schema pass (migration `002`, see `supabase/README.md`): PRD §9 core tables with RLS (progress, photos and saves private; one rating per user; only completers can rate). Regenerate types. | Migration applied, `npm run typecheck` passes |
+| A | Add every route to `App.tsx`, each pointing to a placeholder page *inside the owner's folder*. Add `useSession` and stub `lib/api/*`. | Every route renders "Coming soon"; nobody needs to touch `App.tsx` again |
+| B | Google Maps spike: map renders with `map-style.json`, one Directions request (transit + walking) works. Push the `<RouteMap>`, `<LegDirections>` stubs. | Real transit route drawn between two Boston points |
+| C | Port the style guide: import `tokens.css`/`components.css`, build `AppShell`, `Button`, `Pill`, `Chip`, `SidequestCard`, `EmptyState`. | Placeholder pages render inside the shell on desktop and mobile |
+| D | Seed content sheet (no code): **25–40 real experiences** and **8–10 sidequests** built from them, each with stops, a planned activity, travel mode per leg, 2–4 checklist items, a nearby T station. | Sheet shared; A turns it into `seed.sql` |
 
----
-
-## 3. Team & ownership
-
-Split by **feature**, not by layer. Each person owns a folder, so people rarely touch the same files. The riskiest work (database, maps/transit) goes to the two people using Claude Code. The beginner gets work that is self-contained, visible, and hard to break anything with.
-
-| Person | Feature area | Owns (folders) | Why this fit |
-|---|---|---|---|
-| **A — Claude Code** | **Platform + Active Quest** | `supabase/`, `src/lib/`, `src/types/`, `src/features/quest/` | Database and security changes need care and review. A also unblocks everyone first. |
-| **B — Claude Code** | **Maps, Transit + Create** | `src/features/maps/`, `src/features/create/` | Highest technical risk (MapLibre, geocoding, MBTA) |
-| **C — Intermediate** | **Discovery: feed, detail, save/join, reviews** | `src/features/discovery/`, `src/features/reviews/` | Classic React + Supabase CRUD, the core of the demo |
-| **D — Beginner** | **Accounts, Profiles + Seed Content** | `src/features/auth/`, `src/features/profile/`, `supabase/seed-content/` | Small, well-documented pieces, and the seed content matters a lot for the demo |
-
-**Shared files** (`src/App.tsx`, `src/components/`, `src/index.css`, `package.json`): keep changes small, one PR per change, and tell the group in chat. **Only A merges migrations.**
-
-## 4. Phase 0 — Unblock everyone (Person A, ~1–2 hrs, everyone else starts in parallel)
-
-| ID | Task | Done when |
-|---|---|---|
-| S1 | Migration `002` covering M1–M9 (decide D1 first). Test on a scratch DB, then apply. | RLS spot-checks pass |
-| S2 | Regenerate `database.types.ts` | `npm run typecheck` passes |
-| S3 | Add stub routes for every screen (table below) to `App.tsx`, each a placeholder page in its owner's folder. Add a mobile bottom nav. Update the README. | Every route renders "Coming soon" |
-| S4 | Write shared query functions in `src/lib/queries/`: `getFeed()`, `getSidequest(id)` (with stops, checkpoints, creator, stats), `getMyRuns()`. Export row types. | C and B import these instead of writing their own |
-| S5 | `useSession()` hook: `{ session, profile, loading }` | D and C use it |
-| S6 | Add `CLAUDE.md` with the rules in §8 so both Claude Code sessions respect the folder ownership | File exists in `main` |
-
-**While waiting on Phase 0:** B starts the maps spike (needs no DB). C builds `SidequestCard` against the types file with a hard-coded sample object (delete it before merging). D starts the seed content research (no code).
+Route table (A adds these in Phase 0):
 
 | Path | Screen | Owner |
 |---|---|---|
-| `/` | For You feed | C |
-| `/q/:id` | Sidequest detail | C (embeds B's `<RoutePreview>`) |
-| `/q/:id/play` | Active quest | A (embeds B's `<StopsMap>`) |
-| `/create`, `/q/:id/edit` | Create / edit | B |
-| `/me` | My Activity | D (uses A's `getMyRuns`) |
+| `/` | For You | C |
+| `/q/:id` | Detail | C |
+| `/q/:id/rate` | Rate | C |
+| `/q/:id/play` | Quest mode | A |
+| `/create` | Create | B |
+| `/map` | Map tab (P1) | B |
+| `/login`, `/signup` | Auth | D |
+| `/me` | Profile tabs (own) | D |
 | `/u/:username` | Public profile | D |
-| `/login`, `/signup`, `/onboarding` | Auth | D |
 
-## 5. Task lists
+## 4. Lanes (P0 first, P1 after)
 
-### Person A — Platform + Active Quest (Claude Code)
-1. Phase 0 (S1–S6). **Do this first, everyone depends on it.**
-2. `src/features/quest/api.ts`: `startRun` (resume the existing in-progress run if any), `toggleCheckpoint`, `completeRun`, `abandonRun`.
-3. `/q/:id/play`: B's map, geolocation asked **only here**, denied/unavailable states, location held in memory only.
-4. Checklist under the map (persisted), **Complete quest**, then "Rate it?", which links to C's review form.
-5. Turn D's seed content into `supabase/seed.sql` and apply it.
-6. Review D's PRs (pair on the first one).
-7. Stretch: follows, communities (P1).
+### A — Platform + Quest mode (`/q/:id/play`)
+1. Phase 0 tasks above.
+2. Real implementations of `lib/api/*` and the progress API.
+3. Quest mode: `<RouteMap mode="live">` + `watchPosition` (location in memory only, never stored), checklist grouped by stop, **Completed / Saved for later / Abort**, then `<RatingForm>`.
+4. Mobile pattern from the mockup: full-screen map, bottom sheet, big checkboxes, swipe to complete.
+5. Seed loader: D's sheet → `seed.sql`; demo account with completed quests and ratings.
+6. Review every PR that touches `supabase/` or `src/lib/`.
+7. *P1:* photo on checklist items + "add photos" tab (Supabase Storage bucket + policies).
 
-### Person B — Maps, Transit + Create (Claude Code)
-1. Maps spike: MapLibre + free tiles. `<StopsMap stops selectedId onSelect>` with numbered markers. **No straight lines pretending to be routes.**
-2. `<RoutePreview stops>` for C's detail page. Ship a rough version early so C isn't blocked.
-3. Per-stop "Directions" links (Google/Apple Maps, transit/walk), labelled as external.
-4. MBTA V3: nearest T and bus stops for each stop, plus live predictions if feasible.
-5. Place search (Photon geocoding, Boston bounding box) that fills name, address and coordinates.
-6. Create form: details, anytime vs. scheduled, stops (add/remove/reorder), checkpoints, draft/publish.
-7. Deploy to Vercel (HTTPS is required for geolocation). Do this early, not at the end.
-8. Stretch: edit/archive, in-app routing (D4), scenic checkpoints.
+### B — Maps & Transit + Create (`/create`)
+1. `<RouteMap>`: styled Google map, numbered stop markers, route polylines per the style guide's legend. **Never draw straight lines as routes.**
+2. `<LegDirections>`: Directions API per leg (transit/walking/bicycling, never driving), Google Maps deep link.
+3. `<NearbyStations>`: MBTA V3 nearest stations to a stop.
+4. Create flow: title/description → stops (custom location via Places search; curated library is P1) → planned activity + checklist per stop → travel mode per leg → route preview with total cost and time → visibility and optional scheduled start → publish.
+5. Mobile: 4-step flow from the mockup; desktop: form with live preview.
+6. Deploy to Vercel early (HTTPS is needed for geolocation and the Maps key's referrer restriction).
+7. *P1:* curated experience picker, Map tab, Bluebikes/bus lines (PRD notes).
 
-### Person C — Discovery (Intermediate)
-1. `SidequestCard`: title, summary, creator, cost, duration or date, cover, curated badge.
-2. For You feed at `/`, using `getFeed()`: loading, empty and error states.
-3. Detail page `/q/:id`: stops list, totals, scheduled/anytime label, ratings summary, reviews list, `<RoutePreview>`.
-4. Action bar: **Save/Unsave**, **Join/Leave** (scheduled only), **Start Quest** (links to `/q/:id/play`). Log-out state redirects to login.
-5. Review form: three 1–5 ratings and text, shown only if the user has a completed run. Edit and delete own review.
-6. Stretch: category and budget filters.
+### C — Discovery + Ratings + UI kit (`/`, `/q/:id`, `/q/:id/rate`)
+1. Phase 0 UI kit (everyone depends on it, so do it first).
+2. For You: card list via `getFeed()`, newest and highest rated; loading, empty and error states.
+3. Detail: header, `<RouteMap mode="preview">`, stops with planned activity, `<LegDirections>` per leg, checklist, ratings and reviews, buttons **Start quest / Save for later / Sign up** (sign up only if `scheduled_start`).
+4. `<RatingForm>`: **price, time, enjoyment, memorability** (1–5 each) + optional text; only shown to users who completed it.
+5. Overall rating on cards = average of the four scores.
+6. *P1:* filters (category, neighborhood, budget, Late night, Under $20, Near a T station), share link.
 
-### Person D — Accounts, Profiles + Seed Content (Beginner)
-Pair with A for the first PR. Use Claude.ai or docs freely, and ask early when stuck.
-1. **Seed content (start right away, no code):** research **10 real Boston/Cambridge sidequests** in a shared sheet. Each needs a title, description, category, cost estimate, 2–4 real stops (name, address, coordinates from Google Maps), and 2–4 checkpoints ("Try the cannoli"). Use real places only, with no invented hours or events. A converts it to SQL.
-2. Login and signup pages using shadcn form components and `supabase.auth.signInWithPassword` / `signUp`. Add log out to the nav.
-3. Onboarding `/onboarding`: choose username (3–30 chars, lowercase a–z, 0–9, `_`), display name, university.
-4. Profile page `/u/:username`: avatar, name, university, completed quests.
-5. My Activity `/me`: tabs for Created, Saved, Joined, In Progress, Completed. Each tab is one simple query; A provides `getMyRuns`.
-6. Polish: empty states ("No saved quests yet"), friendly error messages.
+### D — Accounts + Profile + Content (`/login`, `/signup`, `/me`, `/u/:username`)
+1. Phase 0 seed content sheet (start immediately).
+2. Login / signup pages with Supabase Auth; log out in the shell's menu. Pair with A on the first PR.
+3. Profile: avatar, username, bio, **questgiver rating** (average + count, from A's query).
+4. Profile tabs: **Completed, Saved for later, Signed up, Created**. Each is one call to A's progress API, using C's `<SidequestCard>`.
+5. Edit profile (username, display name, bio, avatar URL).
+6. Empty states for each tab with the style-guide illustrations.
 
-## 6. Hand-offs (who waits on whom)
+## 5. Hand-offs
 
-| Needs | From | By |
+| What | From → To | Needed by |
 |---|---|---|
-| Types, queries, `useSession`, stub routes | A | Phase 0, first thing |
-| `<RoutePreview>` (rough is fine) | B → C | Early. C can use a grey box until then |
-| `<StopsMap>` | B → A | Before A starts `/q/:id/play` |
-| `getMyRuns` | A → D | Before D's My Activity tabs |
-| Review form route | C → A | Before A wires "Rate it?" |
-| Seed content sheet | D → A | Before the first demo run-through |
+| Schema, types, routes, stubs | A → everyone | End of Phase 0 |
+| UI kit (`SidequestCard`, shell, buttons) | C → everyone | End of Phase 0 |
+| `<RouteMap>` / `<LegDirections>` stubs | B → C, A | End of Phase 0 (real versions by milestone M2) |
+| Seed content sheet | D → A | Before M1 |
+| `<RatingForm>` | C → A | Before A finishes Completed flow |
+| Progress API (real) | A → D, C | Before D's profile tabs |
 
-Wherever possible, build against the **interface** (component props, function signatures) so nobody has to wait on finished code.
-
-## 7. Milestones
+## 6. Milestones (PRD §12 order)
 
 | Milestone | Check |
 |---|---|
-| M0 Phase 0 merged | Every route renders, types are generated |
-| M1 Feed + detail with seed data | A visitor can browse real quests |
-| M2 Save/join + auth | State persists across refresh |
-| M3 Create → publish → appears in feed | Using a second account |
-| M4 Start → map → checklist → complete → rate | The full PRD §11 flow |
-| M5 Deployed + demo rehearsed | 3-minute *Sunday Cafe Hopping* demo |
+| M0 Phase 0 merged | All routes render in the shell; seed data loads |
+| M1 Feed + detail (no map yet) | Visitor browses real seeded quests |
+| M2 Maps in detail | Route + T/walking directions + nearby stations on a real quest |
+| M3 Create → publish | A second account sees it in the feed |
+| M4 Quest mode → Completed → Rate | Live location, checklist persists, rating saved |
+| M5 Profile tabs + questgiver rating, deployed | Full PRD §13 demo runs on a phone |
 
-P1 work starts only after M4.
+P1 starts only after M5 for that lane.
 
-## 8. Working safely
+## 7. Working without stepping on each other
 
-**Git**
-- Always branch: `git checkout -b feat/<you>-<thing>`. Never commit straight to `main`.
-- Pull often: `git pull origin main` at least every couple of hours. Merge small PRs often rather than one huge one.
-- Every PR needs **one reviewer**. A or B reviews D's PRs, and A reviews anything touching `supabase/` or `src/lib/`.
-- Before pushing, run `npm run build && npm run lint`. If either fails, don't push.
-
-**Database**
-- Only A writes or applies migrations. Need a column? Ask A.
-- Never edit an applied migration. Add `00N_*.sql` instead, and regenerate types afterwards.
-- Never put the service-role key anywhere in the app.
-
-**Claude Code users (A, B)**: put these rules in `CLAUDE.md`:
-- Only edit files in your own feature folders. For shared files, keep changes minimal and say so in the PR.
-- Don't add dependencies or migrations without asking the team.
-- Don't build features outside your area, even if it would be "quick".
-- Don't commit `.env`. Don't push to `main`.
-
-**For D (beginner)**
-- Commit small and often (`git add . && git commit -m "..."`). It's your undo button.
-- If git gets confusing, **stop and ask** before trying `--force` or `reset`.
-- Getting it working is more important than getting it pretty. A will help polish.
+- **One branch + one pull request per task:** `feat/<lane>-<thing>` (e.g. `feat/discovery-feed`). Never push to `main`. Small PRs, reviewed and merged the same day.
+- **Never edit another lane's folder.** Need a change? Ask the owner or open an issue.
+- **Shared files** (`App.tsx`, `package.json`, `src/components/`, `src/lib/`): only their owner edits them. Need a new dependency? Tell the group, add it in its own tiny PR.
+- **Database:** only A changes migrations. Need a column? Ask A.
+- **Pull `main` at least every 2 hours** and before starting a task.
+- **Before pushing:** `npm run build && npm run lint`.
+- **Reviews:** A reviews `supabase/` + `src/lib/`; C reviews `src/components/`; A or B reviews D's PRs.
+- **AI agents** (Claude Code, Codex, Cursor…) read [`AGENTS.md`](../AGENTS.md) / `CLAUDE.md`, which spell out these rules and the PR workflow.
+- **Never commit `.env`.**

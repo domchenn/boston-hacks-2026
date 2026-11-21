@@ -1,8 +1,8 @@
-# Sidequests
+# Breadcrumb
 
 > You've lived here. Have you explored it?
 
-Sidequests is a social itinerary discovery app for Boston college students, built for BostonHacks 2026. Students create, discover, share, join, complete, and review "sidequests": outings around Boston made up of one or more stops (cafes, restaurants, attractions, activities).
+Breadcrumb is a social itinerary discovery app for Boston college students, built for BostonHacks 2026. Students create, discover, share, join, complete, and review "sidequests": outings around Boston made up of one or more stops (cafes, restaurants, attractions, activities).
 
 - **Anytime sidequest** (`scheduled_at` is null): an itinerary others can save and follow whenever they like.
 - **Scheduled sidequest** (`scheduled_at` is set): an outing others can join.
