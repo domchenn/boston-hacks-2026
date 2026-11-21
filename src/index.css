@@ -3,52 +3,34 @@
 @import "tw-animate-css";
 /* Breadcrumb style guide (docs/STYLE_GUIDE.md): tokens + ready-made classes (.btn, .trail-card, .stops…). */
 @import "../docs/styles/tokens.css";
-@import "../docs/styles/components.css";
+/* components.css sits in Tailwind's components layer so utilities (md:hidden, mt-4…) can override its classes. */
+@import "../docs/styles/components.css" layer(components);
 
 @custom-variant dark (&:is(.dark *));
 
-/* Theme tokens (shadcn/ui convention). Edit these to restyle the whole app. */
+/* Theme tokens (shadcn/ui convention), pointed at the Dotted trail palette in
+   docs/styles/tokens.css so shadcn components (Button…) match the mockups.
+   Change colors in tokens.css, not here. There is no dark theme yet. */
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.99 0.004 95);
-  --foreground: oklch(0.2 0.02 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 260);
-  --primary: oklch(0.55 0.17 155);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.95 0.01 95);
-  --secondary-foreground: oklch(0.25 0.02 260);
-  --muted: oklch(0.95 0.01 95);
-  --muted-foreground: oklch(0.5 0.02 260);
-  --accent: oklch(0.93 0.04 75);
-  --accent-foreground: oklch(0.25 0.02 260);
-  --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.9 0.01 95);
-  --input: oklch(0.9 0.01 95);
-  --ring: oklch(0.55 0.17 155);
-}
-
-.dark {
-  --background: oklch(0.17 0.01 260);
-  --foreground: oklch(0.97 0.005 95);
-  --card: oklch(0.21 0.01 260);
-  --card-foreground: oklch(0.97 0.005 95);
-  --popover: oklch(0.21 0.01 260);
-  --popover-foreground: oklch(0.97 0.005 95);
-  --primary: oklch(0.7 0.16 155);
-  --primary-foreground: oklch(0.17 0.01 260);
-  --secondary: oklch(0.27 0.01 260);
-  --secondary-foreground: oklch(0.97 0.005 95);
-  --muted: oklch(0.27 0.01 260);
-  --muted-foreground: oklch(0.7 0.01 260);
-  --accent: oklch(0.3 0.03 75);
-  --accent-foreground: oklch(0.97 0.005 95);
-  --destructive: oklch(0.65 0.2 25);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.16 155);
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: var(--color-white);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-crumb-strong);
+  --primary-foreground: var(--color-text-on-accent);
+  --secondary: var(--color-sand);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-sand);
+  --muted-foreground: var(--color-muted);
+  --accent: var(--color-crumb-tint);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-crumb-deep);
+  --border: var(--color-line);
+  --input: var(--color-line-strong);
+  --ring: var(--color-blue);
 }
 
 @theme inline {
@@ -75,6 +57,26 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Dotted trail names (docs/styles/tailwind.config.snippet.js), e.g.
+     bg-paper text-ink-2 border-line rounded-card shadow-card text-crumb-strong. */
+  --color-paper: var(--color-paper);
+  --color-sand: var(--color-sand);
+  --color-ink: var(--color-ink);
+  --color-ink-2: var(--color-ink-2);
+  --color-line: var(--color-line);
+  --color-line-strong: var(--color-line-strong);
+  --color-crumb: var(--color-crumb);
+  --color-crumb-strong: var(--color-crumb-strong);
+  --color-crumb-deep: var(--color-crumb-deep);
+  --color-crumb-tint: var(--color-crumb-tint);
+  --color-scheduled: var(--color-scheduled);
+  --color-done: var(--color-done);
+  --text-md: var(--text-md);
+  --radius-card: var(--radius-card);
+  --radius-pill: var(--radius-pill);
+  --shadow-card: var(--shadow-card);
+  --shadow-float: var(--shadow-float);
 }
 
 @layer base {
