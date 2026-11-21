@@ -1,5 +1,5 @@
 -- =============================================================================
--- Breadcrumb — 008_add_checklist_completions_and_quest_photos.sql
+-- Breadcrumb — 20261121120008_add_checklist_completions_and_quest_photos.sql
 --
 -- Stores what a user ticks off during a quest, and photos they add.
 --
@@ -8,10 +8,11 @@
 -- - quest_photos: extra photos from the outing. Public on the sidequest as
 --   social proof (PRD §5.4). File storage bucket comes in a later migration.
 --
--- Runs after: 007
+-- Runs after: 20261121120007_add_user_sidequest_progress.sql
 -- Used by:    Quest mode checklist and photos tab, detail page photos
 --
--- Immutable once applied to the shared project: change things in a new file.
+-- Immutable once applied: make further changes in a new migration
+-- (npx supabase migration new <name>).
 -- =============================================================================
 
 -- =============================================================================

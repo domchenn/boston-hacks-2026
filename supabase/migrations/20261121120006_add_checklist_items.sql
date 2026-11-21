@@ -1,5 +1,5 @@
 -- =============================================================================
--- Breadcrumb — 006_add_checklist_items.sql
+-- Breadcrumb — 20261121120006_add_checklist_items.sql
 --
 -- Creates checklist_items: the things to see or do on a sidequest.
 --
@@ -7,10 +7,11 @@
 -- (null = something on the way between stops; is_checkpoint marks the P2
 -- checkpoints feature). Same visibility and edit rights as the sidequest.
 --
--- Runs after: 005
+-- Runs after: 20261121120005_add_sidequest_card_fields_and_stop_details.sql
 -- Used by:    Detail page, Quest mode checklist, Create flow
 --
--- Immutable once applied to the shared project: change things in a new file.
+-- Immutable once applied: make further changes in a new migration
+-- (npx supabase migration new <name>).
 -- =============================================================================
 
 -- =============================================================================

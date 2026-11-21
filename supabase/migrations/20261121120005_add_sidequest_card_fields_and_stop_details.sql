@@ -1,5 +1,5 @@
 -- =============================================================================
--- Breadcrumb — 005_add_sidequest_card_fields_and_stop_details.sql
+-- Breadcrumb — 20261121120005_add_sidequest_card_fields_and_stop_details.sql
 --
 -- Adds the fields the cards, detail page and route need.
 --
@@ -13,10 +13,11 @@
 -- - travel_mode_to_stop: walk / bike / bus / train from the previous stop
 -- - unique (id, sidequest_id): lets checklist items point at a stop safely
 --
--- Runs after: 004
+-- Runs after: 20261121120004_add_experiences_place_library.sql
 -- Used by:    Feed cards, detail page, Create flow, maps
 --
--- Immutable once applied to the shared project: change things in a new file.
+-- Immutable once applied: make further changes in a new migration
+-- (npx supabase migration new <name>).
 -- =============================================================================
 
 -- =============================================================================

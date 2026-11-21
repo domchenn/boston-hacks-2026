@@ -1,5 +1,5 @@
 -- =============================================================================
--- Breadcrumb — 003_add_community_membership_and_visibility.sql
+-- Breadcrumb — 20261121120003_add_community_membership_and_visibility.sql
 --
 -- Lets users belong to one community (BU, BC…) and lets a sidequest be limited to one.
 --
@@ -10,10 +10,11 @@
 --   sidequests read policy so community-only quests stay hidden from outsiders.
 --   Stops, checklist items, ratings and photos all reuse that check.
 --
--- Runs after: 002
+-- Runs after: 20261121120002_drop_tables_replaced_by_user_progress.sql
 -- Used by:    For You community switch, settings page, every sidequest read
 --
--- Immutable once applied to the shared project: change things in a new file.
+-- Immutable once applied: make further changes in a new migration
+-- (npx supabase migration new <name>).
 -- =============================================================================
 
 -- =============================================================================
@@ -38,7 +39,7 @@ create index sidequests_community_idx on public.sidequests (community_id);
 
 
 -- =============================================================================
--- Visibility helpers (replace the 001 versions to add community scoping)
+-- Visibility helpers (replace the base-migration versions to add community scoping)
 -- =============================================================================
 
 -- Is the current user a member of this community?

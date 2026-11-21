@@ -1,7 +1,7 @@
 -- =============================================================================
--- Breadcrumb — 002_drop_tables_replaced_by_user_progress.sql
+-- Breadcrumb — 20261121120002_drop_tables_replaced_by_user_progress.sql
 --
--- Removes the 001 tables that PRD v3 replaces with single, simpler tables.
+-- Removes the base-migration tables that PRD v3 replaces with single, simpler tables.
 --
 -- Dropped                      Replaced by
 -- saved_sidequests       →     user_sidequests (status = 'saved')
@@ -13,10 +13,11 @@
 -- Also removes the triggers that only existed for the participants table.
 -- Safe: no app code reads these tables yet.
 --
--- Runs after: 001
+-- Runs after: 20261121120001_create_profiles_sidequests_and_stops.sql
 -- Used by:    nothing (cleanup only)
 --
--- Immutable once applied to the shared project: change things in a new file.
+-- Immutable once applied: make further changes in a new migration
+-- (npx supabase migration new <name>).
 -- =============================================================================
 
 -- =============================================================================

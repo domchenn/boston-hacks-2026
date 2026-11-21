@@ -11,7 +11,7 @@ Sources: [PRD.md](PRD.md) (v3.0) · [mockup.html](mockup.html) (screens) · [STY
 | # | Topic | Decision |
 |---|---|---|
 | D1 | Framework | ✅ **Stay on Vite + React + React Router.** Supabase is called from the browser and RLS protects data. PRD §8 updated. |
-| D2 | Schema | ✅ **Iterate with numbered migrations.** PRD §9 is the first pass. Tables and columns get added as features need them, each in its own migration PR. Process: [`supabase/README.md`](../supabase/README.md). Person A owns migrations. |
+| D2 | Schema | ✅ **Supabase CLI migrations, iterated as we go.** PRD §9 is the first pass. Tables and columns get added as features need them, each as its own migration (`npm run db:new`) in a `db/…` PR. Person A reviews and runs `npm run db:push`. Process: [`supabase/README.md`](../supabase/README.md). |
 | D3 | Name | ✅ **Breadcrumb** is the product/app name. "Sidequest" stays the name of the content type (a Breadcrumb user does sidequests). |
 | D4 | Maps key | ⏳ Someone sets up a Google Cloud project with the Maps JS + Directions APIs and shares a referrer-restricted key as `VITE_GOOGLE_MAPS_API_KEY` in `.env`. |
 | D5 | Workflow | ✅ **Every change goes through a pull request.** No direct pushes to `main`. Rules for people and AI agents: [`AGENTS.md`](../AGENTS.md). |
@@ -72,7 +72,7 @@ If you need a contract changed, ask its owner. Don't edit their folder.
 
 | Who | Task | Done when |
 |---|---|---|
-| A | First schema pass (migrations `002`–`009`, PR #2; see `supabase/README.md`): PRD §9 core tables with RLS (progress, photos and saves private; one rating per user; only completers can rate). Regenerate types. | Migration applied, `npm run typecheck` passes |
+| A | First schema pass (migrations in PR #2; see `supabase/README.md`): PRD §9 core tables with RLS (progress, photos and saves private; one rating per user; only completers can rate). Regenerate types. | `npm run db:push` done, `npm run db:types` regenerated, `npm run typecheck` passes |
 | A | Add every route to `App.tsx`, each pointing to a placeholder page *inside the owner's folder*. Add `useSession` and stub `lib/api/*`. | Every route renders "Coming soon"; nobody needs to touch `App.tsx` again |
 | B | Google Maps spike: map renders with `map-style.json`, one Directions request (transit + walking) works. Push the `<RouteMap>`, `<LegDirections>` stubs. | Real transit route drawn between two Boston points |
 | C | Port the style guide: import `tokens.css`/`components.css`, build `AppShell`, `Button`, `Pill`, `Chip`, `SidequestCard`, `EmptyState`. | Placeholder pages render inside the shell on desktop and mobile |

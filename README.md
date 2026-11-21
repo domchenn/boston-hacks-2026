@@ -39,6 +39,7 @@ npm run dev
 | `npm run build` | Type-check, then build for production into `dist/` |
 | `npm run typecheck` | Type-check only (`tsc -b --noEmit`) |
 | `npm run lint` | Run ESLint |
+| `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](supabase/README.md)) |
 | `npm run preview` | Serve the production build locally |
 
 ### Environment variables
@@ -56,24 +57,24 @@ If the variables are missing, `src/lib/supabase.ts` throws a clear error the fir
 
 ## Supabase database setup
 
-The schema lives in **[`supabase/migrations/`](supabase/migrations/)** as numbered files, one per feature; each file's name and header comment say what it does. Together they contain tables, constraints, indexes, triggers, and RLS policies.
+The schema lives in **[`supabase/migrations/`](supabase/migrations/)**: one SQL file per change, each named for what it does and starting with a header comment. They're applied with the **Supabase CLI**, which tracks which migrations have run. Full workflow: [`supabase/README.md`](supabase/README.md).
 
-1. Create a Supabase project.
-2. Open **SQL Editor → New query**, paste the first file (`001_…`), and click **Run**. Repeat for each file **in number order**, once each. [`supabase/README.md`](supabase/README.md) lists them and tracks which have been applied.
-3. Under **Authentication → Providers**, enable the sign-in methods you want (e.g. email).
-4. Optional: regenerate TypeScript types from the live schema (see below).
+First-time setup for the shared project (done once, by Person A):
 
-### ⚠️ Migration history
+```bash
+npx supabase login
+npx supabase link --project-ref <project-ref>   # the xxxx in https://xxxx.supabase.co
+npm run db:push                                  # applies every migration in order
+npm run db:types                                 # regenerates src/types/database.types.ts
+```
 
-If you apply `001` by hand in the SQL Editor, the Supabase CLI has **no record** that it ran. Do **not** later run `supabase db push` (or similar) blindly, because it will try to apply `001` again and fail or diverge. Before switching to CLI-based migrations, reconcile the history first, e.g. `supabase migration repair --status applied 001` after linking the project.
+Then, under **Authentication → Providers**, enable the sign-in methods you want (e.g. email, Google).
 
-Rules:
-- **Never edit a migration after it has been applied.** Put every schema change in a new, descriptively named file, e.g. `010_add_quest_photo_storage_bucket.sql`.
-- Agree as a team who applies migrations, and post in chat when you do.
+**Don't paste schema SQL into the Supabase SQL Editor.** The CLI can't see changes made that way. If that has already happened, see "If someone already ran SQL by hand" in [`supabase/README.md`](supabase/README.md).
 
 ### What the schema enforces
 
-Migrations run in number order (`001_…` through `009_…`); see [`supabase/README.md`](supabase/README.md) for what each one does.
+Migrations run in timestamp order; [`supabase/README.md`](supabase/README.md) lists what each one does.
 
 - A profile row is created automatically on signup (`username` starts as `NULL` and is chosen during onboarding).
 - Draft sidequests, and everything attached to them, are visible only to their creator. Community-only sidequests are visible only to that community's members.
@@ -85,13 +86,7 @@ Migrations run in number order (`001_…` through `009_…`); see [`supabase/REA
 
 ### Database types
 
-`src/types/database.types.ts` is **hand-written and provisional**. It mirrors the migration but was not generated from a live DB. Once your project exists, replace it:
-
-```bash
-npx supabase gen types typescript --project-id <project-ref> > src/types/database.types.ts
-```
-
-Regenerate after every new migration.
+`src/types/database.types.ts` gives TypeScript types for every table. After any migration is pushed, regenerate it with `npm run db:types` and commit the result. The current file was generated from the migrations applied to a scratch database, not the live project, so run `npm run db:types` after the first `db:push`.
 
 ## Folder structure
 
@@ -111,7 +106,8 @@ src/
 ├── main.tsx            entry point
 └── index.css           Tailwind + theme tokens
 supabase/
-├── migrations/        one numbered SQL file per schema change
+├── config.toml        Supabase CLI config
+├── migrations/        one SQL file per schema change (CLI-managed)
 └── seed.sql
 ```
 

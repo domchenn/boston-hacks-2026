@@ -1,11 +1,10 @@
 /**
- * TypeScript types for every table and view in the database (migrations 001–009).
+ * TypeScript types for every table and view in the database.
  * Gives autocomplete and type errors for supabase.from('…') calls.
  *
  * Generated from the migrations applied to a scratch Postgres database (same
  * shape as `supabase gen types typescript`), NOT from the live Supabase project.
- * Once the migrations are applied to the shared project, regenerate:
- *   npx supabase gen types typescript --project-id <project-ref> > src/types/database.types.ts
+ * After `npm run db:push`, replace this file with `npm run db:types`.
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]

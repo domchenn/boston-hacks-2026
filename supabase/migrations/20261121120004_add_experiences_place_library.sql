@@ -1,5 +1,5 @@
 -- =============================================================================
--- Breadcrumb — 004_add_experiences_place_library.sql
+-- Breadcrumb — 20261121120004_add_experiences_place_library.sql
 --
 -- Creates the curated library of real, verified Boston places ("experiences").
 --
@@ -7,10 +7,11 @@
 -- nearest T stations are accurate. Read-only for users: the team fills it
 -- through seed.sql or the SQL editor (there is no insert policy).
 --
--- Runs after: 003
+-- Runs after: 20261121120003_add_community_membership_and_visibility.sql
 -- Used by:    Create flow (place picker), seed data
 --
--- Immutable once applied to the shared project: change things in a new file.
+-- Immutable once applied: make further changes in a new migration
+-- (npx supabase migration new <name>).
 -- =============================================================================
 
 -- =============================================================================

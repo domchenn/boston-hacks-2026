@@ -1,5 +1,5 @@
 -- =============================================================================
--- Breadcrumb — 001_create_profiles_sidequests_and_stops.sql
+-- Breadcrumb — 20261121120001_create_profiles_sidequests_and_stops.sql
 --
 -- The base schema: user profiles, sidequests and their ordered stops, plus the
 -- security helpers and triggers everything else builds on.
@@ -13,12 +13,12 @@
 -- - private.can_view_sidequest / private.owns_sidequest: visibility and
 --   ownership checks reused by every child table's RLS policies
 --
--- Created here but replaced in 002 (see that file): saved_sidequests,
+-- Created here but dropped later by 20261121120002_drop_tables_replaced_by_user_progress.sql: saved_sidequests,
 -- sidequest_participants, completed_sidequests, sidequest_reviews,
 -- community_members.
 --
--- Runs first, on a fresh Supabase project. Immutable once applied: change
--- things in a new numbered migration, never by editing this file.
+-- Runs first. Immutable once applied: change things in a new migration
+-- (npx supabase migration new <name>), never by editing this file.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------

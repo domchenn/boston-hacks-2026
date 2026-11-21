@@ -1,5 +1,5 @@
 -- =============================================================================
--- Breadcrumb — 007_add_user_sidequest_progress.sql
+-- Breadcrumb — 20261121120007_add_user_sidequest_progress.sql
 --
 -- Creates user_sidequests: each user's status on each sidequest.
 --
@@ -9,10 +9,11 @@
 -- A trigger fills started_at / completed_at and only allows signed_up for
 -- sidequests with a scheduled start.
 --
--- Runs after: 006
+-- Runs after: 20261121120006_add_checklist_items.sql
 -- Used by:    Save / Sign up / Start / Completed / Abort buttons, profile tabs
 --
--- Immutable once applied to the shared project: change things in a new file.
+-- Immutable once applied: make further changes in a new migration
+-- (npx supabase migration new <name>).
 -- =============================================================================
 
 -- =============================================================================

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Breadcrumb — 009_add_sidequest_and_creator_ratings.sql
+-- Breadcrumb — 20261121120009_add_sidequest_and_creator_ratings.sql
 --
 -- Ratings: users score completed sidequests, and averages for cards and profiles.
 --
@@ -9,10 +9,11 @@
 -- - sidequest_rating_stats view: averages + count per sidequest (card ★).
 -- - questgiver_ratings view: a creator's average across their sidequests.
 --
--- Runs after: 008
+-- Runs after: 20261121120008_add_checklist_completions_and_quest_photos.sql
 -- Used by:    Rate screen, cards, detail page, profile questgiver rating
 --
--- Immutable once applied to the shared project: change things in a new file.
+-- Immutable once applied: make further changes in a new migration
+-- (npx supabase migration new <name>).
 -- =============================================================================
 
 -- =============================================================================
