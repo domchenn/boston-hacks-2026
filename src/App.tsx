@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { AuthPage } from '@/features/auth/AuthPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -13,6 +14,8 @@ const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: 'login', element: <AuthPage mode="login" /> },
+      { path: 'signup', element: <AuthPage mode="signup" /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

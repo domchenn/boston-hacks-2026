@@ -1,5 +1,11 @@
+/* Style-guide font (Inter). Same URL as docs/styles/tokens.css: its own @import is
+   dropped once inlined below Tailwind, because CSS @imports must come first. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Breadcrumb style guide (docs/STYLE_GUIDE.md): tokens + ready-made classes (.btn, .trail-card, .stops…). */
+@import "../docs/styles/tokens.css";
+@import "../docs/styles/components.css";
 
 @custom-variant dark (&:is(.dark *));
 
