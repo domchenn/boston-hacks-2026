@@ -31,6 +31,7 @@ The CLI targets a *local* database by default. The npm scripts add `--remote` so
 | `npm run db:status` | Show which migrations exist locally and which have been applied to the project |
 | `npm run db:push` | Apply all not-yet-applied migrations to the linked Supabase project |
 | `npm run db:types` | Regenerate `src/types/database.types.ts` from the live project |
+| `npm run test:db` | Run the database security tests against a **local** database (needs Docker; see below) |
 
 ## Changing the schema
 
@@ -45,6 +46,14 @@ Rules:
 - **Never edit a migration that has been pushed.** Fix it with a new migration.
 - Only Person A pushes to the shared project, so two people never apply migrations at once.
 - Don't run schema SQL in the Supabase SQL Editor. The CLI can't see those changes, and the next `db push` may break.
+
+## Database tests
+
+`supabase/tests/database/*.test.sql` are [pgTAP](https://pgtap.org) tests for the rules the database enforces: who can see drafts and community-only sidequests, that you can only write your own progress, that only people who completed a sidequest can rate it, that the rating averages are right, and so on. They act as different users (`set local role authenticated` plus a fake login) and roll everything back.
+
+- **CI runs them on every PR** against a fresh local database built from `migrations/` (`.github/workflows/ci.yml`). A PR that breaks a security rule goes red.
+- **Changing a rule?** Update or add a test in the same PR. New table? Add a test file for its policies, e.g. `04_quest_photos.test.sql`.
+- Run them yourself with Docker running: `npx supabase db start`, `npx supabase db reset`, then `npm run test:db`.
 
 ## Optional: local database
 

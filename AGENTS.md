@@ -18,7 +18,7 @@ React 19 + Vite + TypeScript, React Router, Tailwind CSS v4 + shadcn/ui, Lucide 
 1. Start from an up-to-date `main`: `git checkout main && git pull`.
 2. Create a branch: `git checkout -b feat/<lane>-<short-description>`. Use `fix/…` for bug fixes and `db/…` for migrations.
 3. Keep the change to **one feature or fix**. Smaller is better.
-4. Before pushing, run `npm run build && npm run lint`. Both must pass.
+4. Before pushing, run `npm run build && npm run lint`. Both must pass. CI (`.github/workflows/ci.yml`) also runs lint, typecheck, build and the database tests on every PR; a red PR doesn't get merged.
 5. Push the branch and open a pull request into `main`, e.g. `gh pr create --fill --base main`. Fill in the PR template: what changed, screenshots for UI, and how to test it.
 6. A teammate reviews and merges. **Never push or merge to `main` yourself, and never force-push `main`.**
 7. After merge, delete the branch and pull `main` before starting the next task.
@@ -37,7 +37,7 @@ AI agents: when a task is done, open the PR and report its link. Don't merge it.
 - The schema is managed with the **Supabase CLI**. See `supabase/README.md`.
 - To change the schema, create a migration with `npm run db:new -- <verb>_<what>` (e.g. `add_quest_photo_storage_bucket`), write the SQL with a header comment, and open it in its own `db/…` PR.
 - Never edit a migration that has been pushed. Never run schema SQL in the Supabase SQL Editor. **Never run `supabase db push`, `db reset --remote`, or any command that changes the shared project from an agent.** Only Person A pushes, after review.
-- Every new table gets RLS enabled with policies in the same migration.
+- Every new table gets RLS enabled with policies in the same migration, plus pgTAP tests for those policies in `supabase/tests/database/`.
 - After a migration is pushed, regenerate types with `npm run db:types` and commit them.
 
 ## Naming and file headers

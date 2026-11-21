@@ -14,4 +14,5 @@
 - [ ] `npm run build && npm run lint` pass
 - [ ] Only touches my lane's folder (or explains why it touches shared code)
 - [ ] No secrets or `.env` committed
-- [ ] DB change? It's a new numbered migration with RLS, and types are regenerated
+- [ ] DB change? New migration with RLS + tests in `supabase/tests/database/`, and types regenerated
+- [ ] CI is green
