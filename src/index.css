@@ -1,11 +1,9 @@
-/*
- * Global styles: loads Tailwind, defines the theme colour tokens used by
- * shadcn/ui components (light + dark), and sets base page styles.
- */
-
-
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Breadcrumb style guide (docs/STYLE_GUIDE.md): tokens + ready-made classes (.btn, .trail-card, .stops…). */
+@import "../docs/styles/tokens.css";
+@import "../docs/styles/components.css";
 
 @custom-variant dark (&:is(.dark *));
 
