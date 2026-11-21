@@ -93,7 +93,7 @@ Example: **Sunday Cafe Hopping** — three stops across Back Bay and Beacon Hill
 - Start and complete personal quest runs, preserving individual checkpoint state.
 - Only completed users can review; one review per user per sidequest.
 - Ratings are **Fun Factor (1–5)**, **Value/Cost (1–5)**, **Travel Convenience (1–5)**, plus optional text.
-- Show simple average scores and review count.
+- Show simple average scores and review the count.
 
 ## 6. Stretch features — P1/P2
 
