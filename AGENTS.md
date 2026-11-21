@@ -36,7 +36,7 @@ AI agents: when a task is done, open the PR and report its link. Don't merge it.
 
 - The schema is managed with the **Supabase CLI**. See `supabase/README.md`.
 - To change the schema, create a migration with `npm run db:new -- <verb>_<what>` (e.g. `add_quest_photo_storage_bucket`), write the SQL with a header comment, and open it in its own `db/…` PR.
-- Never edit a migration that has been pushed. Never run schema SQL in the Supabase SQL Editor. **Never run `supabase db push`, `db reset --linked`, or any command that changes the shared project from an agent.** Only Person A pushes, after review.
+- Never edit a migration that has been pushed. Never run schema SQL in the Supabase SQL Editor. **Never run `supabase db push`, `db reset --remote`, or any command that changes the shared project from an agent.** Only Person A pushes, after review.
 - Every new table gets RLS enabled with policies in the same migration.
 - After a migration is pushed, regenerate types with `npm run db:types` and commit them.
 

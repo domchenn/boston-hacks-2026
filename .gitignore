@@ -34,3 +34,6 @@ supabase/.branches
 
 # Local Claude Code config
 .claude/
+
+# Temp file from npm run db:types
+src/types/database.types.tmp

@@ -64,7 +64,7 @@ First-time setup for the shared project (done once, by Person A):
 ```bash
 npx supabase login
 npx supabase link --project-ref <project-ref>   # the xxxx in https://xxxx.supabase.co
-npx supabase db reset --linked                   # one time only: clears hand-made tables, applies all migrations
+npx supabase db reset --remote                   # one time only: clears hand-made tables, applies all migrations
 npm run db:types                                 # regenerates src/types/database.types.ts
 ```
 
