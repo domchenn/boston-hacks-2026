@@ -1,5 +1,5 @@
 /**
- * Sidequests · Tailwind theme extension mirroring styles/tokens.css (v0.2).
+ * Breadcrumb · Tailwind theme extension mirroring styles/tokens.css (v0.2).
  *
  * Tailwind v3: merge `theme.extend` (and the plugin) into tailwind.config.js.
  * Tailwind v4: load this file with `@config "./styles/tailwind.config.snippet.js";`

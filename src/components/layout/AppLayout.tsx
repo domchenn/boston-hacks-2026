@@ -9,7 +9,7 @@ export function AppLayout() {
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <Compass className="size-5 text-primary" aria-hidden />
-            Sidequests
+            Breadcrumb
           </Link>
         </div>
       </header>

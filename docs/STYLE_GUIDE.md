@@ -1,6 +1,6 @@
-# Sidequests style guide (v0.2)
+# Breadcrumb style guide (v0.2)
 
-This is the visual foundation for **Sidequests**, our BostonHacks 2026 entry for the *Bos(tons) of Eats and Streets* track.
+This is the visual foundation for **Breadcrumb**, our BostonHacks 2026 entry for the *Bos(tons) of Eats and Streets* track.
 
 > **See it:** from the repo root, run `python -m http.server 5178 --directory docs`, then visit http://localhost:5178/style-guide.html. It shows every token, asset and component. All paths in this guide are relative to `docs/`.
 >
@@ -230,5 +230,5 @@ This is the one place illustrations appear: a centered line illustration (`skyli
 - **Fonts**: Akshar, Archivo and Noto Sans come from Google Fonts under the **SIL Open Font License 1.1**.
 - **Presicav (Typodermic)**: *not used.* It's a commercial family. Typodermic's free desktop licenses don't include web embedding, and live website text needs a paid webfont license (sold through MyFonts). **Archivo Expanded 700** is the free substitute: a wide, all-caps grotesque in the same spirit. If the team buys a Presicav webfont license, swap the first entry of `--font-display` and set `--font-display-stretch: normal`.
 - **Icons**: Lucide, **ISC license** (keep its license notice if you bundle it).
-- **Trademarks**: the Kenmore Square sign illustration (`citgo.svg`) shows the CITGO name and trimark, which are CITGO Petroleum's trademarks. Use it only as a landmark illustration, never as our logo or in a way that suggests endorsement. MBTA line names and colors identify transit lines. Sidequests isn't affiliated with or endorsed by the MBTA. Don't use the MBTA "T" logo.
+- **Trademarks**: the Kenmore Square sign illustration (`citgo.svg`) shows the CITGO name and trimark, which are CITGO Petroleum's trademarks. Use it only as a landmark illustration, never as our logo or in a way that suggests endorsement. MBTA line names and colors identify transit lines. Breadcrumb isn't affiliated with or endorsed by the MBTA. Don't use the MBTA "T" logo.
 - **Map data**: Google Maps requires its own attribution on the map. Keep the default logo and copyright.

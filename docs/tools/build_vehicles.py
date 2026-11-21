@@ -19,7 +19,7 @@ TRUCK = "#3A3F44"
 ROOF = "#A9B0B6"
 SILVER_PAINT = "#B7BEC5"
 RED, ORANGE, BLUE, GREEN = "#CE2634", "#ED8B00", "#206DDF", "#0C6B14"
-HEADER = "<!-- Original artwork - BostonHacks 2026 \"Sidequests\" team. Side view, ~3.25 units per foot. -->"
+HEADER = "<!-- Original artwork - BostonHacks 2026 \"Breadcrumb\" team. Side view, ~3.25 units per foot. -->"
 
 
 def write(name, vb, title, body):
