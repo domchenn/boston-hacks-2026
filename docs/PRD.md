@@ -497,3 +497,10 @@ Detour is a social exploration app that helps Boston college students discover s
 - **Moved following to cherry on top** and added communities (BU, BC), checkpoints, and creator ratings.
 - **Changed the maps stack** from MapLibre to Google Maps for transit directions.
 - **Rebuilt the schema** around sidequests, stops, checklists, user progress, photos, and ratings.
+
+
+## notes
+
+- Blue bikes integration 
+- Boston bus lines integration
+- walking routes integration
