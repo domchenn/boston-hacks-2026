@@ -48,28 +48,28 @@ Rules:
 
 With Docker running, `npx supabase start` runs a full local Supabase (database, auth, storage, Studio UI) on your machine. `npx supabase db reset` rebuilds it from `migrations/` and then loads `seed.sql`. It's handy for testing a migration before pushing, but not required.
 
-## If someone already ran SQL by hand
+## First push to the shared project (one time)
 
-If the shared project already has tables from pasting the first migration into the SQL Editor, tell the CLI that it has run, so `db push` doesn't try to create those tables again:
+The shared project still has tables from an early schema that was pasted into the SQL Editor by hand (`saved_sidequests`, `community_members`, …). They hold no real data and the CLI doesn't know about them, so **reset the shared database once** and let the CLI build everything from `migrations/`:
 
 ```bash
-npx supabase migration repair --status applied 20261121120001
+npx supabase link --project-ref <project-ref>
+npx supabase db reset --linked     # wipes the public schema, then applies all migrations + seed.sql
+npm run db:status                  # every migration should show as applied
+npm run db:types
 ```
 
-Run `npm run db:status` first to see what the CLI thinks is applied.
+- `db reset --linked` asks you to confirm. It deletes all data in the app's tables, which is fine now and **never OK after launch**.
+- Anyone who already signed up (e.g. OAuth testing) automatically gets a fresh profile row: the first migration backfills profiles for existing users.
+- From then on, use `npm run db:push` for new migrations. Never reset the shared project again.
 
 ## Current migrations
 
-| Migration | What it does |
+| Migration | What it creates |
 |---|---|
-| `20261121120001_create_profiles_sidequests_and_stops` | Base schema: profiles (auto-created on signup), sidequests, stops, follows, communities, visibility helpers |
-| `20261121120002_drop_tables_replaced_by_user_progress` | Drops the base tables replaced below (saves, participants, completions, reviews, community_members) |
-| `20261121120003_add_community_membership_and_visibility` | One community per user; community-only sidequests stay hidden from outsiders |
-| `20261121120004_add_experiences_place_library` | Curated library of real Boston places (read-only for users) |
-| `20261121120005_add_sidequest_card_fields_and_stop_details` | `primary_line`, `is_curated`, categories; stop activity, travel mode, library link |
-| `20261121120006_add_checklist_items` | Things to see/do per stop |
-| `20261121120007_add_user_sidequest_progress` | Each user's status per sidequest: saved / signed_up / in_progress / completed / aborted |
-| `20261121120008_add_checklist_completions_and_quest_photos` | Private checklist ticks; public quest photos |
-| `20261121120009_add_sidequest_and_creator_ratings` | 4-part ratings, creator ratings, rating average views |
+| `20261121120001_create_profiles_and_communities` | `profiles` (auto-created on signup, backfilled for existing users), `communities`, `follows`, the `private` helper schema |
+| `20261121120002_create_sidequests_stops_and_places` | `experiences` (curated place library), `sidequests`, `sidequest_stops`, visibility/ownership helpers |
+| `20261121120003_create_quest_progress_and_checklists` | `checklist_items`, `user_sidequests` (saved / signed_up / in_progress / completed / aborted), `checklist_completions`, `quest_photos` |
+| `20261121120004_create_ratings` | `sidequest_ratings` (price/time/enjoyment/memorability), `creator_ratings`, rating average views |
 
 Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.

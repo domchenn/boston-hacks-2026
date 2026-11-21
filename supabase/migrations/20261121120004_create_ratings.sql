@@ -1,19 +1,18 @@
 -- =============================================================================
--- Breadcrumb — 20261121120009_add_sidequest_and_creator_ratings.sql
+-- Breadcrumb — create_ratings
 --
--- Ratings: users score completed sidequests, and averages for cards and profiles.
+-- Ratings and the averages shown on cards and profiles.
 --
--- - sidequest_ratings: price, time, enjoyment, memorability (1–5) + review.
---   A trigger enforces: completed it first, and creators can't rate their own.
+-- - sidequest_ratings: price, time, enjoyment, memorability (1–5 each) +
+--   optional review. A trigger enforces: you completed it first, one rating
+--   per user, and creators can't rate their own.
 -- - creator_ratings: rate a user's quest-making directly (P2).
 -- - sidequest_rating_stats view: averages + count per sidequest (card ★).
 -- - questgiver_ratings view: a creator's average across their sidequests.
 --
--- Runs after: 20261121120008_add_checklist_completions_and_quest_photos.sql
--- Used by:    Rate screen, cards, detail page, profile questgiver rating
---
--- Immutable once applied: make further changes in a new migration
--- (npx supabase migration new <name>).
+-- Runs after: create_quest_progress_and_checklists (needs user_sidequests).
+-- Used by: Rate screen, feed cards, detail page, profile questgiver rating.
+-- Immutable once applied: make changes in a new migration (npm run db:new).
 -- =============================================================================
 
 -- =============================================================================
@@ -37,7 +36,7 @@ create index sidequest_ratings_sidequest_idx on public.sidequest_ratings (sidequ
 
 -- Enforce "completed it" in the database, not just the UI. Runs as definer so
 -- the check works no matter which role writes. Creators can't rate their own.
-create function private.validate_rating()
+create or replace function private.validate_rating()
 returns trigger
 language plpgsql
 security definer
@@ -83,9 +82,9 @@ create policy "Users delete their own ratings"
   using (user_id = (select auth.uid()));
 
 
--- =============================================================================
+-- -----------------------------------------------------------------------------
 -- creator_ratings — rate a user's quest-making directly (P2, PRD §6.3)
--- =============================================================================
+-- -----------------------------------------------------------------------------
 create table public.creator_ratings (
   rater_id   uuid not null references public.profiles (id) on delete cascade,
   creator_id uuid not null references public.profiles (id) on delete cascade,

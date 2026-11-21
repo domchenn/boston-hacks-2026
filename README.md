@@ -64,13 +64,13 @@ First-time setup for the shared project (done once, by Person A):
 ```bash
 npx supabase login
 npx supabase link --project-ref <project-ref>   # the xxxx in https://xxxx.supabase.co
-npm run db:push                                  # applies every migration in order
+npx supabase db reset --linked                   # one time only: clears hand-made tables, applies all migrations
 npm run db:types                                 # regenerates src/types/database.types.ts
 ```
 
 Then, under **Authentication → Providers**, enable the sign-in methods you want (e.g. email, Google).
 
-**Don't paste schema SQL into the Supabase SQL Editor.** The CLI can't see changes made that way. If that has already happened, see "If someone already ran SQL by hand" in [`supabase/README.md`](supabase/README.md).
+**Don't paste schema SQL into the Supabase SQL Editor.** The CLI can't see changes made that way. After this first setup, new migrations go out with `npm run db:push`.
 
 ### What the schema enforces
 
