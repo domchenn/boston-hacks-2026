@@ -1,32 +1,75 @@
-# Database migrations
+# Database (Supabase)
 
-The schema grows as features need new data. Every change is a **new numbered SQL file** in `migrations/`, reviewed in its own pull request. Person A owns the schema and applies migrations to the shared Supabase project.
+The database schema is managed with the **Supabase CLI**, the standard Supabase workflow. Every schema change is a SQL file in `migrations/`. The CLI applies them in order and records which ones have run, so nobody pastes SQL by hand and nothing runs twice.
 
-## Adding to the schema
+| Path | What it is |
+|---|---|
+| `config.toml` | CLI settings (created by `supabase init`) |
+| `migrations/` | One SQL file per schema change, applied in timestamp order |
+| `seed.sql` | Demo/dev data. Runs automatically on a local `supabase db reset` |
 
-1. Need a table or column? Tell Person A, or open a `db/<description>` branch yourself.
-2. Create the next file: `migrations/00N_short_description.sql` (e.g. `003_add_quest_photos.sql`).
-3. In that file:
-   - Use `create table` / `alter table … add column`. Don't drop or rename things other people's code uses without warning the team.
-   - Enable RLS on every new table and add its policies in the same file.
-   - Add comments explaining anything non-obvious.
-4. Test it on a scratch database or a local Supabase if you can.
-5. Open a PR. Once it's approved, Person A runs it in the Supabase SQL Editor, records it in the table below, and regenerates the types:
-   ```bash
-   npx supabase gen types typescript --project-id <project-ref> > src/types/database.types.ts
-   ```
-6. Commit the regenerated types to the same PR, then merge.
+The CLI is a dev dependency, so `npm install` gets it. Run it with `npx supabase …` or the npm scripts below.
 
-## Rules
+## One-time setup (per computer)
 
-- **Never edit a migration after it has been applied.** Fix mistakes with a new migration.
-- Run migrations in order, once each.
-- If you later switch to the Supabase CLI (`supabase db push`), first mark already-applied files with `supabase migration repair --status applied <version>` so they aren't run twice.
-- Seed data lives in `seed.sql` and is for dev/demo only.
+```bash
+npx supabase login                               # opens the browser to authorize
+npx supabase link --project-ref <project-ref>    # asks for the database password
+```
 
-## Applied migrations
+- `<project-ref>` is the `xxxx` in your `https://xxxx.supabase.co` URL.
+- The database password is in Supabase → **Project Settings → Database** (ask whoever created the project).
+- Linking stores local state in `supabase/.temp/`, which is gitignored.
 
-| File | What it does | Applied to shared project? | By / date |
-|---|---|---|---|
-| `001_initial_schema.sql` | First schema (old PRD): profiles, sidequests, stops, saves, participants, completions, reviews, follows, communities | ❓ confirm | |
-| `002_…` | Planned: PRD v3 core (experiences, checklist items, user progress, 4-part ratings, photos) | ⏳ not written | |
+## Everyday commands
+
+| Command | What it does |
+|---|---|
+| `npm run db:new -- <name>` | Create a new empty migration, e.g. `npm run db:new -- add_quest_photo_storage_bucket` |
+| `npm run db:status` | Show which migrations exist locally and which have been applied to the project |
+| `npm run db:push` | Apply all not-yet-applied migrations to the linked Supabase project |
+| `npm run db:types` | Regenerate `src/types/database.types.ts` from the live project |
+
+## Changing the schema
+
+1. Branch: `git checkout -b db/<description>`.
+2. `npm run db:new -- <verb>_<what>`. Name it for what it does, starting with a verb: `add_quest_photo_storage_bucket`, `allow_editing_published_stops`. Never `update_schema` or `v3_changes`. The CLI adds the timestamp prefix.
+3. Write the SQL. **Start the file with a header comment** (copy one from an existing migration) saying what it changes, why, what it runs after, and which features use it.
+4. Enable RLS and add policies for every new table in the same file.
+5. Open a PR. **Person A** reviews every `db/…` PR.
+6. After it's approved, Person A runs `npm run db:push`, then `npm run db:types`, and commits the regenerated types to the same PR before merging.
+
+Rules:
+- **Never edit a migration that has been pushed.** Fix it with a new migration.
+- Only Person A pushes to the shared project, so two people never apply migrations at once.
+- Don't run schema SQL in the Supabase SQL Editor. The CLI can't see those changes, and the next `db push` may break.
+
+## Optional: local database
+
+With Docker running, `npx supabase start` runs a full local Supabase (database, auth, storage, Studio UI) on your machine. `npx supabase db reset` rebuilds it from `migrations/` and then loads `seed.sql`. It's handy for testing a migration before pushing, but not required.
+
+## First push to the shared project (one time)
+
+The shared project still has tables from an early schema that was pasted into the SQL Editor by hand (`saved_sidequests`, `community_members`, …). They hold no real data and the CLI doesn't know about them, so **reset the shared database once** and let the CLI build everything from `migrations/`:
+
+```bash
+npx supabase link --project-ref <project-ref>
+npx supabase db reset --linked     # wipes the public schema, then applies all migrations + seed.sql
+npm run db:status                  # every migration should show as applied
+npm run db:types
+```
+
+- `db reset --linked` asks you to confirm. It deletes all data in the app's tables, which is fine now and **never OK after launch**.
+- Anyone who already signed up (e.g. OAuth testing) automatically gets a fresh profile row: the first migration backfills profiles for existing users.
+- From then on, use `npm run db:push` for new migrations. Never reset the shared project again.
+
+## Current migrations
+
+| Migration | What it creates |
+|---|---|
+| `20261121120001_create_profiles_and_communities` | `profiles` (auto-created on signup, backfilled for existing users), `communities`, `follows`, the `private` helper schema |
+| `20261121120002_create_sidequests_stops_and_places` | `experiences` (curated place library), `sidequests`, `sidequest_stops`, visibility/ownership helpers |
+| `20261121120003_create_quest_progress_and_checklists` | `checklist_items`, `user_sidequests` (saved / signed_up / in_progress / completed / aborted), `checklist_completions`, `quest_photos` |
+| `20261121120004_create_ratings` | `sidequest_ratings` (price/time/enjoyment/memorability), `creator_ratings`, rating average views |
+
+Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.

@@ -1,3 +1,9 @@
+/**
+ * Route table for the whole app (React Router). Maps each URL to a page and
+ * wraps pages in the shared AppLayout. Each lane owns the pages its routes
+ * point to; see docs/TASKS.md for who owns which route.
+ */
+
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { HomePage } from '@/pages/HomePage'

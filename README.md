@@ -39,6 +39,7 @@ npm run dev
 | `npm run build` | Type-check, then build for production into `dist/` |
 | `npm run typecheck` | Type-check only (`tsc -b --noEmit`) |
 | `npm run lint` | Run ESLint |
+| `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](supabase/README.md)) |
 | `npm run preview` | Serve the production build locally |
 
 ### Environment variables
@@ -56,40 +57,36 @@ If the variables are missing, `src/lib/supabase.ts` throws a clear error the fir
 
 ## Supabase database setup
 
-The full schema lives in **[`supabase/migrations/001_initial_schema.sql`](supabase/migrations/001_initial_schema.sql)**. It contains tables, constraints, indexes, triggers, and RLS policies.
+The schema lives in **[`supabase/migrations/`](supabase/migrations/)**: one SQL file per change, each named for what it does and starting with a header comment. They're applied with the **Supabase CLI**, which tracks which migrations have run. Full workflow: [`supabase/README.md`](supabase/README.md).
 
-1. Create a Supabase project.
-2. Open **SQL Editor → New query**, paste the whole file, and click **Run**. Run it **once**, on a fresh project.
-3. Under **Authentication → Providers**, enable the sign-in methods you want (e.g. email).
-4. Optional: regenerate TypeScript types from the live schema (see below).
+First-time setup for the shared project (done once, by Person A):
 
-### ⚠️ Migration history
+```bash
+npx supabase login
+npx supabase link --project-ref <project-ref>   # the xxxx in https://xxxx.supabase.co
+npx supabase db reset --linked                   # one time only: clears hand-made tables, applies all migrations
+npm run db:types                                 # regenerates src/types/database.types.ts
+```
 
-If you apply `001` by hand in the SQL Editor, the Supabase CLI has **no record** that it ran. Do **not** later run `supabase db push` (or similar) blindly, because it will try to apply `001` again and fail or diverge. Before switching to CLI-based migrations, reconcile the history first, e.g. `supabase migration repair --status applied 001` after linking the project.
+Then, under **Authentication → Providers**, enable the sign-in methods you want (e.g. email, Google).
 
-Rules:
-- **Never edit `001_initial_schema.sql` after it has been applied.** Put every schema change in a new file: `002_short_description.sql`, `003_...`.
-- Agree as a team who applies migrations, and post in chat when you do.
+**Don't paste schema SQL into the Supabase SQL Editor.** The CLI can't see changes made that way. After this first setup, new migrations go out with `npm run db:push`.
 
 ### What the schema enforces
 
+Migrations run in timestamp order; [`supabase/README.md`](supabase/README.md) lists what each one does.
+
 - A profile row is created automatically on signup (`username` starts as `NULL` and is chosen during onboarding).
-- Draft and archived sidequests, and their stops, are visible only to their creator.
-- Users can only write their own rows (profile, sidequests, stops, saves, participation, completions, reviews, follows, memberships).
-- Only **published, scheduled** sidequests can be joined (enforced by a trigger).
-- A review requires a completion. This is a foreign key, so un-completing removes the review.
-- Ratings are 1–5, costs are ≥ 0, coordinates are valid, and duplicate saves, joins, and reviews are rejected.
-- Deleting a sidequest cascades to its stops, saves, participants, completions, and reviews. Use `status = 'archived'` to hide one while keeping its history.
+- Draft sidequests, and everything attached to them, are visible only to their creator. Community-only sidequests are visible only to that community's members.
+- Each user has **one progress row per sidequest** in `user_sidequests` (`saved`, `signed_up`, `in_progress`, `completed`, `aborted`). It's private to that user. Signing up is only allowed for sidequests with a scheduled start.
+- Checklist ticks are private and only allowed on a quest you've started.
+- Ratings (price, time, enjoyment, memorability, 1–5 each) require a **completed** run, one per user, and creators can't rate their own. The views `sidequest_rating_stats` and `questgiver_ratings` give the averages.
+- `experiences` (the curated place library) is read-only for users; the team adds rows through `seed.sql`.
+- Users can only write their own rows. Deleting a sidequest cascades to everything attached to it. Use `status = 'archived'` to hide one instead.
 
 ### Database types
 
-`src/types/database.types.ts` is **hand-written and provisional**. It mirrors the migration but was not generated from a live DB. Once your project exists, replace it:
-
-```bash
-npx supabase gen types typescript --project-id <project-ref> > src/types/database.types.ts
-```
-
-Regenerate after every new migration.
+`src/types/database.types.ts` gives TypeScript types for every table. After any migration is pushed, regenerate it with `npm run db:types` and commit the result. The current file was generated from the migrations applied to a scratch database, not the live project, so run `npm run db:types` after the first `db:push`.
 
 ## Folder structure
 
@@ -109,7 +106,8 @@ src/
 ├── main.tsx            entry point
 └── index.css           Tailwind + theme tokens
 supabase/
-├── migrations/001_initial_schema.sql
+├── config.toml        Supabase CLI config
+├── migrations/        one SQL file per schema change (CLI-managed)
 └── seed.sql
 ```
 
