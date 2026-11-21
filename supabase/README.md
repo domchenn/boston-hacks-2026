@@ -83,5 +83,6 @@ npm run db:types
 | `20261121120003_create_quest_progress_and_checklists` | `checklist_items`, `user_sidequests` (saved / signed_up / in_progress / completed / aborted), `checklist_completions`, `quest_photos` |
 | `20261121120004_create_ratings` | `sidequest_ratings` (price/time/enjoyment/memorability), `creator_ratings`, rating average views |
 | `20261121220540_grant_api_access_to_app_tables` | Lets the app's API roles reach the tables (newer Supabase projects don't do this automatically); RLS still controls rows |
+| `20261121225902_seed_curated_demo_trails` | Demo content: the "breadcrumb" team account, 9 real places, 3 curated trails (Sunday Café Hop, North End Cannoli Duel, Harvard Square Bookstores) with stops and crumbs |
 
 Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.
