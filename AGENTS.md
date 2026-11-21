@@ -9,6 +9,19 @@ Breadcrumb is a transit-first social exploration web app for Boston college stud
 - Screens: [`docs/mockup.html`](docs/mockup.html) · Visual rules: [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md)
 - Database change process: [`supabase/README.md`](supabase/README.md)
 
+## Words
+
+The UI and the code use different names for the same things. Screens say the left column; code and the database use the right.
+
+| UI word | Database / code |
+|---|---|
+| **Trail** (an outing) | `sidequests` |
+| **Stop** | `sidequest_stops` |
+| **Crumb** (a small task at a stop) | `checklist_items` |
+| Start trail / Finished / Saved | `user_sidequests.status` = `in_progress` / `completed` / `saved` |
+
+Don't rename tables to match the UI. (`quest_checkpoints`, mentioned in the style guide, doesn't exist; crumbs are `checklist_items`.)
+
 ## Stack
 
 React 19 + Vite + TypeScript, React Router, Tailwind CSS v4 + shadcn/ui, Lucide icons, Supabase (Postgres, Auth, Storage) called directly from the browser and protected by Row Level Security, Google Maps JS + Directions API, MBTA V3 API. Hosted on Vercel. **Not Next.js**, and there is no app server.
