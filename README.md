@@ -59,7 +59,7 @@ If the variables are missing, `src/lib/supabase.ts` throws a clear error the fir
 The full schema lives in **[`supabase/migrations/001_initial_schema.sql`](supabase/migrations/001_initial_schema.sql)**. It contains tables, constraints, indexes, triggers, and RLS policies.
 
 1. Create a Supabase project.
-2. Open **SQL Editor → New query**, paste the whole file, and click **Run**. Run it **once**, on a fresh project.
+2. Open **SQL Editor → New query**, paste the whole file, and click **Run**. Run it **once**, on a fresh project. Then do the same with `002_prd_v3_core.sql`.
 3. Under **Authentication → Providers**, enable the sign-in methods you want (e.g. email).
 4. Optional: regenerate TypeScript types from the live schema (see below).
 
@@ -73,13 +73,15 @@ Rules:
 
 ### What the schema enforces
 
+Migrations run in order: `001_initial_schema.sql`, then `002_prd_v3_core.sql` (see [`supabase/README.md`](supabase/README.md)).
+
 - A profile row is created automatically on signup (`username` starts as `NULL` and is chosen during onboarding).
-- Draft and archived sidequests, and their stops, are visible only to their creator.
-- Users can only write their own rows (profile, sidequests, stops, saves, participation, completions, reviews, follows, memberships).
-- Only **published, scheduled** sidequests can be joined (enforced by a trigger).
-- A review requires a completion. This is a foreign key, so un-completing removes the review.
-- Ratings are 1–5, costs are ≥ 0, coordinates are valid, and duplicate saves, joins, and reviews are rejected.
-- Deleting a sidequest cascades to its stops, saves, participants, completions, and reviews. Use `status = 'archived'` to hide one while keeping its history.
+- Draft sidequests, and everything attached to them, are visible only to their creator. Community-only sidequests are visible only to that community's members.
+- Each user has **one progress row per sidequest** in `user_sidequests` (`saved`, `signed_up`, `in_progress`, `completed`, `aborted`). It's private to that user. Signing up is only allowed for sidequests with a scheduled start.
+- Checklist ticks are private and only allowed on a quest you've started.
+- Ratings (price, time, enjoyment, memorability, 1–5 each) require a **completed** run, one per user, and creators can't rate their own. The views `sidequest_rating_stats` and `questgiver_ratings` give the averages.
+- `experiences` (the curated place library) is read-only for users; the team adds rows through `seed.sql`.
+- Users can only write their own rows. Deleting a sidequest cascades to everything attached to it. Use `status = 'archived'` to hide one instead.
 
 ### Database types
 

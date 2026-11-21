@@ -29,4 +29,4 @@ The schema grows as features need new data. Every change is a **new numbered SQL
 | File | What it does | Applied to shared project? | By / date |
 |---|---|---|---|
 | `001_initial_schema.sql` | First schema (old PRD): profiles, sidequests, stops, saves, participants, completions, reviews, follows, communities | ❓ confirm | |
-| `002_…` | Planned: PRD v3 core (experiences, checklist items, user progress, 4-part ratings, photos) | ⏳ not written | |
+| `002_prd_v3_core.sql` | PRD v3 core: experiences, checklist items, `user_sidequests` progress, checklist completions, quest photos, 4-part ratings, creator ratings, rating views, community visibility. Drops the 001 tables it replaces. | ❌ not yet | |
