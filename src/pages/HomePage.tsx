@@ -1,3 +1,8 @@
+/**
+ * Placeholder landing page shown at '/'. Will be replaced by the For You
+ * feed (Discovery lane).
+ */
+
 export function HomePage() {
   return (
     <section className="flex flex-col items-center gap-3 py-16 text-center sm:py-24">
