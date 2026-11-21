@@ -1,0 +1,4 @@
+-- Optional seed data for LOCAL/dev databases only.
+-- Intentionally empty for now. Profiles are created by the auth trigger, so sign up
+-- test users through the app (or Supabase Dashboard → Authentication) before
+-- inserting sidequests that reference them.
