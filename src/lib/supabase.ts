@@ -7,7 +7,7 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
     '[Sidequests] Missing Supabase environment variables.\n' +
-      'Copy .env.example to .env.local and set VITE_SUPABASE_URL and ' +
+      'Copy .env.example to .env and set VITE_SUPABASE_URL and ' +
       'VITE_SUPABASE_PUBLISHABLE_KEY (Supabase Dashboard → Project Settings → API), ' +
       'then restart `npm run dev`.',
   )

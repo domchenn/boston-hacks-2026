@@ -175,7 +175,7 @@ P1 work starts only after M4.
 - Only edit files in your own feature folders. For shared files, keep changes minimal and say so in the PR.
 - Don't add dependencies or migrations without asking the team.
 - Don't build features outside your area, even if it would be "quick".
-- Don't commit `.env.local`. Don't push to `main`.
+- Don't commit `.env`. Don't push to `main`.
 
 **For D (beginner)**
 - Commit small and often (`git add . && git commit -m "..."`). It's your undo button.

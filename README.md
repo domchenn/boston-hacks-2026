@@ -27,7 +27,7 @@ Requires Node 20+.
 git clone https://github.com/domchenn/boston-hacks-2026.git
 cd boston-hacks-2026
 npm install
-cp .env.example .env.local   # then fill in the values, see below
+cp .env.example .env   # then fill in the values, see below
 npm run dev
 ```
 
@@ -43,7 +43,7 @@ npm run dev
 
 ### Environment variables
 
-Set these in `.env.local`. That file is gitignored, so never commit it.
+Set these in `.env`. That file is gitignored, so never commit it.
 
 | Variable | Where to find it |
 | --- | --- |
@@ -134,4 +134,4 @@ src/features/
 - Use the `@/` alias for imports from `src`.
 - Add UI primitives with `npx shadcn@latest add button card ...` (they land in `src/components/ui/`). Use theme tokens (`bg-primary`, `text-muted-foreground`), not hard-coded colors. Design mobile-first: base styles target phones, and `sm:`/`md:` add larger layouts.
 - Branch per feature (`feat/discovery-feed`) and open a PR into `main`. Run `npm run build && npm run lint` before pushing.
-- Never commit `.env.local` or any secret key.
+- Never commit `.env` or any secret key.
