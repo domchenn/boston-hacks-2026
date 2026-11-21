@@ -1,165 +1,123 @@
-# Breadcrumb — Feature Split (4 people)
+# Breadcrumb — Tasks
 
-Sources: [PRD.md](PRD.md) (v3.0) · [mockup.html](mockup.html) (screens) · [STYLE_GUIDE.md](STYLE_GUIDE.md) · schema in [`supabase/migrations/`](../supabase/migrations/)
+Who builds what, in what order. **Agents: read this file, `AGENTS.md` and `docs/STYLE_GUIDE.md` before starting a task.**
 
-**The rule that prevents overlap:** each person owns whole screens *and* the folder they live in. You only edit your own folder. Anything you need from someone else, you get through a **contract**: a component or function with agreed props that the owner publishes as a stub on day one, then fills in.
+Sources: [PRD.md](PRD.md) · design: [`mockups/`](mockups/) (Main = web, Mobile-* = phone) and [STYLE_GUIDE.md](STYLE_GUIDE.md) · database: [`supabase/README.md`](../supabase/README.md)
+
+## Words
+
+| Say in the UI | Database / code name |
+|---|---|
+| **Trail** (an outing) | `sidequests` |
+| **Stop** | `sidequest_stops` |
+| **Crumb** (a small task at a stop) | `checklist_items` |
+| Make a trail | create a `sidequests` row + stops + crumbs |
+| Start trail / Finished / Saved | `user_sidequests.status` = `in_progress` / `completed` / `saved` |
+
+Screens say trail and crumb. Code keeps the table names; don't rename tables. (The style guide mentions `quest_checkpoints`; that table doesn't exist. Crumbs are `checklist_items`.)
+
+## How to do a task
+
+1. `git checkout main && git pull`
+2. Open your agent in the repo and tell it: **"Do task <ID> from docs/TASKS.md."**
+3. Check the result with `npm run dev`, on desktop and at phone width.
+4. The agent creates the branch named in the task, runs `npm run build && npm run lint`, and opens a PR. **It doesn't merge.**
+5. Wait for CI to go green, then ask a teammate to review and merge. (`main` is protected: no direct pushes.)
+
+## Routes
+
+Every route already exists in `src/App.tsx` and points at a placeholder page. **Replace your page's contents; don't edit `App.tsx`.**
+
+| Path | Screen | Owner | File |
+|---|---|---|---|
+| `/` | Explore ("Trails for you") | Jason | `src/features/explore/ExplorePage.tsx` |
+| `/trails/:id` | Trail detail | Jason | `src/features/trail/TrailDetailPage.tsx` |
+| `/trails/:id/go` | Active trail (Start trail) | Jason (later) | `src/features/trail/ActiveTrailPage.tsx` |
+| `/make` | Make a trail | Dom | `src/features/make/MakeTrailPage.tsx` |
+| `/saved` | Saved | Gio | `src/features/saved/SavedPage.tsx` |
+| `/me`, `/u/:username` | You / profile | Gio | `src/features/profile/ProfilePage.tsx` |
+| `/onboarding` | Pick a username | Gio | `src/features/auth/OnboardingPage.tsx` |
+| `/login`, `/signup` | Auth (done) | Gio | `src/features/auth/AuthPage.tsx` |
+| `/map` | Map tab (P1) | later | `src/features/map/MapPage.tsx` |
+
+## Shared code you can use
+
+| What | Where | Status |
+|---|---|---|
+| `useSession()` → `{ session, profile, loading, signOut, refreshProfile }` | `@/lib/useSession` | ✅ done |
+| Supabase client | `@/lib/supabase` | ✅ done |
+| Table types `Tables<'sidequests'>` etc. | `@/types/database.types` | ✅ done (regenerate with `npm run db:types`) |
+| Allowed values (statuses, categories, T lines…) | `@/types/db-values` | ✅ done |
+| `getFeed()`, `getTrail()` | `@/lib/api/trails` | ⏳ task D1 |
+| `saveTrail`, `unsaveTrail`, `joinTrail`, `startTrail`, `finishTrail`, `abortTrail`, `toggleCrumb`, `getMyStatus` | `@/lib/api/progress` | ⏳ stubs exist; filled in by task G2 |
+
+Call shared functions by these names even before they're finished, so nobody waits.
 
 ---
 
-## 0. Decisions
+## Round 1 (start now, in parallel)
 
-| # | Topic | Decision |
-|---|---|---|
-| D1 | Framework | ✅ **Stay on Vite + React + React Router.** Supabase is called from the browser and RLS protects data. PRD §8 updated. |
-| D2 | Schema | ✅ **Supabase CLI migrations, iterated as we go.** PRD §9 is the first pass. Tables and columns get added as features need them, each as its own migration (`npm run db:new`) in a `db/…` PR. Person A reviews and runs `npm run db:push`. Process: [`supabase/README.md`](../supabase/README.md). |
-| D3 | Name | ✅ **Breadcrumb** is the product/app name. "Sidequest" stays the name of the content type (a Breadcrumb user does sidequests). |
-| D4 | Maps key | ⏳ Someone sets up a Google Cloud project with the Maps JS + Directions APIs and shares a referrer-restricted key as `VITE_GOOGLE_MAPS_API_KEY` in `.env`. |
-| D5 | Workflow | ✅ **Every change goes through a pull request.** No direct pushes to `main`. Rules for people and AI agents: [`AGENTS.md`](../AGENTS.md). |
+Merge **D1 first** if possible; J1 uses its types.
 
-## 1. Who owns what
+### D1 · Dom · Trail data functions + sample trails
+Branch: `feat/trail-data`
+- Create `src/lib/api/trails.ts` using `@/lib/supabase` and the generated types:
+  - `getFeed({ category?, maxCost?, maxMinutes? })`: published trails for Explore, newest first. Each item has: id, title, category, cost, duration, `scheduled_at`, `primary_line`, `is_curated`, creator (username, display_name, avatar_url), stop count, crumb count, first and last stop names, rating average + count (view `sidequest_rating_stats`).
+  - `getTrail(id)`: one trail with creator, stops in order, crumbs per stop, rating stats, and reviews (`sidequest_ratings` with reviewer profiles).
+  - Export the return types: `FeedTrail`, `TrailDetail`.
+- Seed 2–3 real, verified Boston trails (including **"Sunday Café Hop"**) owned by a "breadcrumb" team account, with stops, crumbs and `is_curated = true`. Use a new migration or `seed.sql`; follow `supabase/README.md`.
+- Add a short "Words" section (trail / stop / crumb → table names) to `AGENTS.md`.
 
-Split by **screen** (see `mockup.html`). Each row is one person's lane, end to end: UI, data calls, and states.
+### J1 · Jason · App look, trail card, Explore page
+Branch: `feat/explore`
+- Bring the style guide into the app: import `docs/styles/tokens.css` and `components.css` (or port them to Tailwind) so colors, type and spacing match the mockups.
+- Header in `src/components/layout/AppLayout.tsx`, matching `docs/mockups/Main.dc.html`: breadcrumb logo, Explore / Map / Saved / You nav, search box, orange **Make a trail** button (links to `/make`). Keep the existing `useSession()` log-in / log-out menu. On phones, use the bottom tab bar from the mobile mockups.
+- `src/components/TrailCard.tsx`: reusable card with the dotted trail drawing (`docs/tools/trail.js`), title, cost, time, stops, rating; links to `/trails/:id`.
+- Explore page (`ExplorePage.tsx`), "Trails for you": tabs For you / Nearby / Friends (only For you needs to work), cost and length filters, grid of `TrailCard`s, map placeholder on the right. Until D1 is merged, use one hard-coded sample shaped like `FeedTrail`, then switch to `getFeed()`.
+- Add desktop and phone screenshots to the PR.
 
-| Person | Lane | Mockup screens | Owns folders |
-|---|---|---|---|
-| **A** · Claude Code | **Platform + Quest mode** | 3 · Active quest | `supabase/`, `src/lib/`, `src/types/`, `src/features/quest/` |
-| **B** · Claude Code | **Maps & Transit + Create** | 5 · Create, 8 · Map tab (P1), the map inside 2 and 3 | `src/features/maps/`, `src/features/create/` |
-| **C** · Intermediate | **Discovery + Ratings + UI kit** | 1 · For You, 2 · Detail, 4 · Rate | `src/features/discovery/`, `src/features/ratings/`, `src/components/` |
-| **D** · Beginner | **Accounts + Profile + Content** | 6 · Activity tabs, 7 · Profile, login/signup | `src/features/auth/`, `src/features/profile/`, `supabase/seed-content/` |
+### G1 · Gio · Username onboarding + You page
+Branch: `feat/onboarding-and-profile`
+- Onboarding (`OnboardingPage.tsx`): after login, if `profile.username` is empty, send the user to `/onboarding` to pick a username (3–30 chars: lowercase letters, numbers, `_`; must be unique, so show a friendly message if taken), display name and university. Save with an **UPDATE** on their `profiles` row (never insert), then call `refreshProfile()` and go to `/`.
+- Switch `AuthPage`'s own session check to `useSession()`.
+- You page (`ProfilePage.tsx`, `/me` = me, `/u/:username` = anyone): avatar, name, university, questgiver rating (view `questgiver_ratings`: average + count), and tabs **Finished / Saved / Signed up / Made**:
+  - Finished / Saved / Signed up = the user's `user_sidequests` with status `completed` / `saved` / `signed_up` (only visible on your own page; other people's progress is private).
+  - Made = `sidequests` where `creator_id` = that user.
+  - Empty states from `docs/mockups/Mobile-Profile.dc.html`.
 
-Why this shape: the two riskiest pieces (database/security and Google Maps/Directions) go to the Claude Code users. C gets standard React + Supabase work that is the heart of the demo. D gets small, self-contained screens plus the seed content, which the demo depends on heavily (PRD §10) and needs no code to start.
+---
 
-### Folder layout
+## Round 2 (after your Round 1 PR is merged)
 
-```text
-src/
-├── App.tsx                 ← route table (A, edited once in Phase 0)
-├── components/             ← C: shared UI kit from the style guide
-│   ├── ui/                 ← shadcn primitives
-│   ├── AppShell.tsx        ← top bar (desktop) + bottom tab bar (mobile)
-│   ├── SidequestCard.tsx
-│   └── Button.tsx, Pill.tsx, Chip.tsx, EmptyState.tsx
-├── lib/                    ← A: supabase client, shared queries, useSession
-│   └── api/                ← sidequests.ts, progress.ts, ratings.ts, profiles.ts
-├── types/                  ← A: generated database types
-└── features/
-    ├── auth/      (D)   ├── profile/  (D)
-    ├── discovery/ (C)   ├── ratings/  (C)
-    ├── maps/      (B)   ├── create/   (B)
-    └── quest/     (A)
-```
+### J2 · Jason · Trail detail page
+Branch: `feat/trail-detail`
+- `TrailDetailPage.tsx` per the mockup ("Web · Trail detail"), using `getTrail(id)`: title, cost / time / stops / crumbs / rating, description, the trail (stops with crumbs and how to get between them), "Good to know" box, reviews with the three rating bars.
+- Buttons: **Start trail** → `startTrail(id)` then go to `/trails/:id/go`; **Save** → `saveTrail` / `unsaveTrail`; **Join** only when `scheduled_at` is set → `joinTrail`. Use `getMyStatus(id)` to show the current state. If logged out, send to `/login?next=/trails/:id`.
+- Map on the right: placeholder for now.
 
-## 2. Contracts (the only places lanes touch)
+### G2 · Gio · Trail actions + Saved page
+Branch: `feat/trail-actions-and-saved`
+- Fill in every function in `src/lib/api/progress.ts` (keep the names): each writes the user's `user_sidequests` row (`upsert` on `user_id, sidequest_id`); `toggleCrumb` inserts or deletes in `checklist_completions`. The database already enforces the rules (e.g. join only works on scheduled trails); turn its errors into friendly messages.
+- Saved page (`SavedPage.tsx`): trails the user saved, signed up for, or has in progress, using `TrailCard`.
 
-Each owner pushes a **stub** of their contract in their first PR: real props and types, placeholder output. Everyone else builds against the stub and never waits.
+### D2 · Dom · Make a trail
+Branch: `feat/make-trail`
+- `MakeTrailPage.tsx` per the mockup ("Web · Make a trail"): basics (name, short description, category, anytime vs. pick a date), stops (search or add a place, reorder, remove), a crumb at each stop, live preview card, "Ready to publish" checklist, **Save draft** / **Publish trail**.
+- Writes `sidequests` (status `draft` / `published`), `sidequest_stops` and `checklist_items`. Save everything together so a half-saved trail can't happen (an RPC function in a new migration is fine).
+- Logged-out users are sent to `/login?next=/make`.
 
-| Contract | Owner → used by | Signature |
-|---|---|---|
-| Data types | A → all | `Tables<'sidequests'>` etc. from `@/types/database.types` |
-| `useSession()` | A → all | `{ session, profile, loading }` |
-| Sidequest queries | A → C, D, B | `getFeed(filters)`, `getSidequest(id)` (with stops, checklist, creator, rating stats), `getQuestgiverRating(userId)` |
-| Progress API | A → C, D | `getMyProgress(status?)`, `setStatus(sidequestId, 'saved' \| 'signed_up' \| 'in_progress' \| 'completed' \| 'aborted')`, `toggleChecklistItem(itemId)` |
-| `<RouteMap>` | B → C (detail), A (quest), B (create) | `stops`, `legs`, `mode: 'preview' \| 'live'`, `userLocation?`, `selectedStopId?`, `onSelectStop?` |
-| `<LegDirections>` | B → C, A | `from`, `to`, `mode` → renders T line/bus/walk + time + "Open in Google Maps" |
-| `<NearbyStations>` | B → C | `lat`, `lng` → MBTA stations list |
-| `<SidequestCard>` | C → D (profile tabs), B (map tab) | `sidequest`, `viewerStatus?` |
-| `<RatingForm>` | C → A (after Completed) | `sidequestId`, `onDone` |
-| `AppShell`, `Button`, `Pill`, `Chip`, `EmptyState` | C → all | Style-guide classes (`.btn`, `.pill`, `.chip`…) wrapped as React components |
+---
 
-If you need a contract changed, ask its owner. Don't edit their folder.
+## Later (P1)
 
-## 3. Phase 0 — unblock (first ~2 hours, all in parallel)
+- Active trail page `/trails/:id/go`: live location on a map, crumbs to tick off with `toggleCrumb`, Finished / Save for later / Abort, then the rating screen.
+- Rating screen: price, time, enjoyment, memorability (1–5) + review → `sidequest_ratings`.
+- Maps: real route map on Explore and Trail detail (Google Maps + MBTA).
+- Place research: verified Boston places → `experiences` (see the research brief).
 
-| Who | Task | Done when |
-|---|---|---|
-| A | First schema pass (migrations in PR #2; see `supabase/README.md`): PRD §9 core tables with RLS (progress, photos and saves private; one rating per user; only completers can rate). Regenerate types. | `npm run db:push` done, `npm run db:types` regenerated, `npm run typecheck` passes |
-| A | Add every route to `App.tsx`, each pointing to a placeholder page *inside the owner's folder*. Add `useSession` and stub `lib/api/*`. | Every route renders "Coming soon"; nobody needs to touch `App.tsx` again |
-| B | Google Maps spike: map renders with `map-style.json`, one Directions request (transit + walking) works. Push the `<RouteMap>`, `<LegDirections>` stubs. | Real transit route drawn between two Boston points |
-| C | Port the style guide: import `tokens.css`/`components.css`, build `AppShell`, `Button`, `Pill`, `Chip`, `SidequestCard`, `EmptyState`. | Placeholder pages render inside the shell on desktop and mobile |
-| D | Seed content sheet (no code): **25–40 real experiences** and **8–10 sidequests** built from them, each with stops, a planned activity, travel mode per leg, 2–4 checklist items, a nearby T station. | Sheet shared; A turns it into `seed.sql` |
+## Rules
 
-Route table (A adds these in Phase 0):
-
-| Path | Screen | Owner |
-|---|---|---|
-| `/` | For You | C |
-| `/q/:id` | Detail | C |
-| `/q/:id/rate` | Rate | C |
-| `/q/:id/play` | Quest mode | A |
-| `/create` | Create | B |
-| `/map` | Map tab (P1) | B |
-| `/login`, `/signup` | Auth | D |
-| `/me` | Profile tabs (own) | D |
-| `/u/:username` | Public profile | D |
-
-## 4. Lanes (P0 first, P1 after)
-
-### A — Platform + Quest mode (`/q/:id/play`)
-1. Phase 0 tasks above.
-2. Real implementations of `lib/api/*` and the progress API.
-3. Quest mode: `<RouteMap mode="live">` + `watchPosition` (location in memory only, never stored), checklist grouped by stop, **Completed / Saved for later / Abort**, then `<RatingForm>`.
-4. Mobile pattern from the mockup: full-screen map, bottom sheet, big checkboxes, swipe to complete.
-5. Seed loader: D's sheet → `seed.sql`; demo account with completed quests and ratings.
-6. Review every PR that touches `supabase/` or `src/lib/`.
-7. *P1:* photo on checklist items + "add photos" tab (Supabase Storage bucket + policies).
-
-### B — Maps & Transit + Create (`/create`)
-1. `<RouteMap>`: styled Google map, numbered stop markers, route polylines per the style guide's legend. **Never draw straight lines as routes.**
-2. `<LegDirections>`: Directions API per leg (transit/walking/bicycling, never driving), Google Maps deep link.
-3. `<NearbyStations>`: MBTA V3 nearest stations to a stop.
-4. Create flow: title/description → stops (custom location via Places search; curated library is P1) → planned activity + checklist per stop → travel mode per leg → route preview with total cost and time → visibility and optional scheduled start → publish.
-5. Mobile: 4-step flow from the mockup; desktop: form with live preview.
-6. Deploy to Vercel early (HTTPS is needed for geolocation and the Maps key's referrer restriction).
-7. *P1:* curated experience picker, Map tab, Bluebikes/bus lines (PRD notes).
-
-### C — Discovery + Ratings + UI kit (`/`, `/q/:id`, `/q/:id/rate`)
-1. Phase 0 UI kit (everyone depends on it, so do it first).
-2. For You: card list via `getFeed()`, newest and highest rated; loading, empty and error states.
-3. Detail: header, `<RouteMap mode="preview">`, stops with planned activity, `<LegDirections>` per leg, checklist, ratings and reviews, buttons **Start quest / Save for later / Sign up** (sign up only if `scheduled_start`).
-4. `<RatingForm>`: **price, time, enjoyment, memorability** (1–5 each) + optional text; only shown to users who completed it.
-5. Overall rating on cards = average of the four scores.
-6. *P1:* filters (category, neighborhood, budget, Late night, Under $20, Near a T station), share link.
-
-### D — Accounts + Profile + Content (`/login`, `/signup`, `/me`, `/u/:username`)
-1. Phase 0 seed content sheet (start immediately).
-2. Login / signup pages with Supabase Auth; log out in the shell's menu. Pair with A on the first PR.
-3. Profile: avatar, username, bio, **questgiver rating** (average + count, from A's query).
-4. Profile tabs: **Completed, Saved for later, Signed up, Created**. Each is one call to A's progress API, using C's `<SidequestCard>`.
-5. Edit profile (username, display name, bio, avatar URL).
-6. Empty states for each tab with the style-guide illustrations.
-
-## 5. Hand-offs
-
-| What | From → To | Needed by |
-|---|---|---|
-| Schema, types, routes, stubs | A → everyone | End of Phase 0 |
-| UI kit (`SidequestCard`, shell, buttons) | C → everyone | End of Phase 0 |
-| `<RouteMap>` / `<LegDirections>` stubs | B → C, A | End of Phase 0 (real versions by milestone M2) |
-| Seed content sheet | D → A | Before M1 |
-| `<RatingForm>` | C → A | Before A finishes Completed flow |
-| Progress API (real) | A → D, C | Before D's profile tabs |
-
-## 6. Milestones (PRD §12 order)
-
-| Milestone | Check |
-|---|---|
-| M0 Phase 0 merged | All routes render in the shell; seed data loads |
-| M1 Feed + detail (no map yet) | Visitor browses real seeded quests |
-| M2 Maps in detail | Route + T/walking directions + nearby stations on a real quest |
-| M3 Create → publish | A second account sees it in the feed |
-| M4 Quest mode → Completed → Rate | Live location, checklist persists, rating saved |
-| M5 Profile tabs + questgiver rating, deployed | Full PRD §13 demo runs on a phone |
-
-P1 starts only after M5 for that lane.
-
-## 7. Working without stepping on each other
-
-- **One branch + one pull request per task:** `feat/<lane>-<thing>` (e.g. `feat/discovery-feed`). Never push to `main`. Small PRs, reviewed and merged the same day.
-- **Never edit another lane's folder.** Need a change? Ask the owner or open an issue.
-- **Shared files** (`App.tsx`, `package.json`, `src/components/`, `src/lib/`): only their owner edits them. Need a new dependency? Tell the group, add it in its own tiny PR.
-- **Database:** only A changes migrations. Need a column? Ask A.
-- **Pull `main` at least every 2 hours** and before starting a task.
-- **Before pushing:** `npm run build && npm run lint`.
-- **Reviews:** A reviews `supabase/` + `src/lib/`; C reviews `src/components/`; A or B reviews D's PRs.
-- **AI agents** (Claude Code, Codex, Cursor…) read [`AGENTS.md`](../AGENTS.md) / `CLAUDE.md`, which spell out these rules and the PR workflow.
-- **Never commit `.env`.**
+- **Stay in your own files.** Shared files (`AppLayout`, `src/lib/`, `App.tsx`, the database): keep changes minimal and say so in the PR.
+- **Database changes go through Dom**, as a new migration in its own PR (`supabase/README.md`).
+- Name files for what they do and start each with a short header comment (`AGENTS.md`).
+- One task per PR. Pull `main` before starting. Never commit `.env`.
