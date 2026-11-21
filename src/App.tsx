@@ -1,12 +1,14 @@
 /**
  * Route table for the whole app (React Router). Maps each URL to a page and
- * wraps pages in the shared AppLayout. Each lane owns the pages its routes
+ * wraps pages in the shared AppLayout, inside <SessionProvider> so every page
+ * can call useSession(). Each lane owns the pages its routes
  * point to; see docs/TASKS.md for who owns which route.
  */
 
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AuthPage } from '@/features/auth/AuthPage'
+import { SessionProvider } from '@/lib/SessionProvider'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -28,5 +30,9 @@ const router = createBrowserRouter([
 ])
 
 export default function App() {
-  return <RouterProvider router={router} />
+  return (
+    <SessionProvider>
+      <RouterProvider router={router} />
+    </SessionProvider>
+  )
 }
