@@ -1,234 +1,224 @@
-# Breadcrumb style guide (v0.2)
+# breadcrumb style guide (v1.0 · "Dotted trail")
 
-This is the visual foundation for **Breadcrumb**, our BostonHacks 2026 entry for the *Bos(tons) of Eats and Streets* track.
+The visual system for our BostonHacks 2026 app (track: *Bos(tons) of Eats and Streets*). Open **`style-guide.html`** to see everything live, including both core screens built from the real classes. The trail renderer is an ES module, so serve the folder instead of double-clicking the file:
 
-> **See it:** from the repo root, run `python -m http.server 5178 --directory docs`, then visit http://localhost:5178/style-guide.html. It shows every token, asset and component. All paths in this guide are relative to `docs/`.
->
-> **Using it in the app:** the app runs Tailwind v4, so import `docs/styles/tokens.css` (and `components.css` if you want the ready-made classes) and add `@config "../docs/styles/tailwind.config.snippet.js";` to `src/index.css`, adjusting the path. Icons are already covered: the app ships `lucide-react`.
+```powershell
+python -m http.server 5178 --directory docs
+```
 
-## Direction
-
-v0.1 copied the organizers' "Boston Bound" look closely (hand-drawn marker doodles), and it read as too cartoony. v0.2 keeps the theme's DNA but draws it cleanly, like a well-made transit map. **Buttons are the one exception:** they keep the bold marker treatment (thick outline, hard shadow, uneven corners, slight tilt), so they're the playful accent on an otherwise calm screen.
-
-| Kept from Boston Bound | Changed in v0.2 |
-|---|---|
-| Palette: Red Line red lead, line colors, ink + white | No wobbly or hand-drawn outlines: clean geometry, no SVG filters |
-| Ink + white as the base | Plain white background: the graph-paper grid is gone. 1.5 px ink rules instead of 4 px marker borders |
-| Subway lines, station dots, transfer capsules | Soft, short shadows instead of hard offset ink shadows (except buttons) |
-| Line pills (RL/GL/BL…) | Consistent radii (8 px controls, 12 px cards) instead of uneven corners (except buttons) |
-| The bold marker button: 4 px outline, hard shadow, tilt | Used on buttons only |
-| Track-card layout: colored top, gray bottom, vehicle + status label | Archivo Expanded instead of Unbounded for display type |
-| Akshar as the primary UI face | No clouds, sparkles or squiggles. Landmarks became line illustrations for empty states only. The spiral-notebook nav became a plain tab bar. |
+Then open http://localhost:5178/style-guide.html.
 
 | File | What it is |
 |---|---|
-| `styles/tokens.css` | CSS variables plus utilities: `.font-display`, `.eyebrow`, `.panel`, `.outline-ink`, `.text-highlight` |
-| `styles/components.css` | Card, button, pill, chip, rating input, nav tabs, map legend, route strip |
-| `styles/tailwind.config.snippet.js` | Tailwind `theme.extend` + plugin that mirror the tokens (all values are `var(--…)`) |
-| `styles/map-style.json` | Google Maps JS styling array |
-| `assets/svg/` | 26 original SVGs |
-| `style-guide.html` | Live preview page |
+| `styles/tokens.css` | Every color, type size, radius, shadow and trail measurement as a CSS variable |
+| `styles/components.css` | Component classes (cards, trail, tabs, tab bar, sheet, stop list, buttons) |
+| `styles/tailwind.config.snippet.js` | The same tokens for Tailwind v4 (`@config`) or v3 |
+| `styles/map-style.json` | Warm, quiet Google Maps style |
+| `tools/trail.js` | Draws the dotted trail on cards (`trailSVG`, `mountTrails`) |
+| `tools/build_assets.py` | Regenerates `assets/svg/` |
+| `mockups/` | Mobile and web screen mockups in this style (see `mockups/README.md`) |
+| `archive/boston-bound/` | The previous system (T vehicles, Bluebikes, line pills), kept for reference. `mockup.html` still uses it |
 
----
+> **Naming.** The app is **Breadcrumb**. These mockups call an outing a **trail** and a checklist item a **crumb**. The PRD still calls them a *sidequest* and a *checkpoint*. They map one to one: trail = sidequest, stop = `sidequest_stops`, crumb = `quest_checkpoints`, Start trail = Start quest.
+
+## Direction
+
+Every outing is a **trail**: stops joined by a dotted line, with small tasks called **crumbs** along the way. The look is calm and editorial:
+
+- Warm paper background, white cards with hairline borders, near-black type.
+- **One accent, crumb orange,** for trails, the primary action and orange labels.
+- Blue and green appear only as **status**: scheduled and finished.
+- Soft radii and low, warm shadows. Nothing tilted, outlined thick or hard-shadowed.
+- One type family (Inter). Hierarchy comes from size and weight, not color.
 
 ## 1. Color
 
-Ink and white do most of the work. Line colors mark transit, and **each sidequest card takes the color of the main T line it rides.** Yellow is the rarest color on any screen.
+### Core
 
-### Core palette (from bostonhacks.org)
-
-| Token | Hex | Use for | Text on it |
+| Token | Hex | Use | Text on it |
 |---|---|---|---|
-| `--color-red` | `#CE2634` | Primary accent: main button, RL cards, logo | White (5.3:1) |
-| `--color-green` | `#0C6B14` | GL cards, "Start route", cost icon, success | White (6.7:1) |
-| `--color-blue` | `#206DDF` | BL cards, links, focus ring | White (4.9:1) |
-| `--color-sky` | `#2F9DD9` | Map water, bike legs, illustration accents | Ink only |
-| `--color-yellow` | `#F7DD04` | Rating stars, checkpoints, one highlight per screen | Ink only |
-| `--color-ink` | `#000000` | Text, card and control borders, map markers | White |
-| `--color-gray-light` | `#D9D9D9` | Hairlines: panel, chip and divider borders | Ink |
-| `--color-gray-mid` | `#868686` | Disabled text and placeholders only | — |
-| `--color-paper` | `#FFFFFF` | Page and card background | Ink |
+| `--color-paper` | `#F7F6F2` | App background, bottom sheets | Ink 16:1 |
+| `--color-white` | `#FFFFFF` | Cards, tabs, buttons, tab bar | Ink 17.5:1 |
+| `--color-ink` | `#1B1916` | Type, the selected filter tab, active tab bar item | White 17.5:1 |
+| `--color-crumb-strong` | `#C2410C` | Orange text (eyebrows), primary button, + button | White 5.2:1 |
+| `--color-crumb` | `#E8552D` | **Trail dots and rings only.** Never text (3.6:1) | — |
+| `--color-blue` | `#1D4ED8` | Scheduled trails: "Sat 2:00 PM", "Going", "Join" | White 6.7:1 |
+| `--color-green` | `#15803D` | Finished trails, done crumbs, done stops | White 5.0:1 |
 
-### Extended and neutrals (ours)
+### Text, lines, surfaces
 
-| Token | Hex | Use for |
+| Token | Hex | Use |
 |---|---|---|
-| `--color-orange` | `#ED8B00` | OL cards and pills. **Ink text only** (white is 2.5). |
-| `--color-silver` | `#7C878E` | SL cards. White text at large or bold sizes only (3.7). |
-| `--color-purple` | `#80276C` | Commuter Rail (optional). |
-| `--color-gray-50` | `#F4F5F6` | Muted surfaces: card bottoms, hover fills. |
-| `--color-gray-dark` | `#4A4A4A` | Muted text (`--color-text-muted`, 8.9:1). |
+| `--color-ink-2` | `#57534C` | Secondary text: stats on the sheet, subtitles (7.1:1 on paper) |
+| `--color-muted` | `#736E66` | Meta: distance, head count, addresses, stop labels (4.7:1 on paper) |
+| `--color-line` | `#E7E4DD` | Card borders, dividers, tab bar top edge |
+| `--color-line-strong` | `#D6D2C8` | Unselected filter tab outline, inputs, secondary button |
+| `--color-sand` | `#EFEDE6` | Map land, skeleton loaders, sunken fills |
+| `--color-crumb-deep` | `#9A3412` | Hover and pressed state of orange buttons |
 
-- **Tints** (`--color-{red,green,blue,sky,yellow,orange}-tint`) are backgrounds, always with ink text.
-- **Strong shades** (`--color-{red,green,blue,yellow}-strong`) are for hover and pressed fills. `--color-blue-strong` on `--color-blue-tint` is the active-nav pair (5.2:1).
-- **Line and mode tokens:** `--line-rl` `--line-gl` `--line-bl` `--line-ol` `--line-sl` `--line-cr` · `--mode-bus` (yellow) · `--mode-walk` (ink, dotted) · `--mode-bike` (sky, dashed).
+Tints (`--color-crumb-tint`, `--color-blue-tint`, `--color-green-tint`) are soft backgrounds for badges and selected rows, always with ink or the matching strong color as text. `--color-crumb-pale` and `--color-crumb-soft` exist for the logo's first two dots. Map colors: `--map-land`, `--map-park`, `--map-water`, `--map-road`, `--map-label`.
 
-### Rules
-- Use white text on Red, Green, Blue, Silver, Purple and Ink. Use ink on Orange, Yellow, Sky, grays and tints.
-- Inline links use `--color-link`. Sky blue never carries text.
-- Card tops are one flat line color. Show extra lines as pills, not as gradients.
-- Light theme only for now.
+MBTA line colors (`--line-red`, `--line-orange`, `--line-green`, `--line-blue`, `--line-silver`) appear **only** as a 9 px dot beside a transit step (`.line-dot`), like "● Green Line, Arlington → Copley". Cards are never colored by line or category.
 
 ## 2. Typography
 
-| Role | Font | How | Use |
+**Inter** (Google Fonts, variable weight 400–800). Sizes are CSS px on a 390 px-wide phone.
+
+| Role | Token | Size / weight | Tracking |
 |---|---|---|---|
-| Display | **Archivo Expanded** 700, all caps | `.font-display`, or `font-family: var(--font-display); font-stretch: var(--font-display-stretch)` | Card titles, page and section titles. Five words or fewer. |
-| Primary | **Akshar** 600/700 | `--font-primary` | Headings, buttons, nav, chips, pills, labels. This is the workhorse. |
-| Body | **Noto Sans** 400 | `--font-body` | Descriptions, reviews, anything longer than a sentence |
+| Page title ("Trails for you") | `--text-3xl` | 32 / 800 | −0.035em |
+| Detail title | `--text-2xl` | 28 / 800 | −0.035em |
+| Card title, wordmark | `--text-xl` | 21 / 700 | −0.02em |
+| Stop name | `--text-lg` | 17 / 700 | 0 |
+| Subtitle, button label | `--text-md` | 16 / 400, 700 | 0 |
+| Body, stats, tabs, crumbs | `--text-base` | 15 / 400–600 | 0 |
+| Eyebrow, meta, address | `--text-sm` | 13 / 600, 400 | 0 |
+| Stop labels under a trail | `--text-xs` | 12 / 400 | 0 |
+| Tab bar labels | `--text-2xs` | 11 / 500 (700 when active) | 0 |
 
-- Scale: `--text-2xs` 11 · `xs` 12 · `sm` 14 · `base` 16 · `md` 18 · `lg` 20 · `xl` 24 · `2xl` 30 · `3xl` 36 · `4xl` 48 · `5xl` 64.
-- Leading: tight 1.1 (display), snug 1.25 (headings), normal 1.55 (body).
-- Small uppercase labels (`.eyebrow`): Akshar 600, 14 px, 0.08em tracking.
-- Fonts load via the `@import` at the top of `tokens.css`. Archivo is requested with its width axis (100–125%), so `font-stretch: 125%` gives the expanded cut.
+- The **eyebrow** ("Cafés · Anytime") is the only colored text. Its color comes from the trail's status.
+- Stats are written short and plain: `~$20 · 2 hr · 2 crumbs · ★ 4.6`. Use `~` for estimates, and "Free" when it costs nothing.
 
-## 3. Spacing, shape, depth
+## 3. Shape, space, depth
 
-- **Spacing** (4 px base): `--space-1` 4 · `2` 8 · `3` 12 · `4` 16 · `5` 20 · `6` 24 · `8` 32 · `10` 40 · `12` 48 · `16` 64 · `20` 80 · `24` 96. The phone side gutter is `--gutter` (16).
-- **Radii**: `xs` 4 · `sm` 6 · `md` 8 (`--radius-control`) · `lg` 12 (`--radius-card`) · `xl` 16 · `pill`. Buttons use `--radius-button`, which gives each corner a different curve.
-- **Borders**:
-  - `--border-hairline` 1 px gray: panels, chips, dividers
-  - `--border-thin` 1.5 px ink: cards, buttons, inputs
-  - `--border-base` 2 px: selected and emphasis states
-  - `--border-line` 6 px: subway-line strokes in the UI
-  - `--border-button` 4 px ink: buttons only (3 px on `--sm`)
-- **Shadows**: `--shadow-xs` for resting cards, `--shadow-sm` for the map and menus, `--shadow-md` for hover and overlays, `--shadow-lg` for sheets and dialogs. `--focus-ring` is a 3 px translucent blue ring. **Buttons only:** `--shadow-button` (5/5 hard ink), `--shadow-button-hover` (6/7), `--shadow-button-sm` (3/3), and `--tilt-button` (−2°).
-- **Motion**: `--ease-out`, `--duration-fast` 120 ms, `--duration-base` 200 ms. Hover lifts at most 2 px. Only buttons tilt. Motion is turned off under `prefers-reduced-motion`.
+- **Spacing:** 4 px base (`--space-1` … `--space-16`). Screen gutter is 16 px, cards are 12 px apart, and card padding is 16 × 18.
+- **Radii:** `--radius-sm` 10 · `--radius-md` 14 · `--radius-card` 20 · `--radius-sheet` 24 (top corners) · `--radius-pill` for tabs, buttons and icon buttons.
+- **Shadows:** `--shadow-card` (barely there, always with a hairline border) · `--shadow-float` (buttons over the map) · `--shadow-sheet` (bottom sheet) · `--shadow-fab` (the + button, the only raised element).
+- **Focus:** a 3 px blue ring (`--focus-ring`) on every interactive element.
 
-### Utilities
-- `.panel`: white, hairline border, card radius, xs shadow.
-- `.outline-ink`: a 1.5 px ink rule at card radius, for the printed-map look on featured blocks.
-- `.font-display`, `.eyebrow`, and `.text-highlight` (a yellow stripe behind one or two words).
+## 4. The dotted trail
 
-## 4. Components (`styles/components.css`)
+The signature element. It's the same drawing everywhere a route appears: cards, the map, the stop list and dividers.
 
-### Sidequest card (`.sq-card`)
-This is the organizers' track-card layout, drawn cleanly:
-- **Top half**: the line color (`.sq-card--rl|gl|bl|ol|sl`), a white line pill and the day/time, and the title in Archivo Expanded caps. Orange cards switch to ink text automatically.
-- **Bottom half**: gray 50, separated by a 1.5 px ink rule. It holds a **status label** (Akshar caps) next to the matching vehicle drawing (`vehicle-*.svg` at `--vehicle-scale: 0.28`), a short description in Noto Sans, and the three rating chips.
-- **Status vocabulary**: `OUTBOUND` = open to join · `BOARDING` = you signed up · `INBOUND` = completed · `LAYOVER` = saved for later.
-- The whole card is one `<a>`. Hover lifts it 2 px with a medium shadow, and focus shows the blue ring.
+| Part | Spec |
+|---|---|
+| Dots | 3 px round dots every 8.5 px: `stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 8.5` in `--color-crumb` |
+| Stop ring (cards) | r 7.5, white fill, 2.5 px `--color-crumb` stroke |
+| Numbered ring (lists, map) | 28 px circle, 2.5 px orange border, number in 13 / 700 ink (`.num-ring`) |
+| Path | Gentle alternating humps and dips between evenly spaced stops, ±9 px |
+| Finished | Green path, filled green end points only, no middle rings |
+| Vertical (stop list) | Dots between numbered rings, drawn with a radial-gradient background so they're round in every browser |
+
+**On cards**, `tools/trail.js` draws the SVG at the container's real width, so dots and rings never stretch:
 
 ```html
-<a class="sq-card sq-card--rl" href="/q/123">
-  <div class="sq-card__top">
-    <div class="sq-card__meta"><span class="pill pill--rl">RL</span><span>Sun · 10:00 AM</span></div>
-    <h3 class="sq-card__title">Sunday Café Hop</h3>
-  </div>
-  <div class="sq-card__bottom">
-    <p class="sq-card__label"><img class="vehicle vehicle--rl" src="/assets/svg/vehicle-rl.svg" alt="">Outbound <small>· 3 stops</small></p>
-    <p class="sq-card__desc">Matcha in Harvard Sq, pastries in Central, then a Kendall rooftop.</p>
-    <ul class="chips">…rating chips…</ul>
-  </div>
-</a>
+<div class="trail" style="--stops:3">
+  <div class="trail__line" data-trail data-stops="3" data-seed="0"></div>
+  <div class="trail__labels"><span>Tatte</span><span>Public Garden</span><span>Newbury St</span></div>
+</div>
+<script type="module">import { mountTrails } from "./tools/trail.js"; mountTrails();</script>
 ```
 
-### Vehicles (`.vehicle`)
-Each line has a side-view drawing of the vehicle actually running on it today. All five share one scale (about 3.25 units per foot), so the `.vehicle--rl|ol|bl|gl|sl` classes keep them true to size relative to each other. Change `--vehicle-scale` to resize them together (the card label uses 0.28, the style guide lineup uses 1.75).
+`data-state="done"` gives the finished style. `data-seed` varies the wave so neighboring cards don't look identical. In React, copy `trailSVG` into `src/lib/trail.ts` and render it at a measured width:
 
-| Line | Vehicle drawn | What makes it recognizable |
-|---|---|---|
-| Red | CRRC #4 (1900-series), 69 ft 9 in | Stainless body, broad red lower band, red cab end, 4 double doors per side |
-| Orange | CRRC #14 (1400-series), 65 ft | Same family as the Red Line car, with an orange band and cab end, 3 double doors per side |
-| Blue | Siemens 0700-series, 48 ft | Short car, white body with a blue band, 2 double doors per side, pantograph for the overhead wire north of Airport |
-| Green | Kinki Sharyo Type 7 LRV, 74 ft | Two sections on a bellows, green below and white above, pantograph, folding doors, 3 trucks |
-| Silver | 60 ft articulated hybrid bus (New Flyer) | It's a bus: silver paint, dark window band, accordion joint, 3 doors |
+```tsx
+function Trail({ stops, state = "open", seed = 0 }: { stops: number; state?: "open" | "done"; seed?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const ro = new ResizeObserver(([e]) => setWidth(Math.round(e.contentRect.width)));
+    ro.observe(ref.current!);
+    return () => ro.disconnect();
+  }, []);
+  return <div ref={ref} className="trail__line"
+    dangerouslySetInnerHTML={{ __html: width ? trailSVG({ width, stops, state, seed }) : "" }} />;
+}
+```
 
-Sources: the Wikipedia articles on each line and on the Type 7, plus Wikimedia Commons photos (2025–26) used only as drawing references. Red Line note: most Red Line trains are still the older Bombardier 1800-series (similar stainless body with a red band). We drew the CRRC car because it is replacing them.
+**On Google Maps**, draw the route as a dotted polyline: an invisible stroke plus a repeated circle symbol.
 
-### Buttons (`.btn`)
-Buttons are the bold accent of the system: a 4 px ink outline, a hard 5 px ink shadow, uneven corners (`--radius-button`) and a −2° tilt. Nothing else gets this treatment.
-- Variants: `--primary` (red, **one per screen**), default (white), `--go` (green: start a route), `--highlight` (yellow: rate), `--ghost` (no outline, shadow or tilt), `--icon` (round, 48 px), and `--straight` (no tilt, for dense forms and toolbars).
-- Sizes: `--sm` 38 px (3 px outline, 3 px shadow), default 48 px, `--lg` 58 px. Labels are Akshar 700 caps.
-- States: hover lifts the button, grows the shadow and darkens the fill (`-strong` colors). Pressing pushes it into its shadow. Focus shows a 3 px blue outline. Disabled is flat gray with no shadow or tilt.
+```js
+new google.maps.Polyline({
+  map, path,
+  strokeOpacity: 0,
+  icons: [{
+    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 1.6, fillColor: "#E8552D", fillOpacity: 1, strokeOpacity: 0 },
+    offset: "0", repeat: "9px",
+  }],
+});
+```
 
-### Line and mode pills (`.pill`)
-- `.pill--rl|gl|bl|ol|sl|cr` for T lines. `.pill--bus|walk|bike` for modes, with a Lucide icon inside.
-- Pills are solid with no outline. Inside a colored card top they flip to white with ink text.
-- Static SVG versions live in `assets/svg/pill-*.svg`.
+## 5. Components (`styles/components.css`)
 
-### Rating chips (`.chip`), read-only
-Chips are neutral (white, hairline border), and the icon carries the color:
-- **Cost** `.chip--cost`: green `wallet`, `$`–`$$$`, unused signs grayed out with `.chip__off`.
-- **Travel time** `.chip--time`: blue `clock`, door-to-door minutes.
-- **Fun factor** `.chip--fun`: a yellow-filled `star`, average out of 5 to one decimal.
-
-### Rate a sidequest (`.rate`), input
-Each group is a `<fieldset>` with a visually hidden `<legend>`, built from radio inputs:
-- **Cost**: a segmented control, `$ / $$ / $$$`. The selected segment fills green.
-- **Travel**: a segmented control, `<15 / 15–30 / 30–45 / 45+`. The selected segment fills blue.
-- **Fun**: five stars. Every star up to the chosen one fills yellow (CSS `:has()`).
-
-On phones, each label stacks above its options.
-
-### Nav tabs (`.nav-tabs`)
-A white bar with a 1.5 px ink rule. Items are Akshar caps with a Lucide icon. The **active item turns blue**: `--color-active` text on `--color-active-bg`, set with `.is-active` or `aria-current="page"`. Below 640 px it becomes an icon-over-label tab bar; dock it to the bottom in the app. App tabs: For You · Map · Create · Saved · Profile.
-
-### Map route legend (`.map-legend`)
-| Swatch | Meaning | How to draw it on the map |
-|---|---|---|
-| Line color + white station dot | Subway line | Polyline `strokeWeight: 6` in the line color over an ink polyline `strokeWeight: 9` |
-| Yellow with an ink edge | Bus | Yellow `strokeWeight: 5` over ink `strokeWeight: 8` |
-| Ink dots | Walk | `strokeOpacity: 0` plus a repeating circle symbol (`icons`, `repeat: '10px'`) |
-| Sky dashes | Bike / Bluebikes | Dashed symbol in `--mode-bike` |
-| Numbered white circle | Sidequest stop | HTML marker: 22–28 px circle, 2.5 px ink border, Akshar bold number (or `marker-stop.svg`) |
-| Yellow diamond | Checkpoint | `marker-checkpoint.svg` |
-
-### Itinerary route strip (`.route-strip`)
-The detail view drawn as a vertical subway line:
-- `li.stop` items get a numbered station dot.
-- `li.leg` items get a 6 px colored segment: `.leg--walk` (dotted), `.leg--bike` (dashed), `.leg--bus`, `.leg--rl|gl|bl|ol|sl`.
-- Put checkpoints inside a stop as `.checkpoint` with `marker-checkpoint.svg`.
-
-### Empty state
-This is the one place illustrations appear: a centered line illustration (`skyline.svg`, `citgo.svg`, `lobster.svg`), an Akshar heading, one sentence and one primary button.
-
-## 5. Google Maps (`styles/map-style.json`)
-- The base map is muted: pale gray land, white roads, mid-gray labels. Most POIs are hidden. Parks are green tint, water is light sky blue, and transit lines and rail stations stay in ink so they stand out.
-- Usage: `new google.maps.Map(el, { styles: mapStyle, disableDefaultUI: true, zoomControl: true })`.
-- **Note:** JSON `styles` only apply when no `mapId` is set. If you switch to cloud-based styling (a Map ID, which Advanced Markers require), paste this JSON into the Cloud Console style editor's JSON import instead.
-- Draw our route with our own polylines (spec above) rather than relying on `TransitLayer` colors.
-- Directions: `travelMode: TRANSIT` with `transitOptions.modes: ['SUBWAY','TRAIN','TRAM','BUS']`, plus `WALKING` / `BICYCLING` legs. Never `DRIVING`.
-
-## 6. Iconography
-- **UI icons: [Lucide](https://lucide.dev)** (ISC license). The preview loads `lucide@0.460.0` from jsDelivr. In the app, use `lucide-react` or `lucide` from npm.
-- Use a 2–2.25 stroke width and `currentColor`. Size icons at 16–18 px inline, 22 px in the mobile tab bar.
-- Core set: `house` `map` `circle-plus` `bookmark` `user` · `wallet` `clock` `star` · `bus` `footprints` `bike` `train-front` `navigation` · `share-2` `user-plus` `check` `x`.
-- Illustrations come from `assets/svg/`, never from Lucide.
-
-## 7. Assets (`assets/svg/`)
-
-| Group | Files |
+| Class | What it is |
 |---|---|
-| Line pills | `pill-rl.svg`, `pill-gl.svg`, `pill-bl.svg`, `pill-ol.svg`, `pill-sl.svg` |
-| Lines & stations | `divider-red.svg`, `divider-green.svg`, `divider-blue.svg`, `divider-orange.svg`, `divider-bundle.svg`, `line-corner.svg`, `station-dot.svg`, `station-dot-ink.svg`, `station-transfer.svg` |
-| Map markers | `marker-stop.svg`, `marker-checkpoint.svg` |
-| Vehicles (one shared scale) | `vehicle-rl.svg`, `vehicle-ol.svg`, `vehicle-bl.svg`, `vehicle-gl.svg`, `vehicle-sl.svg` (regenerate from the repo root with `python docs/tools/build_vehicles.py docs/assets/svg`) |
-| Illustrations (empty states only) | `skyline.svg` (Custom House, Hancock, Pru, State House, Zakim), `citgo.svg` (Kenmore Square sign), `lobster.svg` |
-| Brand | `logo-mark.svg` (app icon / favicon), `logo-wordmark.svg` |
+| `.app` | Screen base: Inter, paper background, ink text |
+| `.brand` + `.brand__mark` | Logo mark (`logo-mark.svg`) + "breadcrumb" in 21 / 800 |
+| `.app-bar` | Brand on the left, `.icon-btn` (search) on the right |
+| `.icon-btn` | 44 px round white button with a hairline border. `--float` (no border, float shadow) goes over the map. `.is-on` fills a saved bookmark |
+| `.page-head`, `.page-title`, `.page-sub` | "Trails for you" / "You've lived here. Have you explored it?" |
+| `.tabs` > `.tab` | Filter pills. Selected (`.is-active` or `aria-selected="true"`) is solid ink. The row scrolls sideways |
+| `.feed` | The card list: 12 px gaps, gutter padding |
+| `.trail-card` | White card: `__head` (`__eyebrow` + `__meta`), `__title`, a `.trail`, and `__stats` with `__end` on the right |
+| `.trail-card--scheduled` / `--done` | Blue eyebrow with a `.status-link` ("Going", "Join") / green eyebrow, `.trail--done`, no stats row |
+| `.trail`, `.trail__line`, `.trail__labels` | The dotted trail (section 4). `--stops` sets the label columns |
+| `.rating` | Filled Lucide `star` + number, e.g. `★ 4.6 (12)` |
+| `.tabbar`, `__item`, `__fab` | Explore · Map · **+** · Saved · You. Active item is ink and bold. The + is a 54 px orange circle, raised 20 px |
+| `.map-hero` + `__bar` | Top of the detail screen: the map, with floating back and save buttons |
+| `.sheet`, `__title`, `__stats` | Paper bottom sheet that overlaps the map by 24 px |
+| `.stops` > `.stop` | Numbered ring + `__name`, `__place`, `.crumb-item`, `__leg` (walk or transit step), with dots down to the next stop |
+| `.num-ring` | Numbered stop. `--current` (orange fill, next stop during a run), `--done` (green with a check), `--map` (adds a float shadow for map markers) |
+| `.crumb-item` | Orange bullet + "**Crumb:** find the Make Way for Ducklings statues". `.is-done` turns it green and muted |
+| `.line-dot` | 9 px MBTA line-color dot. Set `--line: var(--line-green)` |
+| `.btn` | 52 px orange pill (`--lg` 56, `--sm` 38, `--block` full width). Variants: `--secondary` (white, outlined), `--ink`, `--ghost`. Disabled is flat gray |
+| `.action-bar` | Sticky bottom area for "Start trail", fading into paper |
 
-- All files are clean vector with no filters. Letters in the pills and wordmark are drawn as strokes, so the files don't depend on fonts.
-- Decorative use: `<img src="…" alt="" aria-hidden="true">`. Logos and pills carry real alt text.
-- Removed in v0.2: `frame-wobbly`, `highlight-swipe`, `spiral-ring`, `squiggle`, `cloud`, `cloud-ink`, `sparkle`, `graph-paper`.
+**Rules for components**
 
-## 8. Do and don't
+- **One orange button per screen** ("Start trail", "Join"). Everything else is secondary, ink or ghost.
+- **Card states:** Anytime (orange "Cafés · Anytime", distance, stop labels, rating) · Scheduled (blue "Food · Sat 2:00 PM", "6 going", Join/Going) · Finished (green "Finished · Nov 16", "You rated 5", green trail).
+- Show stop labels under a card trail only when there are 3 or fewer stops. Otherwise show the count in the stats.
+
+## 6. Screens
+
+**For You (Explore tab):** status bar → app bar → page title + subtitle → filter tabs (For you · Nearby · Friends) → feed of trail cards → tab bar.
+
+**Trail detail:** map hero (300 px, dotted route with numbered rings, floating back and save) → sheet: eyebrow ("Cafés · Anytime · Curated") → title → stats → stop list with crumbs and the walk or transit step between stops → sticky **Start trail**.
+
+During a run, reuse the stop list: finished stops get `.is-done` + `.num-ring--done`, and the next stop gets `.num-ring--current`.
+
+## 7. Google Maps (`styles/map-style.json`)
+
+- Warm and quiet: sand land, pale green parks, pale blue water, off-white roads without outlines, muted labels. POIs, bus stops and road icons are hidden, and transit lines are a faint gray, so our orange trail is the only strong color.
+- Usage: `new google.maps.Map(el, { styles: mapStyle, disableDefaultUI: true, zoomControl: true })`.
+- JSON `styles` only apply **without** a `mapId`. Advanced Markers need a `mapId`, so if you use them, paste this JSON into the Cloud Console style editor instead. Marker content: `<span class="num-ring num-ring--map">1</span>`.
+- Directions: `TRANSIT` (subway, train, tram, bus), `WALKING` and `BICYCLING` legs. Never `DRIVING`.
+
+## 8. Icons
+
+- **[Lucide](https://lucide.dev)** (ISC). Use `lucide-react` in the app. The style guide loads `lucide@0.460.0`.
+- 2 px stroke, `currentColor`, 20 px in buttons, 22 px in the tab bar, 15 px inline.
+- Core set: `compass` `map` `plus` `bookmark` `user` · `search` `chevron-left` `star` (filled) · `footprints` `train-front` `bike` · `check` `x` `user-plus` `share-2`.
+
+## 9. Assets (`assets/svg/`)
+
+| File | Use |
+|---|---|
+| `logo-mark.svg` | Three crumbs that grow and warm toward the end of the trail. Always next to the wordmark |
+| `app-icon.svg` | Home-screen icon and favicon: the three crumbs climbing on orange |
+| `stop-ring.svg`, `stop-done.svg`, `stop-number.svg` | Static stop markers (use `.num-ring` for live numbers) |
+| `trail-divider.svg` | Section breaks and onboarding |
+| `empty-trail.svg` | Empty states: a trail waiting for its next stop. Pair it with one heading, one sentence and one button |
+
+Regenerate them from the repo root with `python docs/tools/build_assets.py docs/assets/svg`.
+
+## 10. Do and don't
 
 | Do | Don't |
 |---|---|
-| Make buttons bold: 4 px outline, hard shadow, uneven corners, slight tilt | Use flat, outline-free buttons that blend into the cards |
-| Keep cards, chips, panels and nav clean: thin rules, soft shadows | Put hard shadows or tilts on anything but buttons |
-| Use white text on Red, Green, Blue and Silver; ink on Orange, Yellow and Sky | Put white text on yellow, orange or sky blue |
-| Give each card top one flat line color | Use gradients or rainbow fills |
-| Keep backgrounds plain white | Add grids, textures or colored page fills |
-| Use one illustration per empty state | Scatter doodles or illustrations around content |
-| Use Archivo Expanded for short all-caps titles | Set paragraphs or buttons in it |
-| Draw our own trains, lines and landmarks | Use the MBTA "T" logo, official map art, or the organizers' images, logo or illustrations |
+| Draw every route as dots between rings | Draw solid lines or arrows for routes |
+| Keep orange as the only accent | Color cards by category or T line |
+| Use `--color-crumb-strong` for orange text | Set text in `--color-crumb` (dots and rings only) |
+| Use blue only for scheduled and green only for finished | Use blue or green as decoration |
+| Use soft shadows and hairline borders | Use hard offset shadows, tilts or thick outlines (the old Boston Bound look) |
+| Keep one orange button per screen | Stack several orange buttons |
+| Write plain, warm copy: "Start trail", "2 crumbs", "You rated 5" | Use gamer or quest jargon in the UI |
+| Show transit with a small line-color dot | Use the MBTA "T" logo or official map art |
 
-## 9. Attribution and licensing
+## 11. Attribution and licensing
 
-- **Artwork**: every file in `assets/svg/` was drawn for this project and is not traced from or copied from bostonhacks.org. Only the organizers' palette and general motifs are referenced.
-- **Fonts**: Akshar, Archivo and Noto Sans come from Google Fonts under the **SIL Open Font License 1.1**.
-- **Presicav (Typodermic)**: *not used.* It's a commercial family. Typodermic's free desktop licenses don't include web embedding, and live website text needs a paid webfont license (sold through MyFonts). **Archivo Expanded 700** is the free substitute: a wide, all-caps grotesque in the same spirit. If the team buys a Presicav webfont license, swap the first entry of `--font-display` and set `--font-display-stretch: normal`.
-- **Icons**: Lucide, **ISC license** (keep its license notice if you bundle it).
-- **Trademarks**: the Kenmore Square sign illustration (`citgo.svg`) shows the CITGO name and trimark, which are CITGO Petroleum's trademarks. Use it only as a landmark illustration, never as our logo or in a way that suggests endorsement. MBTA line names and colors identify transit lines. Breadcrumb isn't affiliated with or endorsed by the MBTA. Don't use the MBTA "T" logo.
-- **Map data**: Google Maps requires its own attribution on the map. Keep the default logo and copyright.
+- **Artwork:** every file in `assets/svg/` was drawn for this project.
+- **Font:** Inter, from Google Fonts, under the SIL Open Font License 1.1.
+- **Icons:** Lucide, ISC license (keep its notice if you bundle it).
+- **Trademarks:** MBTA line names and colors only identify transit lines. We aren't affiliated with or endorsed by the MBTA. Place names (Tatte, Public Garden) are used descriptively.
+- **Map data:** Google Maps requires its own attribution. Keep the default logo and copyright.

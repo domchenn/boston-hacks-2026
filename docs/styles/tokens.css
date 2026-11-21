@@ -1,108 +1,98 @@
 /* ==========================================================================
-   Breadcrumb · BostonHacks 2026 — design tokens (v0.2)
-   Direction: the "Boston Bound" palette and subway-map motifs on plain white,
-   drawn cleanly — thin ink rules, flat fills, soft shadows, no doodles.
-   Buttons are the one bold accent: thick outline, hard shadow, slight tilt.
-   Mirror of these tokens for Tailwind: styles/tailwind.config.snippet.js
+   breadcrumb · BostonHacks 2026 — design tokens (v1.0, "Dotted trail")
+   Warm paper, white cards, near-black type, and one orange accent.
+   Every outing is drawn as a dotted trail between ringed stops.
+   Mirror for Tailwind: styles/tailwind.config.snippet.js
+   The previous "Boston Bound" system lives in archive/boston-bound/.
    ========================================================================== */
 
-/* Fonts (Google Fonts, SIL Open Font License).
-   Archivo at 125% width stands in for Presicav, which needs a paid webfont license. */
-@import url("https://fonts.googleapis.com/css2?family=Akshar:wght@400..700&family=Archivo:wdth,wght@100..125,500..800&family=Noto+Sans:ital,wght@0,400..700;1,400&display=swap");
+/* Inter (Google Fonts, SIL Open Font License), variable weight + optical size. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap");
 
 :root {
-  /* ---- Core palette (from bostonhacks.org) ------------------------------ */
-  --color-red: #CE2634;        /* Red Line — primary accent */
-  --color-green: #0C6B14;      /* Green Line */
-  --color-blue: #206DDF;       /* Blue Line — links, focus */
-  --color-sky: #2F9DD9;        /* map water, bike legs, illustration accents */
-  --color-yellow: #F7DD04;     /* highlighter, ratings, checkpoints — sparingly */
-  --color-ink: #000000;        /* text + rules */
-  --color-gray-light: #D9D9D9; /* hairlines, dividers */
-  --color-gray-mid: #868686;   /* disabled, placeholder (not body text) */
-  --color-paper: #FFFFFF;
-
-  /* ---- Extended transit palette (ours, MBTA-inspired) ------------------- */
-  --color-orange: #ED8B00;     /* Orange Line — ink text only */
-  --color-silver: #7C878E;     /* Silver Line */
-  --color-purple: #80276C;     /* Commuter Rail (optional) */
-
   /* ---- Neutrals ---------------------------------------------------------- */
-  --color-gray-50: #F4F5F6;    /* muted surfaces (card bottoms, hovers) */
-  --color-gray-dark: #4A4A4A;  /* muted text, passes AA */
+  --color-paper: #F7F6F2;       /* app background, bottom sheets */
+  --color-white: #FFFFFF;       /* cards, chips, buttons, tab bar */
+  --color-sand: #EFEDE6;        /* map land, sunken fills, skeletons */
+  --color-ink: #1B1916;         /* titles, body, active tab (16:1 on paper) */
+  --color-ink-2: #57534C;       /* secondary text: stats, addresses (7.1:1) */
+  --color-muted: #736E66;       /* meta text: distance, labels (4.7:1) */
+  --color-line: #E7E4DD;        /* card borders, dividers */
+  --color-line-strong: #D6D2C8; /* chip outlines, inputs */
 
-  /* ---- Tints & strong shades -------------------------------------------- */
-  --color-red-tint: #FBE2E4;
-  --color-green-tint: #DCEEDD;
-  --color-blue-tint: #DDE8FB;
-  --color-sky-tint: #DDF0FA;
-  --color-yellow-tint: #FDF5B0;
-  --color-orange-tint: #FDEACC;
-  --color-red-strong: #AE1F2B;   /* hover / pressed */
-  --color-green-strong: #08520F;
-  --color-blue-strong: #1A5BBD;  /* active nav text on blue tint (5.2:1) */
-  --color-yellow-strong: #E3CA00;
+  /* ---- Crumb orange: the one accent ------------------------------------- */
+  --color-crumb: #E8552D;       /* trail dots and rings only (graphics, 3.6:1) */
+  --color-crumb-strong: #C2410C;/* orange text, primary button, + button (white on it: 5.2:1) */
+  --color-crumb-deep: #9A3412;  /* hover / pressed */
+  --color-crumb-tint: #FDEDE6;  /* selected rows, soft badges */
+  --color-crumb-soft: #F08A69;  /* logo, middle dot */
+  --color-crumb-pale: #F7C2B1;  /* logo, first dot */
+
+  /* ---- Status colors ----------------------------------------------------- */
+  --color-blue: #1D4ED8;        /* scheduled trails: "Sat 2:00 PM", "Going" (6.7:1) */
+  --color-blue-tint: #E6EDFC;
+  --color-green: #15803D;       /* finished trails (5.0:1) */
+  --color-green-tint: #E3F2E7;
+
+  /* ---- Map --------------------------------------------------------------- */
+  --map-land: #EFEDE6;
+  --map-park: #DDE8D3;
+  --map-water: #D8E6F0;
+  --map-road: #FBFAF7;
+  --map-label: #8C877E;
+
+  /* ---- MBTA line colors (small dots in transit notes only) -------------- */
+  --line-red: #DA291C;
+  --line-orange: #ED8B00;
+  --line-green: #00843D;
+  --line-blue: #003DA5;
+  --line-silver: #7C878E;
 
   /* ---- Semantic roles ---------------------------------------------------- */
   --color-bg: var(--color-paper);
-  --color-surface: var(--color-paper);
-  --color-surface-muted: var(--color-gray-50);
+  --color-surface: var(--color-white);
+  --color-surface-sunken: var(--color-sand);
   --color-text: var(--color-ink);
-  --color-text-muted: var(--color-gray-dark);
-  --color-text-on-color: #FFFFFF;
-  --color-border: var(--color-ink);            /* cards, controls */
-  --color-border-subtle: var(--color-gray-light); /* panels, chips, dividers */
-  --color-accent: var(--color-red);
-  --color-link: var(--color-blue);
-  --color-active: var(--color-blue-strong);
-  --color-active-bg: var(--color-blue-tint);
-  --color-focus: var(--color-blue);
-  --color-highlight: var(--color-yellow);
-  --color-success: var(--color-green);
-  --color-danger: var(--color-red);
+  --color-text-2: var(--color-ink-2);
+  --color-text-muted: var(--color-muted);
+  --color-text-on-accent: #FFFFFF;
+  --color-border: var(--color-line);
+  --color-border-strong: var(--color-line-strong);
+  --color-accent: var(--color-crumb-strong);
+  --color-trail: var(--color-crumb);
+  --color-anytime: var(--color-crumb-strong);
+  --color-scheduled: var(--color-blue);
+  --color-done: var(--color-green);
+  --color-focus: rgba(29, 78, 216, 0.45);
 
-  /* ---- Transit lines & travel modes ------------------------------------- */
-  --line-rl: var(--color-red);
-  --line-gl: var(--color-green);
-  --line-bl: var(--color-blue);
-  --line-ol: var(--color-orange);
-  --line-sl: var(--color-silver);
-  --line-cr: var(--color-purple);
-  --mode-bus: var(--color-yellow);
-  --mode-walk: var(--color-ink);
-  --mode-bike: var(--color-sky);
+  /* ---- Typography (sizes are CSS px on a 390 px-wide phone) -------------- */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-  /* ---- Typography -------------------------------------------------------- */
-  --font-display: "Archivo", "Arial Black", sans-serif;  /* use with --font-display-stretch */
-  --font-display-stretch: 125%;                          /* Archivo Expanded */
-  --font-primary: "Akshar", "Arial Narrow", system-ui, sans-serif;
-  --font-body: "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-
-  --text-2xs: 0.6875rem; /* 11 */
-  --text-xs: 0.75rem;    /* 12 */
-  --text-sm: 0.875rem;   /* 14 */
-  --text-base: 1rem;     /* 16 */
-  --text-md: 1.125rem;   /* 18 */
-  --text-lg: 1.25rem;    /* 20 */
-  --text-xl: 1.5rem;     /* 24 */
-  --text-2xl: 1.875rem;  /* 30 */
-  --text-3xl: 2.25rem;   /* 36 */
-  --text-4xl: 3rem;      /* 48 */
-  --text-5xl: 4rem;      /* 64 */
+  --text-2xs: 0.6875rem; /* 11  tab bar labels */
+  --text-xs: 0.75rem;    /* 12  stop labels under a trail */
+  --text-sm: 0.8125rem;  /* 13  eyebrows, meta, addresses */
+  --text-base: 0.9375rem;/* 15  body, stats, chips */
+  --text-md: 1rem;       /* 16  subtitles, buttons */
+  --text-lg: 1.0625rem;  /* 17  stop names */
+  --text-xl: 1.3125rem;  /* 21  card titles, wordmark */
+  --text-2xl: 1.75rem;   /* 28  detail title */
+  --text-3xl: 2rem;      /* 32  page title */
 
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
+  --weight-heavy: 800;
 
   --leading-tight: 1.1;
-  --leading-snug: 1.25;
-  --leading-normal: 1.55;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
 
-  --tracking-display: 0.01em;
-  --tracking-caps: 0.08em;   /* small uppercase labels */
+  --tracking-title: -0.035em;  /* page + detail titles */
+  --tracking-tight: -0.02em;   /* card titles, wordmark */
+  --tracking-normal: 0;
 
-  /* ---- Spacing (4px base) ------------------------------------------------ */
+  /* ---- Spacing (4 px base) ---------------------------------------------- */
   --space-0: 0;
   --space-1: 4px;
   --space-2: 8px;
@@ -114,38 +104,27 @@
   --space-10: 40px;
   --space-12: 48px;
   --space-16: 64px;
-  --space-20: 80px;
-  --space-24: 96px;
 
   /* ---- Radii ------------------------------------------------------------- */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;    /* controls */
-  --radius-lg: 12px;   /* cards, panels */
-  --radius-xl: 16px;   /* sheets, app icon */
-  --radius-pill: 999px;
-  --radius-control: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-button: 14px 20px 12px 22px / 20px 12px 22px 14px; /* uneven, hand-cut corners */
+  --radius-sm: 10px;     /* inputs, small tiles */
+  --radius-md: 14px;     /* menus, toasts */
+  --radius-card: 20px;   /* trail cards */
+  --radius-sheet: 24px;  /* bottom sheet top corners */
+  --radius-pill: 999px;  /* tabs, buttons, icon buttons */
 
-  /* ---- Border widths ----------------------------------------------------- */
-  --border-hairline: 1px;  /* panels, chips, dividers (subtle gray) */
-  --border-thin: 1.5px;    /* cards, buttons, inputs (ink) */
-  --border-base: 2px;      /* emphasis, selected states */
-  --border-line: 6px;      /* subway-line strokes in UI */
-  --border-button: 4px;    /* buttons only (3px on small buttons) */
+  /* ---- Elevation (soft, warm; nothing hard-edged) ----------------------- */
+  --shadow-card: 0 1px 2px rgba(27, 25, 22, 0.04), 0 4px 14px rgba(27, 25, 22, 0.04);
+  --shadow-float: 0 4px 14px rgba(27, 25, 22, 0.14);   /* buttons over the map */
+  --shadow-sheet: 0 -6px 24px rgba(27, 25, 22, 0.06);
+  --shadow-fab: 0 8px 20px rgba(194, 65, 12, 0.32);
+  --focus-ring: 0 0 0 3px var(--color-focus);
 
-  /* ---- Shadows ----------------------------------------------------------- */
-  --shadow-xs: 0 1px 2px rgba(16, 24, 32, 0.06);
-  --shadow-sm: 0 2px 6px rgba(16, 24, 32, 0.08);
-  --shadow-md: 0 8px 20px rgba(16, 24, 32, 0.10);
-  --shadow-lg: 0 16px 40px rgba(16, 24, 32, 0.14);
-  --focus-ring: 0 0 0 3px rgba(32, 109, 223, 0.40);
-  /* Buttons only: hard ink offsets */
-  --shadow-button-sm: 3px 3px 0 0 var(--color-ink);
-  --shadow-button: 5px 5px 0 0 var(--color-ink);
-  --shadow-button-hover: 6px 7px 0 0 var(--color-ink);
-  --tilt-button: -2deg;
+  /* ---- Dotted trail ------------------------------------------------------ */
+  --trail-dot: 3px;          /* dot diameter (= stroke width) */
+  --trail-gap: 8.5px;        /* dot spacing */
+  --trail-ring: 7.5px;       /* stop ring radius on cards */
+  --trail-ring-stroke: 2.5px;
+  --stop-num-size: 28px;     /* numbered ring in lists and on the map */
 
   /* ---- Motion ------------------------------------------------------------ */
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -153,53 +132,32 @@
   --duration-base: 200ms;
 
   /* ---- Layout ------------------------------------------------------------ */
+  --gutter: 16px;            /* screen side padding */
+  --tabbar-height: 64px;     /* plus the safe-area inset */
   --container-max: 1120px;
-  --gutter: 16px;
 }
 
 /* ==========================================================================
-   Utilities
+   Base + utilities
    ========================================================================== */
 
-/* Display type: Archivo Expanded, all caps. */
-.font-display {
-  font-family: var(--font-display);
-  font-stretch: var(--font-display-stretch);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
+.font-title {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-heavy);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-tight);
 }
 
-/* Small uppercase label. */
+/* Small colored line above a title: "Cafés · Anytime". */
 .eyebrow {
-  font-family: var(--font-primary);
+  font-family: var(--font-sans);
   font-weight: var(--weight-semibold);
   font-size: var(--text-sm);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
+  line-height: var(--leading-snug);
+  color: var(--color-anytime);
 }
 
-/* White panel with a hairline border. */
-.panel {
-  background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border-subtle);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-xs);
-}
-
-/* Ink-ruled box: the printed-map look for cards and featured blocks. */
-.outline-ink {
-  border: var(--border-thin) solid var(--color-border);
-  border-radius: var(--radius-card);
-}
-
-/* Highlighter stripe behind a word or two. */
-.text-highlight {
-  background: linear-gradient(transparent 58%, var(--color-yellow) 58%, var(--color-yellow) 90%, transparent 90%);
-  padding: 0 0.1em;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-}
+.text-muted { color: var(--color-text-muted); }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
