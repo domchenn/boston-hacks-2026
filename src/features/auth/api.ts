@@ -1,13 +1,24 @@
 /**
- * Email/password auth for the auth lane. Thin wrappers over the shared Supabase
- * client that turn Supabase's responses into the three outcomes the UI cares
+ * Auth for the auth lane: email/password and Google, as thin wrappers over the
+ * shared Supabase client that turn its responses into the outcomes the UI cares
  * about, with plain-language error messages.
  *
  * Nothing here assumes how the project is configured: whether a session comes
  * back from signUp (email confirmation off) or not (confirmation on) is read
  * from the response itself.
+ *
+ * Redirects (Google, and the link in the confirmation email) all come back to
+ * /login. The shared client reads the session or error out of that URL when the
+ * app loads (supabase-js `detectSessionInUrl`, on by default), and the auth page
+ * then forwards the user or shows the error. See resolveSessionOnLoad().
  */
-import { isAuthApiError, isAuthRetryableFetchError, isAuthWeakPasswordError, type AuthError } from '@supabase/supabase-js'
+import {
+  isAuthApiError,
+  isAuthImplicitGrantRedirectError,
+  isAuthRetryableFetchError,
+  isAuthWeakPasswordError,
+  type AuthError,
+} from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
 export type Credentials = { email: string; password: string }
@@ -35,9 +46,9 @@ export async function signUpWithEmail({ email, password }: Credentials): Promise
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      // Where the confirmation link lands. Supabase only honors it if this origin is in the
-      // project's redirect allow list; otherwise it falls back to the project's Site URL.
-      options: { emailRedirectTo: `${window.location.origin}/` },
+      // Where the confirmation link lands. Supabase only honors it if it matches the
+      // project's Redirect URLs allow list; otherwise it falls back to the Site URL.
+      options: { emailRedirectTo: authRedirectUrl('/') },
     })
     if (error) return { status: 'error', message: authErrorMessage(error) }
     if (data.session) return { status: 'signed_in' }
@@ -49,6 +60,84 @@ export async function signUpWithEmail({ email, password }: Credentials): Promise
     return { status: 'error', message: unexpectedErrorMessage(error) }
   }
 }
+
+// ---- Google (OAuth) ------------------------------------------------------------
+
+export type GoogleStartResult = { status: 'redirecting' } | { status: 'error'; message: string }
+
+/**
+ * Sends the browser to Google through Supabase. One flow for both views: Supabase
+ * creates the account on first use and logs in after that. On success the page
+ * unloads; Google then returns to /login, carrying `next` so the user ends up
+ * where they were headed.
+ */
+export async function startGoogleSignIn(next: string): Promise<GoogleStartResult> {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: authRedirectUrl(next) },
+    })
+    if (error) return { status: 'error', message: authErrorMessage(error) }
+    return { status: 'redirecting' }
+  } catch (error) {
+    return { status: 'error', message: unexpectedErrorMessage(error) }
+  }
+}
+
+/** Absolute /login URL that auth redirects return to, keeping a safe `next`. */
+function authRedirectUrl(next: string): string {
+  const url = new URL('/login', window.location.origin)
+  const safeNext = safeRedirectPath(next)
+  if (safeNext !== '/') url.searchParams.set('next', safeNext)
+  return url.toString()
+}
+
+// ---- Returning from a redirect -------------------------------------------------
+
+const REDIRECT_PARAMS = ['access_token', 'error', 'error_code', 'error_description']
+
+/**
+ * Whether the current URL carries an auth redirect's result: tokens (removed by
+ * supabase-js as soon as it has read them) or an error (which supabase-js leaves
+ * in place, so it can still be read once the page is up).
+ */
+export function isAuthRedirectUrl(href: string = window.location.href): boolean {
+  const url = new URL(href)
+  const hash = new URLSearchParams(url.hash.slice(1))
+  return REDIRECT_PARAMS.some((key) => url.searchParams.has(key) || hash.has(key))
+}
+
+/**
+ * Waits for the shared client to finish loading the session (including one handed
+ * back in the URL by Google or a confirmation link), then reports whether the user
+ * is signed in and, if the current URL is a failed redirect, why.
+ */
+export async function resolveSessionOnLoad(): Promise<{ signedIn: boolean; redirectError: string | null }> {
+  const fromRedirect = isAuthRedirectUrl()
+  try {
+    // initialize() returns the result of the client's first load, URL errors included.
+    const { error } = await supabase.auth.initialize()
+    const { data } = await supabase.auth.getSession()
+    const redirectError = fromRedirect && error ? redirectErrorMessage(error) : null
+    return { signedIn: Boolean(data.session), redirectError }
+  } catch (error) {
+    return { signedIn: false, redirectError: fromRedirect ? unexpectedErrorMessage(error) : null }
+  }
+}
+
+/** Message for an error handed back in the redirect URL. Exported for tests. */
+export function redirectErrorMessage(error: AuthError): string {
+  const details = isAuthImplicitGrantRedirectError(error) ? error.details : null
+  if (details?.error === 'access_denied' && details.code !== 'otp_expired') {
+    return 'Google sign-in was canceled. Try again whenever you’re ready.'
+  }
+  if (details?.code === 'otp_expired') {
+    return 'That link has expired or was already used. Log in, or sign up again for a new one.'
+  }
+  return 'We couldn’t finish signing you in. Please try again.'
+}
+
+// ---- Errors --------------------------------------------------------------------
 
 const GENERIC_ERROR = 'Something went wrong on our end. Please try again.'
 const NETWORK_ERROR = 'We couldn’t reach Breadcrumb. Check your connection and try again.'

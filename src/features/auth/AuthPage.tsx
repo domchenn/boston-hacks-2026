@@ -3,22 +3,37 @@
  * React keeps the same AuthForm instance and the switch animates in place.
  * On desktop an intro column sits beside the card; phones and tablets get the card only.
  *
- * Owns the email/password requests: AuthForm validates, this page calls Supabase
- * (through ./api), shows loading and errors, then redirects or asks the user to
- * confirm their email.
+ * Owns the auth requests: AuthForm validates, this page calls Supabase (through
+ * ./api), shows loading and errors, then redirects or asks the user to confirm
+ * their email. Google uses one handler for both views.
+ *
+ * On load it also waits for the shared client's session: a user who is already
+ * signed in, or who just came back from Google or a confirmation link, is sent on
+ * to `next`; a failed redirect shows its error here.
  */
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { MailCheck } from 'lucide-react'
 import logoMark from '../../../docs/assets/svg/logo-mark.svg'
-import { safeRedirectPath, signInWithEmail, signUpWithEmail } from './api'
+import {
+  isAuthRedirectUrl,
+  resolveSessionOnLoad,
+  safeRedirectPath,
+  signInWithEmail,
+  signUpWithEmail,
+  startGoogleSignIn,
+} from './api'
 import { AuthForm, type AuthMode, type AuthValues } from './AuthForm'
 import './auth.css'
 
 export function AuthPage({ mode }: { mode: AuthMode }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [pending, setPending] = useState<'email' | null>(null)
+  const nextPath = safeRedirectPath(searchParams.get('next'))
+  // While a redirect's session is being read, lock the form (shown on the Google button).
+  const [pending, setPending] = useState<'email' | 'google' | null>(() =>
+    isAuthRedirectUrl() ? 'google' : null,
+  )
   const [error, setError] = useState<string | null>(null)
   /** Set after a sign up that needs email confirmation: the address the link went to. */
   const [confirmEmailFor, setConfirmEmailFor] = useState<string | null>(null)
@@ -31,6 +46,41 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   useEffect(() => {
     currentMode.current = mode
   }, [mode])
+
+  // Already signed in, or back from Google / a confirmation link: forward to `next`.
+  // A failed redirect (canceled, expired link…) shows its error, and its params are
+  // stripped from the URL so a refresh doesn't show it again.
+  useEffect(() => {
+    let cancelled = false
+    const fromRedirect = isAuthRedirectUrl()
+    resolveSessionOnLoad().then(({ signedIn, redirectError }) => {
+      if (cancelled) return
+      if (signedIn) {
+        navigate(nextPath, { replace: true })
+        return
+      }
+      if (fromRedirect) {
+        setPending(null)
+        if (redirectError) setError(redirectError)
+        navigate(nextPath === '/' ? '.' : `.?next=${encodeURIComponent(nextPath)}`, { replace: true })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [navigate, nextPath])
+
+  // Pressing Back on Google's page can restore this page from the browser's cache with
+  // the Google button still spinning; unlock it.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return
+      inFlight.current = false
+      setPending(null)
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
 
   // Switching views clears the previous view's error and confirmation screen.
   const [prevMode, setPrevMode] = useState(mode)
@@ -54,10 +104,25 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     if (currentMode.current !== requestMode) return
 
     if (result.status === 'signed_in') {
-      navigate(safeRedirectPath(searchParams.get('next')), { replace: true })
+      navigate(nextPath, { replace: true })
     } else if (result.status === 'confirm_email') {
       setConfirmEmailFor(values.email)
     } else {
+      setError(result.message)
+    }
+  }
+
+  async function handleGoogle() {
+    if (inFlight.current) return
+    inFlight.current = true
+    setPending('google')
+    setError(null)
+
+    const result = await startGoogleSignIn(nextPath)
+    // On success the browser is already leaving for Google: stay locked until it does.
+    if (result.status === 'error') {
+      inFlight.current = false
+      setPending(null)
       setError(result.message)
     }
   }
@@ -98,7 +163,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 
       {/* Kept mounted while hidden so the typed email survives "Use a different email". */}
       <div hidden={confirmEmailFor !== null}>
-        <AuthForm mode={mode} pending={pending} error={error} onSubmit={handleSubmit} />
+        <AuthForm mode={mode} pending={pending} error={error} onSubmit={handleSubmit} onGoogle={handleGoogle} />
       </div>
       {confirmEmailFor !== null && (
         <CheckInbox email={confirmEmailFor} onUseDifferentEmail={() => setConfirmEmailFor(null)} />
