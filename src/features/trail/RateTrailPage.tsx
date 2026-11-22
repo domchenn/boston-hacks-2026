@@ -1,7 +1,8 @@
 /**
  * Rate a finished trail (docs/mockups/Mobile-Finished): "Trail finished!" header,
  * four 1–5 star questions (fun, memorable, worth the money, worth the time), an
- * optional review, then Post rating or Skip, both back to /trails/:id. Loads
+ * optional review, your photos with Add photos (MyTrailPhotos, these post right
+ * away), then Post rating or Skip, both back to /trails/:id. Loads
  * getTrail + getMyStatus + getMyRating; an existing rating pre-fills the form and
  * can be removed. Logged out → login; your own or unfinished trail → a message.
  * Route: /trails/:id/rate · Owner: Jason
@@ -27,6 +28,7 @@ import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
 import type { UserSidequestStatus } from '@/types/db-values'
 import { RATING_QUESTIONS, type RatingKey } from './ratingQuestions'
+import { MyTrailPhotos } from './TrailPhotos'
 import { TrailMessage } from './TrailPageMessage'
 import { isTrailId, loginPath, type TrailNotice } from './trailLinks'
 
@@ -113,7 +115,7 @@ function StarQuestion({
 }
 
 /** The form itself. Mounted once the trail and any existing rating have loaded, so it starts pre-filled. */
-function RateTrailForm({ trail, existing }: { trail: TrailDetail; existing: MyRating | null }) {
+function RateTrailForm({ trail, existing, userId }: { trail: TrailDetail; existing: MyRating | null; userId: string }) {
   const navigate = useNavigate()
   const formRef = useRef<HTMLFormElement>(null)
   const headingId = useId()
@@ -235,6 +237,8 @@ function RateTrailForm({ trail, existing }: { trail: TrailDetail; existing: MyRa
           </p>
         ) : null}
       </div>
+
+      <MyTrailPhotos trailId={trail.id} trailTitle={trail.title} userId={userId} />
 
       {editing ? (
         <div className="mt-5 flex min-h-11 flex-wrap items-center gap-3">
@@ -395,5 +399,5 @@ export function RateTrailPage() {
     )
   }
 
-  return <RateTrailForm key={trail.id} trail={trail} existing={result.rating ?? null} />
+  return <RateTrailForm key={trail.id} trail={trail} existing={result.rating ?? null} userId={userId!} />
 }

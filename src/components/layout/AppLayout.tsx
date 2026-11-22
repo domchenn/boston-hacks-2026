@@ -1,7 +1,8 @@
 /**
  * App shell shared by every page (docs/mockups/Web-Explore + Main). Desktop header:
- * logo, Explore / Map / Saved / You nav, search box, orange "Make a trail" button
- * and the account menu (log in / log out via useSession()). Phones get a compact
+ * logo, Explore / Map / Saved / You nav (trail pages count as Explore), search box,
+ * orange "Make a trail" button (not on /make itself) and the account menu (log in /
+ * log out via useSession()). Phones get a compact
  * header (logo, search toggle, account) plus the bottom tab bar with the + button
  * (hidden on /trails/:id pages, which have their own sticky Start trail bar). On
  * /map the shell is exactly one screen tall and <main> has no padding, so the map
@@ -188,6 +189,7 @@ export function AppLayout() {
   const onTrailPage = useMatch('/trails/:id/*') !== null
   // The Map tab is a full-screen map, so no page padding or width limit there.
   const onMapPage = useMatch('/map') !== null
+  const onMakePage = useMatch('/make') !== null
 
   return (
     <div className={cn('flex flex-col bg-paper', onMapPage ? 'h-dvh overflow-hidden' : 'min-h-dvh')}>
@@ -201,7 +203,13 @@ export function AppLayout() {
                 key={to}
                 to={to}
                 end={end}
-                className="inline-flex h-10 items-center rounded-pill px-3.5 text-base font-medium text-ink-2 hover:bg-paper aria-[current=page]:bg-sand aria-[current=page]:font-bold aria-[current=page]:text-ink"
+                className={({ isActive }) =>
+                  cn(
+                    'inline-flex h-10 items-center rounded-pill px-3.5 text-base font-medium text-ink-2 transition-colors hover:bg-paper hover:text-ink',
+                    // Trail pages count as Explore, like the Web-Detail mockup.
+                    (isActive || (to === '/' && onTrailPage)) && 'bg-sand font-bold text-ink hover:bg-sand',
+                  )
+                }
               >
                 {label}
               </NavLink>
@@ -223,11 +231,13 @@ export function AppLayout() {
             >
               {searchOpen ? <X aria-hidden /> : <Search aria-hidden />}
             </button>
-            {/* Icon-only between md and lg so the header fits on tablets. */}
-            <Link to="/make" aria-label="Make a trail" className="btn btn--sm hidden px-2.5 md:inline-flex lg:px-4">
-              <Plus aria-hidden />
-              <span className="hidden lg:inline">Make a trail</span>
-            </Link>
+            {/* Icon-only between md and lg so the header fits on tablets. Not shown on Make a trail itself. */}
+            {onMakePage ? null : (
+              <Link to="/make" aria-label="Make a trail" className="btn btn--sm hidden px-2.5 md:inline-flex lg:px-4">
+                <Plus aria-hidden />
+                <span className="hidden lg:inline">Make a trail</span>
+              </Link>
+            )}
             <AccountMenu />
           </div>
         </div>

@@ -12,7 +12,6 @@ import { ChevronDown } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { TrailCard } from '@/components/TrailCard'
 import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
-import { cn } from '@/lib/utils'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { loadTrails, matchesSearch, type MapTrail } from './api'
 
@@ -87,11 +86,11 @@ function FeedSkeleton() {
   )
 }
 
-/** Friendly message in place of the grid (empty results, coming-soon tabs, errors). */
-function FeedMessage({ title, children }: { title: string; children?: ReactNode }) {
+/** Friendly message in place of the grid (empty results, coming-soon tabs, errors). Same look as Saved / You. */
+function FeedMessage({ title, picture = true, children }: { title: string; picture?: boolean; children?: ReactNode }) {
   return (
     <div className="col-span-full rounded-card border border-dashed border-line-strong bg-white px-6 py-12 text-center">
-      <img src={emptyTrail} alt="" aria-hidden className="mx-auto mb-4 h-10 w-auto" />
+      {picture ? <img src={emptyTrail} alt="" aria-hidden width={240} height={160} className="mx-auto mb-4 h-auto max-w-full" /> : null}
       <p className="text-lg font-bold text-ink">{title}</p>
       {children ? <div className="mt-2 text-base text-ink-2">{children}</div> : null}
     </div>
@@ -106,8 +105,8 @@ export function ExplorePage() {
   const [length, setLength] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ key: string; trails?: MapTrail[]; error?: string } | null>(null)
-  // The trail being pointed at, and whether that's from its card or its map pin.
-  const [hover, setHover] = useState<{ id: string; from: 'card' | 'pin' } | null>(null)
+  // The trail being pointed at, by its card or its map pin; both get highlighted.
+  const [hoverId, setHoverId] = useState<string | null>(null)
   const [mapAvailable, setMapAvailable] = useState(true)
   const navigate = useNavigate()
 
@@ -152,11 +151,20 @@ export function ExplorePage() {
     body = <FeedSkeleton />
   } else if (result?.error) {
     body = (
-      <FeedMessage title="Couldn't load trails">
+      <FeedMessage title="Couldn't load trails" picture={false}>
         <p>{result.error}</p>
         <button type="button" className="btn btn--sm btn--secondary mt-4" onClick={() => setAttempt((n) => n + 1)}>
           Try again
         </button>
+      </FeedMessage>
+    )
+  } else if (trails.length === 0 && !q && !filtered) {
+    body = (
+      <FeedMessage title="No trails yet">
+        <p>Be the first to put one on the map.</p>
+        <Link to="/make" className="btn btn--sm mt-4">
+          Make a trail
+        </Link>
       </FeedMessage>
     )
   } else if (trails.length === 0) {
@@ -181,16 +189,12 @@ export function ExplorePage() {
     body = trails.map((trail) => (
       <div
         key={trail.id}
-        className={cn(
-          'rounded-card transition-shadow',
-          hover?.id === trail.id && hover.from === 'pin' && 'shadow-[0_0_0_2px_var(--color-crumb)]',
-        )}
-        onMouseEnter={() => setHover({ id: trail.id, from: 'card' })}
-        onMouseLeave={() => setHover(null)}
-        onFocus={() => setHover({ id: trail.id, from: 'card' })}
-        onBlur={() => setHover(null)}
+        onMouseEnter={() => setHoverId(trail.id)}
+        onMouseLeave={() => setHoverId(null)}
+        onFocus={() => setHoverId(trail.id)}
+        onBlur={() => setHoverId(null)}
       >
-        <TrailCard trail={trail} className="h-full" />
+        <TrailCard trail={trail} selected={hoverId === trail.id} className="h-full" />
       </div>
     ))
   }
@@ -254,8 +258,8 @@ export function ExplorePage() {
       <aside aria-label="Trails on the map" className="sticky top-24 hidden lg:block">
         <TrailsMap
           trails={mapTrails}
-          highlightedId={hover?.id ?? null}
-          onHover={(id) => setHover(id ? { id, from: 'pin' } : null)}
+          highlightedId={hoverId}
+          onHover={setHoverId}
           onSelect={(id) => navigate(`/trails/${id}`)}
           onStatusChange={(status) => setMapAvailable(status !== 'unavailable')}
           className="aspect-[440/600] max-h-[calc(100dvh-160px)] w-full"
