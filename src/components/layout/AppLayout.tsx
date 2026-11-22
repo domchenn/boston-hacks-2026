@@ -3,7 +3,9 @@
  * logo, Explore / Map / Saved / You nav, search box, orange "Make a trail" button
  * and the account menu (log in / log out via useSession()). Phones get a compact
  * header (logo, search toggle, account) plus the bottom tab bar with the + button
- * (hidden on /trails/:id pages, which have their own sticky Start trail bar).
+ * (hidden on /trails/:id pages, which have their own sticky Start trail bar). On
+ * /map the shell is exactly one screen tall and <main> has no padding, so the map
+ * fills everything between the header and the tab bar.
  * Search sends you to Explore with ?q=…; the current route's page renders in <Outlet />.
  */
 
@@ -184,9 +186,11 @@ export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
   // Trail pages have their own sticky Start trail bar on phones (Mobile-Detail mockup), so no tab bar there.
   const onTrailPage = useMatch('/trails/:id/*') !== null
+  // The Map tab is a full-screen map, so no page padding or width limit there.
+  const onMapPage = useMatch('/map') !== null
 
   return (
-    <div className="flex min-h-dvh flex-col bg-paper">
+    <div className={cn('flex flex-col bg-paper', onMapPage ? 'h-dvh overflow-hidden' : 'min-h-dvh')}>
       <header className="sticky top-0 z-20 border-b border-line bg-white">
         <div className="mx-auto flex w-full max-w-[1360px] items-center gap-3 px-4 py-3 md:gap-6 md:px-6">
           <BrandLogo />
@@ -237,8 +241,10 @@ export function AppLayout() {
 
       <main
         className={cn(
-          'mx-auto w-full max-w-[1360px] flex-1 px-4 pt-5 md:px-6 md:pt-8 md:pb-12',
-          onTrailPage ? 'pb-6' : 'pb-28',
+          onMapPage
+            ? 'relative flex min-h-0 w-full flex-1 flex-col'
+            : 'mx-auto w-full max-w-[1360px] flex-1 px-4 pt-5 md:px-6 md:pt-8 md:pb-12',
+          !onMapPage && (onTrailPage ? 'pb-6' : 'pb-28'),
         )}
       >
         <Outlet />
