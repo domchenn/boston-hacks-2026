@@ -29,6 +29,7 @@ import {
   type StopDraft,
   type TrailDraft,
 } from './draft'
+import { VisibilityField } from '@/features/communities/VisibilityField'
 import { PlacePicker } from './PlacePicker'
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180, 240, 300]
@@ -322,6 +323,11 @@ export function MakeTrailForm({
                   <p className="mt-1.5 text-sm text-muted-foreground">Dated trails show a time and let people join.</p>
                 </fieldset>
               </div>
+              <VisibilityField
+                value={draft.communityId}
+                onChange={(communityId) => update({ communityId })}
+                labelClass={labelClass}
+              />
             </div>
           </Panel>
 

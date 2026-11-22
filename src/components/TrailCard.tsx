@@ -15,7 +15,8 @@ import { TrailLine } from '@/components/TrailLine'
 import { hasHappened } from '@/lib/api/attendees'
 import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { cn } from '@/lib/utils'
-import type { Category, UserSidequestStatus } from '@/types/db-values'
+import { lineColor } from '@/lib/transitColors'
+import type { Category, TransitLine, UserSidequestStatus } from '@/types/db-values'
 
 /** The fields a card needs (a subset of FeedTrail). */
 export type TrailCardData = {
@@ -33,6 +34,8 @@ export type TrailCardData = {
   rating: { average: number | null; count: number }
   /** Scheduled trails: how many are going. Shown as "6 going" in place of the neighborhood. */
   goingCount?: number
+  /** Main T line; colors the dots and rings in that line's color. Optional. */
+  primaryLine?: TransitLine | null
 }
 
 type TrailCardProps = {
@@ -100,7 +103,10 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
       </div>
       <h2 className="trail-card__title">{trail.title}</h2>
 
-      <div className={cn('trail', done && 'trail--done')}>
+      <div
+        className={cn('trail', done && 'trail--done')}
+        style={!done && lineColor(trail.primaryLine) ? ({ '--color-trail': lineColor(trail.primaryLine) } as CSSProperties) : undefined}
+      >
         <TrailLine stops={trail.stopCount} state={done ? 'done' : 'open'} seed={waveSeed(trail.id)} />
         {labels.length > 0 && !done ? (
           <div className="trail__labels" style={{ '--stops': labels.length } as CSSProperties}>

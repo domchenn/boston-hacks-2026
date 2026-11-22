@@ -52,6 +52,8 @@ export type TrailDraft = {
   scheduledLocal: string
   /** Minutes; null = use the suggestion. */
   durationMinutes: number | null
+  /** Who can see it: null = everyone, else only this community (task G6). */
+  communityId: string | null
   stops: StopDraft[]
 }
 
@@ -62,6 +64,7 @@ export const emptyDraft = (): TrailDraft => ({
   when: 'anytime',
   scheduledLocal: '',
   durationMinutes: null,
+  communityId: null,
   stops: [],
 })
 
@@ -107,6 +110,7 @@ export function toSavePayload(draft: TrailDraft, status: 'draft' | 'published') 
     estimated_cost: cost,
     estimated_duration_minutes: minutes,
     neighborhood: draft.stops[0]?.neighborhood ?? null,
+    community_id: draft.communityId,
     stops: draft.stops.map((s, i) => ({
       experience_id: s.experienceId,
       place_name: s.placeName.trim(),

@@ -118,6 +118,7 @@ function ActiveTrailView({
       <div className="relative -mx-4 -mt-5 md:mx-0 md:mt-0 lg:sticky lg:top-24 lg:order-2">
         <RouteMap
           stops={stops}
+          primaryLine={trail.primaryLine}
           mode="live"
           userLocation={location.status === 'on' ? location.location : null}
           selectedStopId={current?.id ?? null}
@@ -236,6 +237,7 @@ function ActiveTrailView({
         </h2>
         <TrailChecklist
           stops={stops}
+          primaryLine={trail.primaryLine}
           betweenStopCrumbs={trail.betweenStopCrumbs}
           currentIndex={currentIndex}
           onSelectStop={(i) => {

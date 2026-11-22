@@ -12,6 +12,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Check, ChevronDown, Moon, TrainFront } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { useCommunities } from '@/features/communities/api'
+import { CommunitySwitcher } from '@/features/communities/CommunitySwitcher'
 import { TrailCard } from '@/components/TrailCard'
 import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
 import { cn } from '@/lib/utils'
@@ -127,7 +129,13 @@ export function ExplorePage() {
   const [params, setParams] = useSearchParams()
   const q = (params.get('q') ?? '').trim()
   const values = readFilterValues(params)
-  const activeCount = FILTER_KEYS.filter((k) => values[k] !== '').length
+  // Community switcher (task G6), kept in ?community=<slug> so it can be shared.
+  const communitySlug = params.get('community') ?? ''
+  const communities = useCommunities()
+  const communityId = communities?.find((c) => c.slug === communitySlug)?.id
+  // Wait for the communities list before loading a ?community= link (no flash of "All").
+  const communityPending = communitySlug !== '' && communities === null
+  const activeCount = FILTER_KEYS.filter((k) => values[k] !== '').length + (communitySlug ? 1 : 0)
   const [tab, setTab] = useState<Tab>('for-you')
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ key: string; trails?: MapTrail[]; error?: string } | null>(null)
@@ -138,13 +146,14 @@ export function ExplorePage() {
   const navigate = useNavigate()
 
   // Everything that changes what loadTrails() returns. The search (q) is applied below instead.
-  const key = JSON.stringify([values, attempt])
+  const key = JSON.stringify([values, communityPending ? 'pending' : (communityId ?? ''), attempt])
   const loading = result?.key !== key
 
   useEffect(() => {
+    if (communityPending) return
     let cancelled = false
-    const [filterValues] = JSON.parse(key) as [Record<FilterKey, string>, number]
-    loadTrails(toExploreFilters(filterValues)).then(
+    const [filterValues, community] = JSON.parse(key) as [Record<FilterKey, string>, string, number]
+    loadTrails({ ...toExploreFilters(filterValues), communityId: community || undefined }).then(
       (trails) => !cancelled && setResult({ key, trails }),
       (error: unknown) =>
         !cancelled && setResult({ key, error: error instanceof Error ? error.message : 'Something went wrong.' }),
@@ -152,7 +161,7 @@ export function ExplorePage() {
     return () => {
       cancelled = true
     }
-  }, [key])
+  }, [key, communityPending])
 
   useEffect(() => {
     let cancelled = false
@@ -183,7 +192,12 @@ export function ExplorePage() {
 
   // Filter clicks replace the URL entry, so Back leaves Explore instead of undoing each click.
   const setFilter = (k: FilterKey, value: string) => setParams(withFilter(params, k, value), { replace: true })
-  const clearFilters = () => setParams(withoutFilters(params), { replace: true })
+  const clearFilters = () => {
+    const next = withoutFilters(params)
+    next.delete('community')
+    setParams(next, { replace: true })
+  }
+  const setCommunity = (slug: string) => setParams(withFilter(params, 'community', slug), { replace: true })
   const clearSearch = () => setParams(withFilter(params, 'q', ''))
 
   let body: ReactNode
@@ -281,6 +295,11 @@ export function ExplorePage() {
             </button>
           ))}
         </div>
+        {tab === 'for-you' ? (
+          <div className="mb-4">
+            <CommunitySwitcher value={communitySlug} onChange={setCommunity} />
+          </div>
+        ) : null}
 
         {tab === 'for-you' ? (
           // Phones: one row you can swipe sideways, so the trails stay near the top. Wider: wraps.

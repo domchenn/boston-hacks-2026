@@ -184,8 +184,8 @@ export function TrailDetailPage() {
           </div>
 
           <h2 className="mt-8 text-xl font-bold tracking-[var(--tracking-tight)] md:mt-10">The trail</h2>
-          <RouteMap stops={trail.stops} className="mb-4 aspect-[4/3] lg:hidden" />
-          <TrailStops stops={trail.stops} betweenStopCrumbs={trail.betweenStopCrumbs} />
+          <RouteMap stops={trail.stops} primaryLine={trail.primaryLine} className="mb-4 aspect-[4/3] lg:hidden" />
+          <TrailStops stops={trail.stops} betweenStopCrumbs={trail.betweenStopCrumbs} primaryLine={trail.primaryLine} />
 
           <div className="mt-6 grid gap-4 lg:hidden">
             <TrailGoodToKnow trail={trail} />
@@ -199,7 +199,7 @@ export function TrailDetailPage() {
         </article>
 
         <aside aria-label="Map and details" className="sticky top-24 hidden flex-col gap-4 lg:flex">
-          <RouteMap stops={trail.stops} className="aspect-[400/420]" />
+          <RouteMap stops={trail.stops} primaryLine={trail.primaryLine} className="aspect-[400/420]" />
           <TrailGoodToKnow trail={trail} />
           <TrailCreatorCard trail={trail} />
         </aside>
