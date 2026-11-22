@@ -6,7 +6,7 @@
  *   trails (picked in Make a trail) are visible to starred friends only. Nobody
  *   is told whether they're on your list.
  * Rules are enforced by RLS (migration add_trail_visibility_and_close_friends).
- * Used by ProfilePage (/me).
+ * Used in the profile Settings panel (ProfileSettingsDialog, `embedded`).
  */
 
 import { useEffect, useState } from 'react'
@@ -21,7 +21,7 @@ type Props = {
   isPrivate: boolean
 }
 
-export function PrivacySettings({ viewerId, isPrivate }: Props) {
+export function PrivacySettings({ viewerId, isPrivate, embedded = false }: Props & { embedded?: boolean }) {
   const [privateOn, setPrivateOn] = useState(isPrivate)
   const [savingPrivate, setSavingPrivate] = useState(false)
   const [friends, setFriends] = useState<TrailCreator[] | null>(null)
@@ -82,7 +82,10 @@ export function PrivacySettings({ viewerId, isPrivate }: Props) {
   }
 
   return (
-    <section aria-labelledby="privacy-title" className="mt-6 rounded-card border border-line bg-white px-4 py-4 md:px-5">
+    <section
+      aria-labelledby="privacy-title"
+      className={embedded ? '' : 'mt-6 rounded-card border border-line bg-white px-4 py-4 md:px-5'}
+    >
       <h2 id="privacy-title" className="m-0 text-lg font-bold">
         Friends & privacy
       </h2>

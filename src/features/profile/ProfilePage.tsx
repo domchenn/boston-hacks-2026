@@ -1,20 +1,21 @@
 /**
- * "You" page. /me is the signed-in user (sent to /login or /onboarding first if
- * needed); /u/:username is anyone. Shows avatar, name, university, bio, stats
- * with the questgiver rating, followers / following + Follow (FollowBar), the trail
- * tabs (ProfileTrails.tsx) and, on your own page, Badges, Friends & privacy (private
- * account, close friends) and Friends' activity. Private accounts show a lock note. Layout
+ * Profile page. /me is the signed-in user (sent to /login or /onboarding first if
+ * needed); /u/:username is anyone. Kept short: avatar, name, university, bio, one
+ * line of numbers (followers · following · finished · made, plus the maker rating
+ * once there is one; FollowBar), a strip of your earned badges (BadgeStrip) and
+ * the tabs (ProfileTrails: Finished / Made / Badges on
+ * your own page, Activity on others'). Settings (edit profile, private account,
+ * close friends, log out) sit behind the gear (ProfileSettingsDialog). Private
+ * accounts show a lock note. Layout
  * follows docs/mockups/Mobile-Profile.dc.html.
  * Route: /me and /u/:username · Owner: Gio
  */
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import { CircleAlert, Lock, Settings, Star } from 'lucide-react'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
-import { ProfileBadges } from '@/features/badges/ProfileBadges'
+import { BadgeStrip } from '@/features/badges/BadgeStrip'
 import { FollowBar } from '@/features/friends/FollowBar'
-import { FriendsActivity } from '@/features/friends/FriendsActivity'
-import { PrivacySettings } from '@/features/friends/PrivacySettings'
 import { useSession } from '@/lib/useSession'
 import {
   countMade,
@@ -26,6 +27,7 @@ import {
 } from './api'
 import { CommunitySetting } from '@/features/communities/CommunitySetting'
 import { SHOW_COMMUNITIES } from '@/features/communities/api'
+import { ProfileSettingsDialog } from './ProfileSettingsDialog'
 import { ProfileTrails } from './ProfileTrails'
 import './profile.css'
 
@@ -64,6 +66,7 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
   const [attempt, setAttempt] = useState(0)
   // Bumped after a follow / unfollow, so a private profile's trails reload.
   const [trailsKey, setTrailsKey] = useState(0)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const key = 'id' in by ? `id:${by.id}` : `u:${by.username}`
 
   useEffect(() => {
@@ -153,9 +156,15 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
           </p>
         </div>
         {isOwn && (
-          <Link className="icon-btn profile-head__edit" to="/onboarding?next=%2Fme" aria-label="Edit profile">
+          <button
+            type="button"
+            className="icon-btn profile-head__edit"
+            aria-label="Settings"
+            aria-haspopup="dialog"
+            onClick={() => setSettingsOpen(true)}
+          >
             <Settings aria-hidden />
-          </Link>
+          </button>
         )}
       </header>
 
@@ -166,7 +175,24 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
         isOwn={isOwn}
         name={name}
         onRelationshipChange={() => setTrailsKey((n) => n + 1)}
+        extra={
+          <>
+            {isOwn && finished !== null ? <Stat value={finished} label="finished" /> : null}
+            {made !== null ? <Stat value={made} label="made" /> : null}
+            {rating ? (
+              <>
+                <span aria-hidden> · </span>
+                <span className="inline-flex items-center gap-1">
+                  <Star aria-hidden className="size-3.5 fill-current text-ink" />
+                  <strong className="font-bold text-ink">{rating.average.toFixed(1)}</strong>
+                  <span>as a maker ({rating.count})</span>
+                </span>
+              </>
+            ) : null}
+          </>
+        }
       />
+      {isOwn ? <BadgeStrip userId={profile.id} /> : null}
       {profile.is_private && !isOwn ? (
         <p className="mt-3 mb-0 flex items-center gap-2 rounded-card bg-paper px-4 py-3 text-sm text-ink-2">
           <Lock aria-hidden className="size-4 flex-none" />
@@ -174,45 +200,29 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
         </p>
       ) : null}
 
-      <dl className="profile-stats" style={{ '--cols': isOwn ? 3 : 2 } as CSSProperties}>
-        {isOwn && (
-          <div>
-            <dt>Finished</dt>
-            <dd>{finished ?? '–'}</dd>
-          </div>
-        )}
-        <div>
-          <dt>Made</dt>
-          <dd>{made ?? '–'}</dd>
-        </div>
-        <div>
-          <dt>
-            Rating<span className="sr-only"> as a trail maker</span>
-          </dt>
-          <dd>
-            {rating ? (
-              <span className="rating profile-stats__rating">
-                <Star aria-hidden />
-                {rating.average.toFixed(1)}
-                <small>({rating.count})</small>
-              </span>
-            ) : (
-              <span className="profile-stats__none">No ratings yet</span>
-            )}
-          </dd>
-        </div>
-      </dl>
-
       {/* Join BU / BC (or none). Reloads the header so the new community shows. */}
       {isOwn && SHOW_COMMUNITIES ? <CommunitySetting onChanged={() => setAttempt((n) => n + 1)} /> : null}
-      {isOwn ? <ProfileBadges userId={profile.id} /> : null}
+      <ProfileTrails key={trailsKey} userId={profile.id} isOwn={isOwn} name={name} viewerId={viewerId} />
 
-      <ProfileTrails key={trailsKey} userId={profile.id} isOwn={isOwn} name={name} />
       {isOwn && viewerId ? (
-        <PrivacySettings viewerId={viewerId} isPrivate={profile.is_private} />
+        <ProfileSettingsDialog
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          viewerId={viewerId}
+          isPrivate={profile.is_private}
+        />
       ) : null}
-      {isOwn && viewerId ? <FriendsActivity viewerId={viewerId} /> : null}
     </div>
+  )
+}
+
+/** " · 2 made" in the numbers line. */
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <>
+      <span aria-hidden> · </span>
+      <strong className="font-bold text-ink">{value}</strong> {label}
+    </>
   )
 }
 
@@ -254,7 +264,7 @@ function ProfileSkeleton() {
           <span className="profile-skeleton profile-skeleton--line" style={{ width: '6rem', marginTop: 8 }} />
         </div>
       </div>
-      <div className="profile-stats profile-skeleton" style={{ height: 76 }} />
+      <span className="profile-skeleton profile-skeleton--line" style={{ width: '16rem', marginTop: 14 }} />
     </div>
   )
 }

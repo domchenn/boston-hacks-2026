@@ -1,6 +1,8 @@
 /**
- * The trail tabs on the You page. Your own page: Finished / Saved / Signed up /
- * Made (progress tabs are private). Someone else's: just their published trails.
+ * The tabs on a profile. Your own page: Finished (private progress) / Made /
+ * Badges (ProfileBadges); saved trails have their own Saved page. Someone else's: Trails
+ * (their published trails) / Activity (PersonActivity: what they made, finished
+ * or joined, if you follow them).
  * The open tab lives in ?tab= so it survives refresh and can be linked. Each tab
  * has loading, error and empty states (empty-trail.svg, per the style guide).
  * Cards use the style guide's .trail-card; swap in the shared TrailCard (task J1)
@@ -10,23 +12,42 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { CircleAlert, Pencil } from 'lucide-react'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
+import { ProfileBadges } from '@/features/badges/ProfileBadges'
+import { PersonActivity } from '@/features/friends/FriendsActivity'
 import { getMadeTrails, getMyTrails, type ProfileTrail, type ProgressTab, type Result } from './api'
 
-type TabId = 'finished' | 'saved' | 'signed-up' | 'made'
+type TrailTabId = 'finished' | 'made'
+type TabId = TrailTabId | 'badges' | 'activity'
 
-const TABS: Record<TabId, { label: string; status: ProgressTab | null }> = {
+const TABS: Record<TrailTabId, { label: string; status: ProgressTab | null }> = {
   finished: { label: 'Finished', status: 'completed' },
-  saved: { label: 'Saved', status: 'saved' },
-  'signed-up': { label: 'Signed up', status: 'signed_up' },
   made: { label: 'Made', status: null },
 }
-const OWN_TABS: TabId[] = ['finished', 'saved', 'signed-up', 'made']
+const LABELS: Record<TabId, string> = {
+  finished: 'Finished',
+  made: 'Made',
+  badges: 'Badges',
+  activity: 'Activity',
+}
+const OWN_TABS: TabId[] = ['finished', 'made', 'badges']
+const OTHER_TABS: TabId[] = ['made', 'activity']
 
-export function ProfileTrails({ userId, isOwn, name }: { userId: string; isOwn: boolean; name: string }) {
+export function ProfileTrails({
+  userId,
+  isOwn,
+  name,
+  viewerId,
+}: {
+  userId: string
+  isOwn: boolean
+  name: string
+  viewerId: string | null
+}) {
   const id = useId()
   const [searchParams, setSearchParams] = useSearchParams()
   const requested = searchParams.get('tab') as TabId | null
-  const tab: TabId = isOwn ? (requested && OWN_TABS.includes(requested) ? requested : 'finished') : 'made'
+  const tabs = isOwn ? OWN_TABS : OTHER_TABS
+  const tab: TabId = requested && tabs.includes(requested) ? requested : tabs[0]
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({})
 
   function select(next: TabId, focus = false) {
@@ -42,34 +63,23 @@ export function ProfileTrails({ userId, isOwn, name }: { userId: string; isOwn: 
 
   // Arrow keys move between tabs (WAI-ARIA tabs pattern).
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    const index = OWN_TABS.indexOf(tab)
+    const index = tabs.indexOf(tab)
     const moves: Record<string, number> = {
       ArrowRight: index + 1,
       ArrowLeft: index - 1,
       Home: 0,
-      End: OWN_TABS.length - 1,
+      End: tabs.length - 1,
     }
     if (!(event.key in moves)) return
     event.preventDefault()
-    const nextIndex = (moves[event.key] + OWN_TABS.length) % OWN_TABS.length
-    select(OWN_TABS[nextIndex], true)
-  }
-
-  if (!isOwn) {
-    return (
-      <section className="profile-trails" aria-labelledby={`${id}-made`}>
-        <h2 id={`${id}-made`} className="profile-section-title">
-          Trails by {name}
-        </h2>
-        <TrailList key={`${userId}:made`} userId={userId} tab="made" isOwn={false} name={name} />
-      </section>
-    )
+    const nextIndex = (moves[event.key] + tabs.length) % tabs.length
+    select(tabs[nextIndex], true)
   }
 
   return (
     <section className="profile-trails">
-      <div className="tabs profile-tabs" role="tablist" aria-label="Your trails">
-        {OWN_TABS.map((t) => (
+      <div className="tabs profile-tabs" role="tablist" aria-label={isOwn ? 'Your trails and badges' : `${name}’s trails`}>
+        {tabs.map((t) => (
           <button
             key={t}
             ref={(el) => {
@@ -85,12 +95,20 @@ export function ProfileTrails({ userId, isOwn, name }: { userId: string; isOwn: 
             onClick={() => select(t)}
             onKeyDown={onTabKeyDown}
           >
-            {TABS[t].label}
+            {!isOwn && t === 'made' ? 'Trails' : LABELS[t]}
           </button>
         ))}
       </div>
       <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-tab-${tab}`}>
-        <TrailList key={`${userId}:${tab}`} userId={userId} tab={tab} isOwn name={name} />
+        {tab === 'badges' ? (
+          <ProfileBadges userId={userId} />
+        ) : tab === 'activity' ? (
+          viewerId ? (
+            <PersonActivity viewerId={viewerId} personId={userId} name={name} />
+          ) : null
+        ) : (
+          <TrailList key={`${userId}:${tab}`} userId={userId} tab={tab} isOwn={isOwn} name={name} />
+        )}
       </div>
     </section>
   )
@@ -98,7 +116,7 @@ export function ProfileTrails({ userId, isOwn, name }: { userId: string; isOwn: 
 
 type ListState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; trails: ProfileTrail[] }
 
-function TrailList({ userId, tab, isOwn, name }: { userId: string; tab: TabId; isOwn: boolean; name: string }) {
+function TrailList({ userId, tab, isOwn, name }: { userId: string; tab: TrailTabId; isOwn: boolean; name: string }) {
   const [state, setState] = useState<ListState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
 
@@ -177,7 +195,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const dayFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
-const whenFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })
 
 /** Style guide stats: "~$20 · 2 hr", "Free" when it costs nothing. */
 function statsFor(trail: ProfileTrail): string[] {
@@ -196,20 +213,16 @@ function statsFor(trail: ProfileTrail): string[] {
  * Eyebrow text and status colour, per the style guide's card states:
  * finished = green, scheduled = blue, anytime = orange.
  */
-function eyebrowFor(trail: ProfileTrail, tab: TabId): { text: string; variant: 'done' | 'scheduled' | 'anytime' | 'draft' } {
+function eyebrowFor(trail: ProfileTrail, tab: TrailTabId): { text: string; variant: 'done' | 'scheduled' | 'anytime' | 'draft' } {
   if (tab === 'finished') {
     return { text: trail.completedAt ? `Finished · ${dayFormat.format(new Date(trail.completedAt))}` : 'Finished', variant: 'done' }
   }
   if (trail.trailStatus === 'draft') return { text: 'Draft', variant: 'draft' }
   const category = trail.category ? CATEGORY_LABELS[trail.category] ?? null : null
-  if (trail.scheduledAt) {
-    const when = whenFormat.format(new Date(trail.scheduledAt))
-    return { text: [tab === 'signed-up' ? 'Going' : category, when].filter(Boolean).join(' · '), variant: 'scheduled' }
-  }
-  return { text: [category, 'Anytime'].filter(Boolean).join(' · '), variant: 'anytime' }
+  return { text: category ?? 'Trail', variant: 'anytime' }
 }
 
-function ProfileTrailCard({ trail, tab }: { trail: ProfileTrail; tab: TabId }) {
+function ProfileTrailCard({ trail, tab }: { trail: ProfileTrail; tab: TrailTabId }) {
   const eyebrow = eyebrowFor(trail, tab)
   const stats = statsFor(trail)
   const meta =
@@ -230,21 +243,11 @@ function ProfileTrailCard({ trail, tab }: { trail: ProfileTrail; tab: TabId }) {
 
 // ---- Empty states ------------------------------------------------------------------
 
-function EmptyTab({ tab, isOwn, name }: { tab: TabId; isOwn: boolean; name: string }) {
-  const copy: Record<TabId, { title: string; text: string; cta: { to: string; label: string } }> = {
+function EmptyTab({ tab, isOwn, name }: { tab: TrailTabId; isOwn: boolean; name: string }) {
+  const copy: Record<TrailTabId, { title: string; text: string; cta: { to: string; label: string } }> = {
     finished: {
       title: 'No finished trails yet',
       text: 'Pick one from Explore and check off its crumbs. It shows up here when you’re done.',
-      cta: { to: '/', label: 'Explore trails' },
-    },
-    saved: {
-      title: 'No saved trails yet',
-      text: 'Save one from your feed, or make your own. It only takes two stops.',
-      cta: { to: '/', label: 'Explore trails' },
-    },
-    'signed-up': {
-      title: 'Nothing on your calendar',
-      text: 'Sign up for a scheduled trail and it shows up here.',
       cta: { to: '/', label: 'Explore trails' },
     },
     made: isOwn
