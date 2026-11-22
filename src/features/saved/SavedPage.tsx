@@ -11,6 +11,8 @@ import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { TrailCard } from '@/components/TrailCard'
 import { ProgressError, progressErrorMessage, unsaveTrail } from '@/lib/api/progress'
 import { useSession } from '@/lib/useSession'
+import { AlsoSavedBy } from '@/features/friends/AlsoSavedBy'
+import { useFriendsAlsoSaved } from '@/features/friends/alsoSaved'
 import { getSavedTrails, type SavedStatus, type SavedTrail } from './api'
 
 const SECTIONS: { status: SavedStatus; title: string }[] = [
@@ -32,6 +34,8 @@ type State = { status: 'loading' } | { status: 'error'; message: string } | { st
 
 function SavedList({ userId }: { userId: string }) {
   const [state, setState] = useState<State>({ status: 'loading' })
+  // Friends who saved the same trails: "Also saved by @joey" under saved cards (friends_also_saved()).
+  const alsoSaved = useFriendsAlsoSaved(userId)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
@@ -108,6 +112,7 @@ function SavedList({ userId }: { userId: string }) {
                 {items.map((trail) => (
                   <li key={trail.id} className="grid content-start gap-1">
                     <TrailCard trail={trail} progress={trail.status} />
+                    {status === 'saved' ? <AlsoSavedBy friends={alsoSaved?.get(trail.id)} className="px-1" /> : null}
                     {status === 'saved' ? <RemoveButton trail={trail} onRemoved={() => removeTrail(trail.id)} /> : null}
                   </li>
                 ))}

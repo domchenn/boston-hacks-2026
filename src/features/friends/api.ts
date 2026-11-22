@@ -95,7 +95,7 @@ const CARD_COLUMNS = `id, title, category, neighborhood, estimated_cost, estimat
   sidequest_stops(place_name, stop_order)`
 
 /** Card details (and ratings) for these trails, keyed by id. Trails you can't see are left out. */
-async function loadCards(ids: string[]) {
+export async function loadCards(ids: string[]) {
   const cards = new Map<string, TrailCardData>()
   if (ids.length === 0) return cards
   const [{ data, error }, stats] = await Promise.all([

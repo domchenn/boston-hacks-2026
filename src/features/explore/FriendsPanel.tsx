@@ -2,7 +2,8 @@
  * Explore "Friends" tab (task J7): trails the people you follow made, finished or
  * joined, newest first, each card topped with who did what ("@ben finished · 2 d").
  * Logged out: a nudge to log in. Signed in: a "Find friends" button (FindPeople:
- * opens search + suggestions) is always on top, so you can keep following people; then the
+ * opens search + suggestions) is always on top, so you can keep following people;
+ * then "You both saved" (trails you and a friend both saved); then the
  * activity, or a nudge when there's none. Renders the items of Explore's feed
  * grid. Data: @/features/friends (friends_activity, follows).
  */
@@ -13,6 +14,8 @@ import { TrailCard } from '@/components/TrailCard'
 import type { ActivityItem } from '@/features/friends/api'
 import { ACTIVITY_VERBS, handle, timeAgo } from '@/features/friends/activityFormat'
 import { FindPeople } from '@/features/friends/FindPeople'
+import { BothSavedSection } from '@/features/friends/AlsoSavedBy'
+import { useFriendsAlsoSaved } from '@/features/friends/alsoSaved'
 import { PersonAvatar } from '@/features/friends/FriendsActivity'
 import { useFriendsActivity } from '@/features/friends/useFriendsActivity'
 import { loginPath } from '@/features/trail/trailLinks'
@@ -72,6 +75,8 @@ export function FriendsPanel() {
   const { session, loading: sessionLoading } = useSession()
   const viewerId = session?.user.id ?? null
   const { loading, activity, following, error, reload } = useFriendsActivity(viewerId, ACTIVITY_LIMIT)
+  // Trails you and a friend both saved, shown on top ("You both saved").
+  const alsoSaved = useFriendsAlsoSaved(viewerId)
 
   if (sessionLoading) return <Skeleton />
   if (!viewerId) {
@@ -84,7 +89,12 @@ export function FriendsPanel() {
       </PanelMessage>
     )
   }
-  const findPeople = <FindPeople viewerId={viewerId} onFollowChange={reload} />
+  const findPeople = (
+    <>
+      <FindPeople viewerId={viewerId} onFollowChange={reload} />
+      <BothSavedSection alsoSaved={alsoSaved} />
+    </>
+  )
   if (loading) {
     return (
       <>
