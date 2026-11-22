@@ -2,7 +2,7 @@
  * Make a trail (docs/mockups/Web-Create + Mobile-Create): basics (name,
  * description, category, anytime vs. a date), 2–8 stops picked from the place
  * library or added by hand, a crumb at each stop and how to get there, a live
- * preview card, and the "Ready to publish" checklist. Save draft / Publish trail
+ * preview card with a route map, and the "Ready to publish" checklist. Save draft / Publish trail
  * call save_trail() through ./api, which saves everything in one transaction.
  * Logged-out users are sent to /login?next=/make.
  * Route: /make · Owner: Dom
@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Check, Circle, X } from 'lucide-react'
 import { Navigate, useNavigate } from 'react-router'
+import { RouteMap } from '@/components/RouteMap'
 import { TrailCard } from '@/components/TrailCard'
 import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
@@ -404,6 +405,19 @@ function MakeTrailForm() {
               <TrailCard trail={preview} />
             </div>
           </div>
+
+          {draft.stops.length > 0 ? (
+            <RouteMap
+              className="aspect-[4/3]"
+              stops={draft.stops.map((s, i) => ({
+                id: s.key,
+                placeName: s.placeName,
+                latitude: s.latitude,
+                longitude: s.longitude,
+                travelModeToStop: i === 0 ? null : s.travelMode,
+              }))}
+            />
+          ) : null}
 
           <Panel title="Estimates">
             <dl className="grid grid-cols-2 gap-3 text-sm">

@@ -50,6 +50,7 @@ Set these in `.env`. That file is gitignored, so never commit it.
 | --- | --- |
 | `VITE_SUPABASE_URL` | Supabase Dashboard → Project Settings → API → Project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Same page → **publishable** key (or the legacy `anon` key) |
+| `VITE_GOOGLE_MAPS_API_KEY` *(optional)* | Google Cloud Console → a browser key with **Maps JavaScript API** and **Directions API** enabled, restricted to `http://localhost:5173/*` and the Vercel domain. Without it, maps show a stop list with Google Maps links. |
 
 Anything prefixed with `VITE_` is shipped to the browser. **Never** put the `service_role` or secret key in this app. Security is enforced by Row Level Security in the database, not by the frontend.
 

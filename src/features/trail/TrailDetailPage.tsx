@@ -2,13 +2,14 @@
  * Trail detail page (docs/mockups/Web-Detail + Mobile-Detail), loaded with getTrail(id):
  * eyebrow, title, cost / time / stops / crumbs / rating, description, Start trail /
  * Save / Join (TrailActions), the stops with crumbs, Good to know, the creator and
- * reviews. Map on the right is a placeholder for now. Phones get a sticky action bar.
+ * reviews. The route map (RouteMap) sits on the right on desktop and above the stops on phones. Phones get a sticky action bar.
  * Route: /trails/:id · Owner: Jason
  */
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronLeft, MapIcon, Star } from 'lucide-react'
+import { ChevronLeft, Star } from 'lucide-react'
 import { Link, useParams } from 'react-router'
+import { RouteMap } from '@/components/RouteMap'
 import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
@@ -166,6 +167,7 @@ export function TrailDetailPage() {
           </div>
 
           <h2 className="mt-8 text-xl font-bold tracking-[var(--tracking-tight)] md:mt-10">The trail</h2>
+          <RouteMap stops={trail.stops} className="mb-4 aspect-[4/3] lg:hidden" />
           <TrailStops stops={trail.stops} betweenStopCrumbs={trail.betweenStopCrumbs} />
 
           <div className="mt-6 grid gap-4 lg:hidden">
@@ -178,13 +180,7 @@ export function TrailDetailPage() {
         </article>
 
         <aside aria-label="Map and details" className="sticky top-24 hidden flex-col gap-4 lg:flex">
-          <div className="grid aspect-[400/420] place-items-center rounded-card border border-line bg-sand p-8 text-center">
-            <div>
-              <MapIcon aria-hidden className="mx-auto size-8 text-muted-foreground" />
-              <p className="mt-3 font-bold text-ink">Map coming soon</p>
-              <p className="mt-1 text-sm text-muted-foreground">The stops will show here on a real map of Boston.</p>
-            </div>
-          </div>
+          <RouteMap stops={trail.stops} className="aspect-[400/420]" />
           <TrailGoodToKnow trail={trail} />
           <TrailCreatorCard trail={trail} />
         </aside>
