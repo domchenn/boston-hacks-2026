@@ -185,19 +185,6 @@ export async function unsaveTrail(trailId: string): Promise<void> {
   }
 }
 
-/** Sign up for a scheduled trail (status 'signed_up'). Only works if scheduled_at is set. */
-export function joinTrail(trailId: string): Promise<void> {
-  return transition(trailId, 'signed_up', [null, 'saved', 'aborted'])
-}
-
-/**
- * Leave a scheduled trail you signed up for: back to 'saved', so it stays
- * bookmarked (unsave it to remove it entirely). Added in task G5.
- */
-export function leaveTrail(trailId: string): Promise<void> {
-  return transition(trailId, 'saved', ['signed_up'])
-}
-
 /** Start the trail (status 'in_progress'). Resumes if already started. */
 export function startTrail(trailId: string): Promise<void> {
   return transition(trailId, 'in_progress', [null, 'saved', 'signed_up', 'aborted'])

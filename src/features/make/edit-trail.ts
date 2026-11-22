@@ -67,12 +67,6 @@ export async function loadStopLibrary(
   }
 }
 
-/** ISO time → the "YYYY-MM-DDTHH:mm" a datetime-local input expects, in the user's time zone. */
-export function toLocalInput(iso: string): string {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 /** The Make a trail form's draft for an existing trail. */
 export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
@@ -96,8 +90,6 @@ export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
     title: trail.title,
     description: trail.description ?? '',
     category: trail.category,
-    when: trail.scheduledAt ? 'scheduled' : 'anytime',
-    scheduledLocal: trail.scheduledAt ? toLocalInput(trail.scheduledAt) : '',
     durationMinutes: trail.estimatedMinutes,
     communityId: trail.communityId,
     visibility: trail.visibility,

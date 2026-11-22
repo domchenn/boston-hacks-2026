@@ -128,7 +128,8 @@ async function loadCards(ids: string[]) {
 export async function loadFriendsActivity(limit = 30): Promise<FriendsActivity> {
   const { data, error } = await supabase.rpc('friends_activity', { p_limit: limit })
   if (error) throw friendlyError(error)
-  const rows = data ?? []
+  // Joining dated trails was removed from the app, so old "joined" items are skipped.
+  const rows = (data ?? []).filter((r) => r.kind !== 'joined')
   const trails = await loadCards([...new Set(rows.map((r) => r.sidequest_id))])
   const items = rows
     .filter((r) => trails.has(r.sidequest_id))

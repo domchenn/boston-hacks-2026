@@ -1,6 +1,6 @@
 /**
  * Make a trail (docs/mockups/Web-Create + Mobile-Create): basics (name,
- * description, category, anytime vs. a date), 2–8 stops picked from the place
+ * description, category), 2–8 stops picked from the place
  * library or added by hand, an optional crumb at each stop and how to get there, a live
  * preview card with a route map, and the "Ready to publish" checklist. Save draft / Publish trail
  * call save_trail() through ./api, which saves everything in one transaction.
@@ -85,14 +85,12 @@ function formatMinutes(minutes: number) {
 const MISSING_TEXT: Record<ChecklistKey, string> = {
   basics: 'a name and a category',
   stops: 'at least 2 stops',
-  date: 'a future date',
 }
 
 /** Where to scroll for each missing checklist item. */
 const MISSING_TARGET: Record<ChecklistKey, string> = {
   basics: 'trail-basics',
   stops: 'trail-stops',
-  date: 'trail-when',
 }
 
 /** White rounded box used for each section of the form. */
@@ -272,8 +270,6 @@ export function MakeTrailForm({
     neighborhood: draft.stops[0]?.neighborhood ?? null,
     estimatedCost: cost,
     estimatedMinutes: minutes,
-    scheduledAt:
-      draft.when === 'scheduled' && draft.scheduledLocal ? new Date(draft.scheduledLocal).toISOString() : null,
     stopCount: Math.max(draft.stops.length, 2),
     firstStopName: draft.stops[0]?.placeName ?? null,
     lastStopName: draft.stops.length > 1 ? draft.stops[draft.stops.length - 1].placeName : null,
@@ -382,7 +378,7 @@ export function MakeTrailForm({
                   onChange={(e) => update({ description: e.target.value })}
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div>
                 <fieldset>
                   <legend className={labelClass}>
                     Category
@@ -404,33 +400,6 @@ export function MakeTrailForm({
                       </button>
                     ))}
                   </div>
-                </fieldset>
-                <fieldset id="trail-when" className="scroll-mt-24">
-                  <legend className={labelClass}>When</legend>
-                  <div className="flex gap-2">
-                    {(['anytime', 'scheduled'] as const).map((when) => (
-                      <button
-                        key={when}
-                        type="button"
-                        className="tab flex-1"
-                        aria-pressed={draft.when === when}
-                        aria-selected={draft.when === when}
-                        onClick={() => update({ when })}
-                      >
-                        {when === 'anytime' ? 'Anytime' : 'Pick a date'}
-                      </button>
-                    ))}
-                  </div>
-                  {draft.when === 'scheduled' ? (
-                    <input
-                      type="datetime-local"
-                      aria-label="Date and time"
-                      className={cn(fieldClass, 'mt-2', missing('date') && 'border-crumb-strong')}
-                      value={draft.scheduledLocal}
-                      onChange={(e) => update({ scheduledLocal: e.target.value })}
-                    />
-                  ) : null}
-                  <p className="mt-1.5 text-sm text-muted-foreground">Dated trails show a time and let people join.</p>
                 </fieldset>
               </div>
               <fieldset>

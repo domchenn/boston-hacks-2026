@@ -53,9 +53,6 @@ export type TrailDraft = {
   title: string
   description: string
   category: Category | null
-  when: 'anytime' | 'scheduled'
-  /** Value of a datetime-local input, e.g. "2026-11-29T11:00", in the user's time zone. */
-  scheduledLocal: string
   /** Minutes; null = use the suggestion. */
   durationMinutes: number | null
   /** Who can see it: null = everyone, else only this community (task G6). */
@@ -71,8 +68,6 @@ export const emptyDraft = (): TrailDraft => ({
   title: '',
   description: '',
   category: null,
-  when: 'anytime',
-  scheduledLocal: '',
   durationMinutes: null,
   communityId: null,
   visibility: 'public',
@@ -92,17 +87,14 @@ export function suggestedMinutes(stopCount: number): number | null {
   return Math.max(30, Math.round((stopCount * 45) / 30) * 30)
 }
 
-export type ChecklistKey = 'basics' | 'stops' | 'date'
+export type ChecklistKey = 'basics' | 'stops'
 export type ChecklistItem = { key: ChecklistKey; label: string; done: boolean }
 
 /** The "Ready to publish" list. Publishing is allowed when every item is done. Crumbs are optional. */
 export function publishChecklist(draft: TrailDraft): ChecklistItem[] {
-  const scheduledOk =
-    draft.when === 'anytime' || (draft.scheduledLocal !== '' && new Date(draft.scheduledLocal).getTime() > Date.now())
   return [
     { key: 'basics', label: 'A name and a category', done: draft.title.trim() !== '' && draft.category !== null },
     { key: 'stops', label: `At least ${MIN_STOPS} stops`, done: draft.stops.length >= MIN_STOPS },
-    { key: 'date', label: 'A future date (dated trails only)', done: scheduledOk },
   ]
 }
 
@@ -116,8 +108,8 @@ export function toSavePayload(draft: TrailDraft, status: 'draft' | 'published') 
     title: draft.title.trim(),
     description: draft.description.trim() || null,
     category: draft.category,
-    scheduled_at:
-      draft.when === 'scheduled' && draft.scheduledLocal ? new Date(draft.scheduledLocal).toISOString() : null,
+    // Trails are go-anytime: saving clears any date an old trail had.
+    scheduled_at: null,
     status,
     estimated_cost: cost,
     estimated_duration_minutes: minutes,

@@ -37,9 +37,8 @@ export function PrivacyPage() {
           reviews and trail photos are public.
         </li>
         <li>
-          <b>Your progress:</b> which trails you saved, joined, started or finished, and which crumbs you ticked. This is
-          private to you, except finished trails can appear on your profile and to people who follow you, and the
-          number of people going to a scheduled trail is shown.
+          <b>Your progress:</b> which trails you saved, started or finished, and which crumbs you ticked. This is
+          private to you, except finished trails can appear on your profile and to people who follow you.
         </li>
         <li>
           <b>Reports</b> you send about content, so our team can review them.
