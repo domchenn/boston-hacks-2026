@@ -1,7 +1,7 @@
 /**
  * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main): tabs For you /
  * Nearby (./NearbyPanel) / Friends (./FriendsPanel), filters (category, neighborhood,
- * cost, length, Late night, Near a T station), a grid of TrailCards and, on wide
+ * cost range, length, Late night, Near a T station), a grid of TrailCards and, on wide
  * screens, a map of where the shown trails start (TrailsMap). Hovering a card
  * highlights its pin and vice versa; clicking a pin opens the trail.
  * Filters and the header search (?q=) live in the URL so a filtered feed can be
@@ -23,7 +23,6 @@ import { loadNeighborhoods, loadTrails, matchesSearch, NEAR_T_MILES, type MapTra
 import { NearbyPanel } from './NearbyPanel'
 import {
   CATEGORY_OPTIONS,
-  COST_OPTIONS,
   FILTER_KEYS,
   LENGTH_OPTIONS,
   readFilterValues,
@@ -32,6 +31,7 @@ import {
   withoutFilters,
   type FilterKey,
 } from './filters'
+import { CostRangeFilter } from './CostRangeFilter'
 
 type Tab = 'for-you' | 'nearby' | 'friends'
 
@@ -194,6 +194,8 @@ export function ExplorePage() {
 
   // Filter clicks replace the URL entry, so Back leaves Explore instead of undoing each click.
   const setFilter = (k: FilterKey, value: string) => setParams(withFilter(params, k, value), { replace: true })
+  const setCost = (min: string, max: string) =>
+    setParams(withFilter(withFilter(withFilter(params, 'cost_min', min), 'cost_max', max), 'cost', ''), { replace: true })
   const clearFilters = () => {
     const next = withoutFilters(params)
     next.delete('community')
@@ -332,7 +334,14 @@ export function ExplorePage() {
               options={neighborhoodOptions}
               onChange={(v) => setFilter('neighborhood', v)}
             />
-            <FilterSelect label="Cost" value={values.cost} options={COST_OPTIONS} onChange={(v) => setFilter('cost', v)} />
+            <CostRangeFilter
+              min={values.cost_min}
+              max={values.cost_max}
+              onChange={setCost}
+              pillClass={pill}
+              onClass={pillOn}
+              offClass={pillOff}
+            />
             <FilterSelect
               label="Length"
               value={values.length}

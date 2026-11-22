@@ -1,6 +1,7 @@
 /**
  * Explore's filters live in the URL so a filtered feed can be shared:
- *   /?category=food_drink&neighborhood=North%20End&cost=20&length=120&late=1&near_t=1&q=pizza
+ *   /?category=food_drink&neighborhood=North%20End&cost_min=10&cost_max=25&length=120&late=1&near_t=1&q=pizza
+ * (Old links with ?cost=20 still work: it's read as "up to $20".)
  * readFilters() turns the query string into ExploreFilters (ignoring values it doesn't
  * know); withFilter() returns new params with one filter changed. Used by ExplorePage
  * and the header search (which keeps the filters when you search).
@@ -15,13 +16,26 @@ export const CATEGORY_OPTIONS = [
   ...(Object.entries(CATEGORY_LABELS) as [Category, string][]).map(([value, label]) => ({ value, label })),
 ]
 
-export const COST_OPTIONS = [
-  { value: '', label: 'Any cost' },
-  { value: '0', label: 'Free' },
-  { value: '10', label: 'Under $10' },
-  { value: '20', label: 'Under $20' },
-  { value: '35', label: 'Under $35' },
+/** Quick picks in the Cost filter. min/max are dollars per person; '' = no limit. */
+export const COST_PRESETS = [
+  { label: 'Free', min: '', max: '0' },
+  { label: 'Under $10', min: '', max: '10' },
+  { label: 'Under $25', min: '', max: '25' },
+  { label: '$10–$25', min: '10', max: '25' },
+  { label: '$25+', min: '25', max: '' },
 ]
+
+/** "$10–$25", "Under $20", "$25+", "Free" or "Any cost", for the Cost pill. */
+export function costLabel(min: string, max: string) {
+  if (min === '' && max === '') return 'Any cost'
+  if (max === '0') return 'Free'
+  if (min === '' || min === '0') return `Under $${max}`
+  if (max === '') return `$${min}+`
+  return `$${min}–$${max}`
+}
+
+/** A whole number of dollars from the URL, or '' if it isn't one. */
+const dollars = (value: string | null) => (value !== null && /^\d{1,4}$/.test(value) ? String(Number(value)) : '')
 
 export const LENGTH_OPTIONS = [
   { value: '', label: 'Any length' },
@@ -31,7 +45,7 @@ export const LENGTH_OPTIONS = [
 ]
 
 /** The query-string names of every Explore filter (q is the header search). */
-export const FILTER_KEYS = ['category', 'neighborhood', 'cost', 'length', 'late', 'near_t'] as const
+export const FILTER_KEYS = ['category', 'neighborhood', 'cost_min', 'cost_max', 'length', 'late', 'near_t'] as const
 export type FilterKey = (typeof FILTER_KEYS)[number]
 
 const known = (options: { value: string }[], value: string | null) =>
@@ -42,7 +56,8 @@ export function readFilterValues(params: URLSearchParams): Record<FilterKey, str
   return {
     category: known(CATEGORY_OPTIONS, params.get('category')),
     neighborhood: params.get('neighborhood')?.trim() ?? '',
-    cost: known(COST_OPTIONS, params.get('cost')),
+    cost_min: dollars(params.get('cost_min')),
+    cost_max: dollars(params.get('cost_max') ?? params.get('cost')),
     length: known(LENGTH_OPTIONS, params.get('length')),
     late: params.get('late') === '1' ? '1' : '',
     near_t: params.get('near_t') === '1' ? '1' : '',
@@ -54,7 +69,8 @@ export function toExploreFilters(values: Record<FilterKey, string>): ExploreFilt
   return {
     category: (values.category || undefined) as Category | undefined,
     neighborhood: values.neighborhood || undefined,
-    maxCost: values.cost === '' ? undefined : Number(values.cost),
+    minCost: values.cost_min === '' ? undefined : Number(values.cost_min),
+    maxCost: values.cost_max === '' ? undefined : Number(values.cost_max),
     maxMinutes: values.length === '' ? undefined : Number(values.length),
     lateNight: values.late === '1' || undefined,
     nearT: values.near_t === '1' || undefined,
@@ -62,7 +78,7 @@ export function toExploreFilters(values: Record<FilterKey, string>): ExploreFilt
 }
 
 /** A copy of `params` with one filter set (or removed when value is ''). */
-export function withFilter(params: URLSearchParams, key: FilterKey | 'q' | 'community', value: string) {
+export function withFilter(params: URLSearchParams, key: FilterKey | 'q' | 'community' | 'cost', value: string) {
   const next = new URLSearchParams(params)
   if (value) next.set(key, value)
   else next.delete(key)
@@ -73,5 +89,6 @@ export function withFilter(params: URLSearchParams, key: FilterKey | 'q' | 'comm
 export function withoutFilters(params: URLSearchParams) {
   const next = new URLSearchParams(params)
   for (const key of FILTER_KEYS) next.delete(key)
+  next.delete('cost') // the old single "up to" cost filter
   return next
 }
