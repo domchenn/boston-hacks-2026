@@ -52,3 +52,14 @@ export function googleStepColor(step: google.maps.DirectionsStep): string {
   if (line?.color) return line.color
   return WALK_COLOR
 }
+
+/** The same colors for a step from the Routes API (google.maps.routes), which replaced Directions. */
+export function routesStepColor(step: google.maps.routes.RouteLegStep): string {
+  if (step.travelMode === 'WALKING') return WALK_COLOR
+  if (step.travelMode === 'BICYCLING') return BIKE_COLOR
+  const line = step.transitDetails?.transitLine
+  const vehicle = line?.vehicle?.vehicleType
+  if (vehicle === 'BUS' || vehicle === 'TROLLEYBUS') return BUS_COLOR
+  if (line?.color) return line.color
+  return WALK_COLOR
+}

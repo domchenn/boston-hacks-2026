@@ -1,6 +1,7 @@
 /**
  * Map of a trail: numbered stop markers (.num-ring) and the real walking /
- * transit / biking route between stops from the Google Directions service, drawn
+ * transit / biking route between stops from Google (Routes API, or the legacy
+ * Directions service if that isn't enabled for the key), drawn
  * as the style guide's dotted line in each leg's color: walking orange, T rides in
  * their line's color, bus yellow, Bluebikes blue (@/lib/transitColors). In "live" mode it also shows the
  * user's position (passed in by the page, never stored) and keeps it in view.
@@ -22,7 +23,7 @@ import {
   loadGoogleMaps,
   type LatLng,
 } from '@/lib/maps'
-import { WALK_COLOR, googleStepColor, legColor } from '@/lib/transitColors'
+import { WALK_COLOR, googleStepColor, legColor, routesStepColor } from '@/lib/transitColors'
 import type { TransitLine, TravelMode } from '@/types/db-values'
 
 export type RouteMapStop = {
@@ -103,17 +104,41 @@ function dottedLine(maps: typeof google.maps, map: google.maps.Map, path: google
   })
 }
 
-/** The route for one leg from the Directions service, split into colored segments, or null if there isn't one. */
+/** Colored segments from the Routes API (the current Google service), or null if it can't route. */
+async function routesApiSegments(maps: typeof google.maps, from: LatLng, to: LatLng, mode: TravelMode | null) {
+  try {
+    const { Route } = (await maps.importLibrary('routes')) as google.maps.RoutesLibrary
+    const travelMode = ({ walking: 'WALKING', transit: 'TRANSIT', bicycling: 'BICYCLING' } as const)[googleTravelMode(mode)]
+    const { routes } = await Route.computeRoutes({ origin: from, destination: to, travelMode, fields: ['legs'] })
+    const steps = routes?.[0]?.legs?.flatMap((leg) => leg.steps) ?? []
+    const segments: Segment[] = steps
+      .filter((step) => step.path.length > 1)
+      .map((step) => ({ path: step.path.map((p) => new maps.LatLng(p.lat, p.lng)), color: routesStepColor(step) }))
+    return segments.length ? segments : null
+  } catch {
+    return null // Routes API not enabled for this key, or no route
+  }
+}
+
+/**
+ * The route for one leg, split into colored segments (a T ride in its line's
+ * color, the walks around it in orange), or null if there isn't one. Tries the
+ * Routes API, then the legacy Directions service.
+ */
 async function routeForLeg(maps: typeof google.maps, from: LatLng, to: LatLng, mode: TravelMode | null) {
   const key = `${from.lat},${from.lng}|${to.lat},${to.lng}|${googleTravelMode(mode)}`
   if (legCache.has(key)) return legCache.get(key) ?? null
+  const fromRoutes = await routesApiSegments(maps, from, to, mode)
+  if (fromRoutes) {
+    legCache.set(key, fromRoutes)
+    return fromRoutes
+  }
   const travelMode = { walking: maps.TravelMode.WALKING, transit: maps.TravelMode.TRANSIT, bicycling: maps.TravelMode.BICYCLING }[
     googleTravelMode(mode)
   ]
   try {
     const result = await new maps.DirectionsService().route({ origin: from, destination: to, travelMode })
     const steps = result.routes[0]?.legs.flatMap((leg) => leg.steps) ?? []
-    // One segment per step, so a T ride is drawn in its line's color and the walks around it in orange.
     const segments: Segment[] = steps
       .filter((step) => step.path?.length)
       .map((step) => ({ path: step.path, color: googleStepColor(step) }))
