@@ -20,5 +20,8 @@ export type TravelMode = 'walk' | 'bike' | 'bus' | 'train'
 /** sidequests.primary_line: main T line, sets the card colour */
 export type TransitLine = 'rl' | 'gl' | 'bl' | 'ol' | 'sl' | 'cr'
 
+/** sidequests.visibility: who can see a published trail */
+export type TrailVisibility = 'public' | 'friends' | 'close_friends'
+
 /** checklist_items.item_type */
 export type ChecklistItemType = 'see' | 'do'

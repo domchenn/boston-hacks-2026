@@ -2,17 +2,19 @@
  * "You" page. /me is the signed-in user (sent to /login or /onboarding first if
  * needed); /u/:username is anyone. Shows avatar, name, university, bio, stats
  * with the questgiver rating, followers / following + Follow (FollowBar), the trail
- * tabs (ProfileTrails.tsx) and, on your own page, Badges and Friends' activity. Layout
+ * tabs (ProfileTrails.tsx) and, on your own page, Badges, Friends & privacy (private
+ * account, close friends) and Friends' activity. Private accounts show a lock note. Layout
  * follows docs/mockups/Mobile-Profile.dc.html.
  * Route: /me and /u/:username · Owner: Gio
  */
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
-import { CircleAlert, Settings, Star } from 'lucide-react'
+import { CircleAlert, Lock, Settings, Star } from 'lucide-react'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { ProfileBadges } from '@/features/badges/ProfileBadges'
 import { FollowBar } from '@/features/friends/FollowBar'
 import { FriendsActivity } from '@/features/friends/FriendsActivity'
+import { PrivacySettings } from '@/features/friends/PrivacySettings'
 import { useSession } from '@/lib/useSession'
 import {
   countMade,
@@ -60,6 +62,8 @@ type LoadState =
 function ProfileView({ by, viewerId }: { by: { id: string } | { username: string }; viewerId: string | null }) {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  // Bumped after a follow / unfollow, so a private profile's trails reload.
+  const [trailsKey, setTrailsKey] = useState(0)
   const key = 'id' in by ? `id:${by.id}` : `u:${by.username}`
 
   useEffect(() => {
@@ -156,7 +160,19 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
       </header>
 
       {profile.bio && <p className="profile-bio">{profile.bio}</p>}
-      <FollowBar profileId={profile.id} viewerId={viewerId} isOwn={isOwn} name={name} />
+      <FollowBar
+        profileId={profile.id}
+        viewerId={viewerId}
+        isOwn={isOwn}
+        name={name}
+        onRelationshipChange={() => setTrailsKey((n) => n + 1)}
+      />
+      {profile.is_private && !isOwn ? (
+        <p className="mt-3 mb-0 flex items-center gap-2 rounded-card bg-paper px-4 py-3 text-sm text-ink-2">
+          <Lock aria-hidden className="size-4 flex-none" />
+          Private account. Only friends (people who follow each other) can see {name}’s trails.
+        </p>
+      ) : null}
 
       <dl className="profile-stats" style={{ '--cols': isOwn ? 3 : 2 } as CSSProperties}>
         {isOwn && (
@@ -191,7 +207,10 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
       {isOwn && SHOW_COMMUNITIES ? <CommunitySetting onChanged={() => setAttempt((n) => n + 1)} /> : null}
       {isOwn ? <ProfileBadges userId={profile.id} /> : null}
 
-      <ProfileTrails userId={profile.id} isOwn={isOwn} name={name} />
+      <ProfileTrails key={trailsKey} userId={profile.id} isOwn={isOwn} name={name} />
+      {isOwn && viewerId ? (
+        <PrivacySettings viewerId={viewerId} isPrivate={profile.is_private} />
+      ) : null}
       {isOwn && viewerId ? <FriendsActivity viewerId={viewerId} /> : null}
     </div>
   )

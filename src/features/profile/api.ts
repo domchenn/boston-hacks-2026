@@ -12,7 +12,7 @@ export type Result<T> = { ok: true; data: T } | { ok: false; message: string }
 
 export type PublicProfile = Pick<
   Tables<'profiles'>,
-  'id' | 'username' | 'display_name' | 'avatar_url' | 'university' | 'bio'
+  'id' | 'username' | 'display_name' | 'avatar_url' | 'university' | 'bio' | 'is_private'
 > & {
   /** The community they joined (BU / BC), if any (task G6). */
   community: { name: string; slug: string | null } | null
@@ -39,7 +39,7 @@ export type ProfileTrail = {
 export type ProgressTab = Extract<UserSidequestStatus, 'completed' | 'saved' | 'signed_up'>
 
 const PROFILE_COLUMNS =
-  'id, username, display_name, avatar_url, university, bio, community:communities!profiles_community_id_fkey(name, slug)'
+  'id, username, display_name, avatar_url, university, bio, is_private, community:communities!profiles_community_id_fkey(name, slug)'
 const TRAIL_COLUMNS =
   'id, title, category, scheduled_at, estimated_cost, estimated_duration_minutes, neighborhood, status'
 

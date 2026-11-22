@@ -8,6 +8,7 @@
  * fields and scrolls to the first one. "+ Add another stop" jumps back to the
  * search box.
  * Logged-out users are sent to /login?next=/make.
+ * Basics also has "Who can see it": everyone / friends / close friends.
  * Route: /make · Owner: Dom
  */
 
@@ -24,6 +25,7 @@ import {
   CATEGORY_OPTIONS,
   MAX_STOPS,
   TRAVEL_OPTIONS,
+  VISIBILITY_OPTIONS,
   canPublish,
   emptyDraft,
   publishChecklist,
@@ -387,6 +389,26 @@ export function MakeTrailForm({
                   <p className="mt-1.5 text-sm text-muted-foreground">Dated trails show a time and let people join.</p>
                 </fieldset>
               </div>
+              <fieldset>
+                <legend className={labelClass}>Who can see it</legend>
+                <div className="flex flex-wrap gap-2">
+                  {VISIBILITY_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className="tab"
+                      aria-pressed={draft.visibility === option.value}
+                      aria-selected={draft.visibility === option.value}
+                      onClick={() => update({ visibility: option.value })}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  {VISIBILITY_OPTIONS.find((o) => o.value === draft.visibility)?.hint}
+                </p>
+              </fieldset>
               {SHOW_COMMUNITIES ? (
                 <VisibilityField
                   value={draft.communityId}

@@ -13,7 +13,7 @@
 import { getGoingCounts } from '@/lib/api/attendees'
 import { supabase } from '@/lib/supabase'
 import type { Tables } from '@/types/database.types'
-import type { Category, SidequestStatus, TransitLine, TravelMode, ChecklistItemType } from '@/types/db-values'
+import type { Category, SidequestStatus, TransitLine, TravelMode, ChecklistItemType, TrailVisibility } from '@/types/db-values'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -131,6 +131,8 @@ export type TrailRemixSource = { id: string; title: string; creator: TrailCreato
 
 export type TrailDetail = Omit<FeedTrail, 'rating'> & {
   status: SidequestStatus
+  /** Who can see it: everyone, the creator's friends, or their close friends. */
+  visibility: TrailVisibility
   communityId: string | null
   /** Set when this trail is a remix and the original is still visible to you; null otherwise. */
   remixedFrom: TrailRemixSource | null
@@ -268,7 +270,7 @@ export async function getTrail(id: string): Promise<TrailDetail | null> {
     .select(
       `id, title, description, category, neighborhood, cover_image_url, estimated_cost,
        estimated_duration_minutes, scheduled_at, primary_line, is_curated, created_at,
-       status, community_id, remixed_from,
+       status, visibility, community_id, remixed_from,
        creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS}),
        sidequest_stops(id, stop_order, place_name, address, latitude, longitude, description,
                        planned_activity, travel_mode_to_stop, estimated_cost, notes),
@@ -330,6 +332,7 @@ export async function getTrail(id: string): Promise<TrailDetail | null> {
     isCurated: row.is_curated,
     createdAt: row.created_at,
     status: row.status as SidequestStatus,
+    visibility: row.visibility as TrailVisibility,
     communityId: row.community_id,
     remixedFrom: row.remixed_from ? await fetchRemixSource(row.remixed_from) : null,
     creator: row.creator,
