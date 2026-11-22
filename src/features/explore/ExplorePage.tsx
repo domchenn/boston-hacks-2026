@@ -2,7 +2,8 @@
  * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main): tabs For you /
  * Nearby (./NearbyPanel) / Friends (./FriendsPanel), filters (category, neighborhood,
  * cost range, length, Late night, Near a T station), a grid of TrailCards and, on wide
- * screens, a map of where the shown trails start (TrailsMap). Hovering a card
+ * screens, a map of where the shown trails start (TrailsMap), its top level with
+ * the tabs (the title spans both columns). Hovering a card
  * highlights its pin and vice versa; clicking a pin opens the trail.
  * Filters and the header search (?q=) live in the URL so a filtered feed can be
  * shared (see ./filters). Data: loadTrails() and loadNeighborhoods() in ./api.
@@ -283,156 +284,157 @@ export function ExplorePage() {
   const showCount = ready && trails.length > 0 && (q !== '' || activeCount > 0)
 
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-8">
-      <section aria-labelledby="feed-title" className="min-w-0">
-        <h1
-          id="feed-title"
-          className="text-[2rem] leading-[var(--leading-tight)] font-extrabold tracking-[var(--tracking-title)] text-ink md:text-[2.5rem]"
-        >
-          Trails for you
-        </h1>
-        <p className="mt-1.5 text-md text-ink-2 md:mt-2 md:text-lg">You've lived here. Have you explored it?</p>
-
-        <div role="tablist" aria-label="Feed" className="mt-4 flex flex-wrap gap-2 md:mt-5">
-          {TABS.map(({ id, label }) => (
-            <button
-              key={id}
-              id={`tab-${id}`}
-              type="button"
-              role="tab"
-              aria-selected={tab === id}
-              aria-controls="feed-panel"
-              className="tab"
-              onClick={() => setTab(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {SHOW_COMMUNITIES && tab === 'for-you' ? (
-          <div className="mb-4">
-            <CommunitySwitcher value={communitySlug} onChange={setCommunity} />
-          </div>
-        ) : null}
-
-        {tab === 'for-you' ? (
-          // Phones: one row you can swipe sideways, so the trails stay near the top. Wider: wraps.
-          <div
-            role="group"
-            aria-label="Filters"
-            className="-mx-4 mt-2 flex items-center gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0"
-          >
-            <FilterSelect
-              label="Category"
-              value={values.category}
-              options={CATEGORY_OPTIONS}
-              onChange={(v) => setFilter('category', v)}
-            />
-            <FilterSelect
-              label="Neighborhood"
-              value={values.neighborhood}
-              options={neighborhoodOptions}
-              onChange={(v) => setFilter('neighborhood', v)}
-            />
-            <CostRangeFilter
-              min={values.cost_min}
-              max={values.cost_max}
-              onChange={setCost}
-              pillClass={pill}
-              onClass={pillOn}
-              offClass={pillOff}
-            />
-            <FilterSelect
-              label="Length"
-              value={values.length}
-              options={LENGTH_OPTIONS}
-              onChange={(v) => setFilter('length', v)}
-            />
-            <FilterToggle
-              label="Late night"
-              icon={<Moon aria-hidden />}
-              on={values.late === '1'}
-              title="At least one stop is open late"
-              onChange={(on) => setFilter('late', on ? '1' : '')}
-            />
-            <FilterToggle
-              label="Near a T station"
-              icon={<TrainFront aria-hidden />}
-              on={values.near_t === '1'}
-              title={`Every stop is within ${NEAR_T_MILES} mi of a T station (straight line)`}
-              onChange={(on) => setFilter('near_t', on ? '1' : '')}
-            />
-            {activeCount > 0 ? (
+    <>
+      {/* The title sits above both columns, so the map's top lines up with the tabs. */}
+      <h1
+        id="feed-title"
+        className="text-[2rem] leading-[var(--leading-tight)] font-extrabold tracking-[var(--tracking-title)] text-ink md:text-[2.5rem]"
+      >
+        Trails for you
+      </h1>
+      <div className="mt-4 md:mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-8">
+        <section aria-labelledby="feed-title" className="min-w-0">
+          <div role="tablist" aria-label="Feed" className="flex flex-wrap gap-2">
+            {TABS.map(({ id, label }) => (
               <button
+                key={id}
+                id={`tab-${id}`}
                 type="button"
-                onClick={clearFilters}
-                className="inline-flex h-11 cursor-pointer items-center rounded-pill border-0 bg-transparent px-2 text-sm font-semibold text-crumb-strong hover:text-crumb-deep hover:underline md:h-[38px]"
+                role="tab"
+                aria-selected={tab === id}
+                aria-controls="feed-panel"
+                className="tab"
+                onClick={() => setTab(id)}
               >
-                Clear filters
+                {label}
               </button>
-            ) : null}
+            ))}
           </div>
-        ) : null}
-
-        <p role="status" className={cn('mt-4 text-sm text-muted-foreground', showCount ? 'mb-3' : 'sr-only')}>
-          {ready ? (
-            <>
-              {trails.length} {trails.length === 1 ? 'trail' : 'trails'}
-              {q ? ` for “${q}”` : ''}
-              {showCount && q ? (
-                <>
-                  {' · '}
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:text-crumb-deep hover:underline"
-                  >
-                    Clear search
-                  </button>
-                </>
-              ) : null}
-              {/* Phones: the filter row scrolls, so an active filter may be out of sight. */}
-              {showCount && activeCount > 0 ? (
-                <span className="md:hidden">
-                  {' · '}
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:text-crumb-deep hover:underline"
-                  >
-                    Clear {activeCount} {activeCount === 1 ? 'filter' : 'filters'}
-                  </button>
-                </span>
-              ) : null}
-            </>
+          {SHOW_COMMUNITIES && tab === 'for-you' ? (
+            <div className="mb-4">
+              <CommunitySwitcher value={communitySlug} onChange={setCommunity} />
+            </div>
           ) : null}
-        </p>
 
-        <div
-          id="feed-panel"
-          role="tabpanel"
-          aria-labelledby={`tab-${tab}`}
-          aria-busy={tab === 'for-you' && loading}
-          className={cn(
-            'grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-3 md:gap-4',
-            !showCount && 'mt-4',
-          )}
-        >
-          {body}
-        </div>
-      </section>
+          {tab === 'for-you' ? (
+            // Phones: one row you can swipe sideways, so the trails stay near the top. Wider: wraps.
+            <div
+              role="group"
+              aria-label="Filters"
+              className="-mx-4 mt-2 flex items-center gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0"
+            >
+              <FilterSelect
+                label="Category"
+                value={values.category}
+                options={CATEGORY_OPTIONS}
+                onChange={(v) => setFilter('category', v)}
+              />
+              <FilterSelect
+                label="Neighborhood"
+                value={values.neighborhood}
+                options={neighborhoodOptions}
+                onChange={(v) => setFilter('neighborhood', v)}
+              />
+              <CostRangeFilter
+                min={values.cost_min}
+                max={values.cost_max}
+                onChange={setCost}
+                pillClass={pill}
+                onClass={pillOn}
+                offClass={pillOff}
+              />
+              <FilterSelect
+                label="Length"
+                value={values.length}
+                options={LENGTH_OPTIONS}
+                onChange={(v) => setFilter('length', v)}
+              />
+              <FilterToggle
+                label="Late night"
+                icon={<Moon aria-hidden />}
+                on={values.late === '1'}
+                title="At least one stop is open late"
+                onChange={(on) => setFilter('late', on ? '1' : '')}
+              />
+              <FilterToggle
+                label="Near a T station"
+                icon={<TrainFront aria-hidden />}
+                on={values.near_t === '1'}
+                title={`Every stop is within ${NEAR_T_MILES} mi of a T station (straight line)`}
+                onChange={(on) => setFilter('near_t', on ? '1' : '')}
+              />
+              {activeCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="inline-flex h-11 cursor-pointer items-center rounded-pill border-0 bg-transparent px-2 text-sm font-semibold text-crumb-strong hover:text-crumb-deep hover:underline md:h-[38px]"
+                >
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
-      <aside aria-label="Trails on the map" className="sticky top-24 hidden lg:block">
-        <TrailsMap
-          trails={mapTrails}
-          highlightedId={hoverId}
-          onHover={setHoverId}
-          onSelect={(id) => navigate(`/trails/${id}`)}
-          onStatusChange={(status) => setMapAvailable(status !== 'unavailable')}
-          className="aspect-[440/600] max-h-[calc(100dvh-160px)] w-full"
-        />
-        {mapAvailable && mapTrails.length > 0 ? <TrailsMapLegend trails={mapTrails} className="mt-3" /> : null}
-      </aside>
-    </div>
+          <p role="status" className={cn('mt-4 text-sm text-muted-foreground', showCount ? 'mb-3' : 'sr-only')}>
+            {ready ? (
+              <>
+                {trails.length} {trails.length === 1 ? 'trail' : 'trails'}
+                {q ? ` for “${q}”` : ''}
+                {showCount && q ? (
+                  <>
+                    {' · '}
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:text-crumb-deep hover:underline"
+                    >
+                      Clear search
+                    </button>
+                  </>
+                ) : null}
+                {/* Phones: the filter row scrolls, so an active filter may be out of sight. */}
+                {showCount && activeCount > 0 ? (
+                  <span className="md:hidden">
+                    {' · '}
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:text-crumb-deep hover:underline"
+                    >
+                      Clear {activeCount} {activeCount === 1 ? 'filter' : 'filters'}
+                    </button>
+                  </span>
+                ) : null}
+              </>
+            ) : null}
+          </p>
+
+          <div
+            id="feed-panel"
+            role="tabpanel"
+            aria-labelledby={`tab-${tab}`}
+            aria-busy={tab === 'for-you' && loading}
+            className={cn(
+              'grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-3 md:gap-4',
+              !showCount && 'mt-4',
+            )}
+          >
+            {body}
+          </div>
+        </section>
+
+        <aside aria-label="Trails on the map" className="sticky top-24 hidden lg:block">
+          <TrailsMap
+            trails={mapTrails}
+            highlightedId={hoverId}
+            onHover={setHoverId}
+            onSelect={(id) => navigate(`/trails/${id}`)}
+            onStatusChange={(status) => setMapAvailable(status !== 'unavailable')}
+            className="aspect-[440/600] max-h-[calc(100dvh-160px)] w-full"
+          />
+          {mapAvailable && mapTrails.length > 0 ? <TrailsMapLegend trails={mapTrails} className="mt-3" /> : null}
+        </aside>
+      </div>
+    </>
   )
 }
