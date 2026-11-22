@@ -3,7 +3,8 @@
  * neighborhood, cost, length and late-night filters), each trail's start (its first
  * stop with coordinates) for the map pins, and the "Near a T station" filter, which
  * checks every stop against MBTA rapid-transit stations from @/lib/mbta (straight-line
- * distance). Also the neighborhood list for the filter. Used by ExplorePage and MapPage.
+ * distance). Also the neighborhood list for the filter, and the Trending tab's
+ * ranking (loadTrending). Used by ExplorePage and MapPage.
  */
 
 import { getFeed, type FeedFilters, type FeedTrail } from '@/lib/api/trails'
@@ -79,4 +80,17 @@ export function matchesSearch(trail: FeedTrail, q: string) {
   return [trail.title, trail.description, trail.neighborhood, ...stopNames].some((field) =>
     field?.toLowerCase().includes(needle),
   )
+}
+
+/** One trending trail: its rank score and how many different people were active on it lately. */
+export type TrendingEntry = { id: string; score: number; people: number }
+
+/** How far back Trending looks, in days. */
+export const TRENDING_DAYS = 14
+
+/** Trails with the most recent activity (trending_trails(): totals only, never who), busiest first. */
+export async function loadTrending(limit = 30): Promise<TrendingEntry[]> {
+  const { data, error } = await supabase.rpc('trending_trails', { p_days: TRENDING_DAYS, p_limit: limit })
+  if (error) throw error
+  return (data ?? []).map((row) => ({ id: row.sidequest_id, score: row.score, people: row.people }))
 }
