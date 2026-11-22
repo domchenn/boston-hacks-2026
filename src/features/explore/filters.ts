@@ -76,7 +76,11 @@ export function toExploreFilters(values: Record<FilterKey, string>): ExploreFilt
 }
 
 /** A copy of `params` with one filter set (or removed when value is ''). */
-export function withFilter(params: URLSearchParams, key: FilterKey | 'q' | 'community' | 'cost' | 'tab', value: string) {
+export function withFilter(
+  params: URLSearchParams,
+  key: FilterKey | 'q' | 'community' | 'cost' | 'tab' | 'radius',
+  value: string,
+) {
   const next = new URLSearchParams(params)
   if (value) next.set(key, value)
   else next.delete(key)
