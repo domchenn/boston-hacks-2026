@@ -4,7 +4,8 @@
  * (Old links with ?cost=20 still work: it's read as "up to $20".)
  * readFilters() turns the query string into ExploreFilters (ignoring values it doesn't
  * know); withFilter() returns new params with one filter changed. Used by ExplorePage
- * and the header search (which keeps the filters when you search).
+ * and the Map tab (both through TrailFilters) and the header search (which keeps the
+ * filters when you search).
  */
 
 import { CATEGORY_LABELS } from '@/components/trailFormat'
@@ -53,6 +54,12 @@ export function readFilterValues(params: URLSearchParams): Record<FilterKey, str
     late: params.get('late') === '1' ? '1' : '',
     near_t: params.get('near_t') === '1' ? '1' : '',
   }
+}
+
+/** How many filters are on in these params (the header search q isn't a filter). */
+export function activeFilterCount(params: URLSearchParams) {
+  const values = readFilterValues(params)
+  return FILTER_KEYS.filter((k) => values[k] !== '').length
 }
 
 /** The same values as filters for loadTrails(). */
