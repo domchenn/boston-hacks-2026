@@ -180,7 +180,7 @@ export function AuthForm({ mode, pending = null, error = null, onSubmit, onGoogl
             autoComplete="email"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="you@school.edu"
+            placeholder="you@email.com"
             required
             value={values.email}
             onChange={update('email')}
