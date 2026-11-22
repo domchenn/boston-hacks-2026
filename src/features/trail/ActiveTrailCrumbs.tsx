@@ -5,6 +5,7 @@
  * green and the current one orange (style guide: "During a run, reuse the stop
  * list"). Each crumb is a toggle button with aria-pressed.
  */
+import type { ReactNode } from 'react'
 import { Check, LoaderCircle } from 'lucide-react'
 import type { TrailCrumb, TrailStop } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
@@ -14,6 +15,8 @@ type CrumbProps = {
   ticked: Set<string>
   pending: Set<string>
   onToggle: (crumbId: string) => void
+  /** Optional extra control next to a ticked crumb (e.g. the D5 camera button). */
+  renderDoneExtra?: (crumb: TrailCrumb) => ReactNode
 }
 
 /** One crumb: a full-width button with a 26px ring that fills green when done. */
@@ -63,7 +66,7 @@ function CrumbToggle({
 }
 
 /** "Crumbs here" card for the current stop. */
-export function CrumbChecklist({ title, crumbs, ticked, pending, onToggle }: CrumbProps & { title: string }) {
+export function CrumbChecklist({ title, crumbs, ticked, pending, onToggle, renderDoneExtra }: CrumbProps & { title: string }) {
   const done = crumbs.filter((c) => ticked.has(c.id)).length
   return (
     <div className="mt-4 rounded-card border border-line bg-white px-4 pt-3.5 pb-2">
@@ -79,15 +82,26 @@ export function CrumbChecklist({ title, crumbs, ticked, pending, onToggle }: Cru
         <p className="mt-2 mb-2 text-base text-ink-2">No crumbs here. Enjoy the stop.</p>
       ) : (
         <div className="mt-1">
-          {crumbs.map((crumb) => (
-            <CrumbToggle
-              key={crumb.id}
-              crumb={crumb}
-              done={ticked.has(crumb.id)}
-              saving={pending.has(crumb.id)}
-              onToggle={() => onToggle(crumb.id)}
-            />
-          ))}
+          {crumbs.map((crumb) => {
+            const done = ticked.has(crumb.id)
+            const extra = done && renderDoneExtra ? renderDoneExtra(crumb) : null
+            const toggle = (
+              <CrumbToggle
+                key={crumb.id}
+                crumb={crumb}
+                done={done}
+                saving={pending.has(crumb.id)}
+                onToggle={() => onToggle(crumb.id)}
+              />
+            )
+            if (!extra) return toggle
+            return (
+              <div key={crumb.id} className="flex items-center gap-2 border-b border-line last:border-b-0">
+                <div className="min-w-0 flex-1 [&>button]:border-b-0">{toggle}</div>
+                {extra}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
