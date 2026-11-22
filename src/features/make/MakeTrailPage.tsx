@@ -149,6 +149,8 @@ export function MakeTrailForm({
   autosaveFor,
 }: MakeTrailFormProps = {}) {
   const navigate = useNavigate()
+  // Your @username on the preview card, as it will show in the feed.
+  const { profile } = useSession()
   // A trail-in-progress kept on this device from before a refresh (plain /make only).
   const [restored] = useState(() => (autosaveFor && !initialDraft ? readLocalDraft(autosaveFor) : null))
   const [showRestored, setShowRestored] = useState(restored !== null)
@@ -275,6 +277,7 @@ export function MakeTrailForm({
     firstStopName: draft.stops[0]?.placeName ?? null,
     lastStopName: draft.stops.length > 1 ? draft.stops[draft.stops.length - 1].placeName : null,
     rating: { average: null, count: 0 },
+    creator: profile ? { username: profile.username } : null,
   }
 
   return (

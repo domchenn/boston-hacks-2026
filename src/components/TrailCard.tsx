@@ -1,5 +1,6 @@
 /**
- * Reusable trail card: eyebrow (category, or "Finished"), title, the dotted
+ * Reusable trail card: eyebrow (category, or "Finished"), title, who made it
+ * ("@username", small and muted, so a trusted creator is easy to spot), the dotted
  * trail with first/last stop names, then cost, time, stops and rating. The whole
  * card links to /trails/:id. Styled by .trail-card in docs/styles/components.css.
  * Used by Explore (feed grid), the Map tab and Saved / You. Takes any object with the
@@ -35,6 +36,8 @@ export type TrailCardData = {
   distanceMiles?: number
   /** Main T line; colors the dots and rings in that line's color. Optional. */
   primaryLine?: TransitLine | null
+  /** Who made it; shown as "@username" under the title when there is one. */
+  creator?: { username: string | null } | null
 }
 
 type TrailCardProps = {
@@ -95,6 +98,12 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         ) : null}
       </div>
       <h2 className="trail-card__title">{trail.title}</h2>
+      {/* Plain text, not a link: the whole card is already a link to the trail. */}
+      {trail.creator?.username ? (
+        <p className="mt-0.5 mb-0 truncate text-sm font-medium text-muted-foreground">
+          <span className="sr-only">Made by </span>@{trail.creator.username}
+        </p>
+      ) : null}
 
       <div
         className={cn('trail', done && 'trail--done')}

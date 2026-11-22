@@ -31,7 +31,8 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
       .select(
         `status, updated_at,
          sidequest:sidequests(id, title, category, neighborhood, estimated_cost,
-           estimated_duration_minutes, sidequest_stops(place_name, stop_order))`,
+           estimated_duration_minutes, sidequest_stops(place_name, stop_order),
+           creator:profiles!sidequests_creator_id_fkey(username))`,
       )
       .eq('user_id', userId)
       .in('status', ['in_progress', 'signed_up', 'saved'])
@@ -70,6 +71,7 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
         firstStopName: stops[0]?.place_name ?? null,
         lastStopName: stops.length > 1 ? stops[stops.length - 1].place_name : null,
         rating: ratings.get(trail.id) ?? { average: null, count: 0 },
+        creator: trail.creator,
         status: row.status === 'in_progress' ? 'in_progress' : 'saved',
         updatedAt: row.updated_at,
       }

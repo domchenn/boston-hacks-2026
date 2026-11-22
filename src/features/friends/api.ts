@@ -92,7 +92,7 @@ export async function unfollow(viewerId: string, userId: string) {
 // ---------------------------------------------------------------------------
 
 const CARD_COLUMNS = `id, title, category, neighborhood, estimated_cost, estimated_duration_minutes, scheduled_at,
-  sidequest_stops(place_name, stop_order)`
+  sidequest_stops(place_name, stop_order), creator:profiles!sidequests_creator_id_fkey(username)`
 
 /** Card details (and ratings) for these trails, keyed by id. Trails you can't see are left out. */
 export async function loadCards(ids: string[]) {
@@ -119,6 +119,7 @@ export async function loadCards(ids: string[]) {
       firstStopName: stops[0]?.place_name ?? null,
       lastStopName: stops.length > 1 ? stops[stops.length - 1].place_name : null,
       rating: { average: num(r?.avg_overall), count: r?.rating_count ?? 0 },
+      creator: row.creator,
     })
   }
   return cards
