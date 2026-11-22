@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router'
+import { ReportButton } from '@/features/reports/ReportButton'
 import { formatShortDate } from '@/components/trailFormat'
 import { deletePhoto, type TrailPhoto } from '@/lib/api/photos'
 import { useSession } from '@/lib/useSession'
@@ -169,7 +170,9 @@ function PhotoViewer({ photos, index, trailTitle, onIndex, onClose, onDeleted }:
                 Delete
               </button>
             )
-          ) : null}
+          ) : (
+            <ReportButton targetType="photo" targetId={photo.id} ownerId={photo.uploader?.id} what="this photo" tone="dark" />
+          )}
         </div>
         {error ? (
           <p role="alert" className="mt-2 text-sm font-medium text-white">

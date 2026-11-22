@@ -6,6 +6,7 @@
  */
 
 import { Link } from 'react-router'
+import { ReportButton } from '@/features/reports/ReportButton'
 import { formatShortDate } from '@/components/trailFormat'
 import type { TrailRatingBreakdown, TrailReview } from '@/lib/api/trails'
 import { RATING_QUESTIONS } from './ratingQuestions'
@@ -45,6 +46,7 @@ function ReviewCard({ review }: { review: TrailReview }) {
             {formatShortDate(review.createdAt)} · rated {review.overall.toFixed(1)}
           </span>
         </span>
+        <ReportButton targetType="review" targetId={review.id} ownerId={review.reviewer?.id} what="this review" className="ml-auto self-start" />
       </figcaption>
       {review.text ? <blockquote className="m-0 mt-3 text-base leading-normal">{review.text}</blockquote> : null}
     </figure>

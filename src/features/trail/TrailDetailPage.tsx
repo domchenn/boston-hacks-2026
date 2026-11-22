@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 import { Check, Star } from 'lucide-react'
 import { Link, useLocation, useParams } from 'react-router'
 import { RouteMap } from '@/components/RouteMap'
+import { ReportButton } from '@/features/reports/ReportButton'
 import { TransitAlerts } from '@/components/TransitAlerts'
 import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
@@ -198,6 +199,9 @@ export function TrailDetailPage() {
 
           <h2 className="mt-8 text-xl font-bold tracking-[var(--tracking-tight)] md:mt-10">Reviews</h2>
           <TrailReviews rating={trail.rating} reviews={trail.reviews} />
+          <div className="mt-6">
+            <ReportButton targetType="trail" targetId={trail.id} ownerId={trail.creator?.id} what="this trail" />
+          </div>
         </article>
 
         <aside aria-label="Map and details" className="sticky top-24 hidden flex-col gap-4 lg:flex">
