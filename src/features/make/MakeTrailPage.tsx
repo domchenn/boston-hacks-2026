@@ -1,12 +1,12 @@
 /**
  * Make a trail (docs/mockups/Web-Create + Mobile-Create): basics (name,
  * description, category, anytime vs. a date), 2–8 stops picked from the place
- * library or added by hand, a crumb at each stop and how to get there, a live
+ * library or added by hand, an optional crumb at each stop and how to get there, a live
  * preview card with a route map, and the "Ready to publish" checklist. Save draft / Publish trail
  * call save_trail() through ./api, which saves everything in one transaction.
  * Publish is always tappable: if something is missing it says what, marks the
- * fields and scrolls to the first one. After a stop is added its crumb box gets
- * focus, and "+ Add another stop" jumps back to the search box.
+ * fields and scrolls to the first one. "+ Add another stop" jumps back to the
+ * search box.
  * Logged-out users are sent to /login?next=/make.
  * Route: /make · Owner: Dom
  */
@@ -80,7 +80,6 @@ function formatMinutes(minutes: number) {
 const MISSING_TEXT: Record<ChecklistKey, string> = {
   basics: 'a name and a category',
   stops: 'at least 2 stops',
-  crumbs: 'a crumb at every stop',
   date: 'a future date',
 }
 
@@ -88,7 +87,6 @@ const MISSING_TEXT: Record<ChecklistKey, string> = {
 const MISSING_TARGET: Record<ChecklistKey, string> = {
   basics: 'trail-basics',
   stops: 'trail-stops',
-  crumbs: 'trail-stops',
   date: 'trail-when',
 }
 
@@ -140,7 +138,7 @@ export function MakeTrailForm({
   trailId: initialTrailId = null,
   published = false,
   heading = 'Make a trail',
-  subheading = `Pick 2 to ${MAX_STOPS} stops, add a crumb at each, and publish.`,
+  subheading = `Pick 2 to ${MAX_STOPS} stops and publish. Crumbs (small things to do at a stop) are optional.`,
   aside,
 }: MakeTrailFormProps = {}) {
   const navigate = useNavigate()
@@ -178,8 +176,6 @@ export function MakeTrailForm({
   const addStop = (stop: StopDraft) => {
     if (draft.stops.length >= MAX_STOPS) return
     update({ stops: [...draft.stops, stop] })
-    // Its crumb box exists after this render: focus it so the next step is obvious.
-    setTimeout(() => document.getElementById(`crumb-${stop.key}`)?.focus(), 0)
   }
 
   const focusSearch = () => {
@@ -189,15 +185,12 @@ export function MakeTrailForm({
 
   /** Scroll to (and focus, where there's one field) the first thing a checklist item needs. */
   function jumpTo(key: ChecklistKey) {
-    const emptyCrumb = key === 'crumbs' ? draft.stops.find((s) => s.crumb.trim() === '') : undefined
     const field =
       key === 'basics' && draft.title.trim() === ''
         ? document.getElementById('trail-title')
-        : emptyCrumb
-          ? document.getElementById(`crumb-${emptyCrumb.key}`)
-          : key === 'stops'
-            ? searchRef.current
-            : null
+        : key === 'stops'
+          ? searchRef.current
+          : null
     const section = document.getElementById(MISSING_TARGET[key])
     ;(field ?? section)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     field?.focus({ preventScroll: true })
@@ -500,19 +493,12 @@ export function MakeTrailForm({
                         </div>
                       </div>
                       <label className="mt-3 block">
-                        <span className="mb-1 flex items-baseline justify-between gap-2 text-xs font-semibold tracking-wide text-crumb-strong uppercase">
-                          Crumb
-                          {missing('crumbs') && stop.crumb.trim() === '' ? (
-                            <span className="font-semibold tracking-normal text-crumb-deep normal-case">Needs a crumb</span>
-                          ) : null}
+                        <span className="mb-1 block text-xs font-semibold tracking-wide text-crumb-strong uppercase">
+                          Crumb <span className="font-normal tracking-normal text-muted-foreground normal-case">(optional)</span>
                         </span>
                         <input
                           id={`crumb-${stop.key}`}
-                          aria-invalid={missing('crumbs') && stop.crumb.trim() === '' ? true : undefined}
-                          className={cn(
-                            'w-full scroll-mt-24 rounded-[8px] border bg-white px-3 py-2 text-sm outline-none focus:shadow-[var(--focus-ring)]',
-                            missing('crumbs') && stop.crumb.trim() === '' ? 'border-crumb-strong' : 'border-line-strong',
-                          )}
+                          className="w-full rounded-[8px] border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:shadow-[var(--focus-ring)]"
                           maxLength={200}
                           placeholder="A small thing to do here, e.g. Dig through the outdoor sale lot"
                           value={stop.crumb}

@@ -39,7 +39,7 @@ export type StopDraft = {
   estimatedCost: number | null
   /** How to get here from the previous stop (ignored for the first stop). */
   travelMode: TravelMode
-  /** The small task at this stop. */
+  /** The small task at this stop (optional; '' = none). */
   crumb: string
 }
 
@@ -83,17 +83,16 @@ export function suggestedMinutes(stopCount: number): number | null {
   return Math.max(30, Math.round((stopCount * 45) / 30) * 30)
 }
 
-export type ChecklistKey = 'basics' | 'stops' | 'crumbs' | 'date'
+export type ChecklistKey = 'basics' | 'stops' | 'date'
 export type ChecklistItem = { key: ChecklistKey; label: string; done: boolean }
 
-/** The "Ready to publish" list. Publishing is allowed when every item is done. */
+/** The "Ready to publish" list. Publishing is allowed when every item is done. Crumbs are optional. */
 export function publishChecklist(draft: TrailDraft): ChecklistItem[] {
   const scheduledOk =
     draft.when === 'anytime' || (draft.scheduledLocal !== '' && new Date(draft.scheduledLocal).getTime() > Date.now())
   return [
     { key: 'basics', label: 'A name and a category', done: draft.title.trim() !== '' && draft.category !== null },
     { key: 'stops', label: `At least ${MIN_STOPS} stops`, done: draft.stops.length >= MIN_STOPS },
-    { key: 'crumbs', label: 'A crumb at every stop', done: draft.stops.length > 0 && draft.stops.every((s) => s.crumb.trim() !== '') },
     { key: 'date', label: 'A future date (dated trails only)', done: scheduledOk },
   ]
 }
