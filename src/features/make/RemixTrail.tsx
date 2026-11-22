@@ -37,6 +37,8 @@ async function loadRemix(trailId: string, userId: string): Promise<State> {
       when: 'anytime',
       scheduledLocal: '',
       communityId: null,
+      // A remix starts public; the remixer can change it before publishing.
+      visibility: 'public',
       remixedFrom: trail.id,
     }
     return { status: 'ready', trail, draft }

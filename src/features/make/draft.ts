@@ -4,7 +4,7 @@
  * into the JSON that save_trail() expects. No React here, so it's easy to test.
  */
 
-import type { Category, TravelMode } from '@/types/db-values'
+import type { Category, TrailVisibility, TravelMode } from '@/types/db-values'
 
 export const MIN_STOPS = 2
 export const MAX_STOPS = 8
@@ -23,6 +23,12 @@ export const TRAVEL_OPTIONS: { value: TravelMode; label: string }[] = [
   { value: 'train', label: 'T (subway)' },
   { value: 'bus', label: 'Bus' },
   { value: 'bike', label: 'Bike' },
+]
+
+export const VISIBILITY_OPTIONS: { value: TrailVisibility; label: string; hint: string }[] = [
+  { value: 'public', label: 'Everyone', hint: 'Anyone on Breadcrumb can find it.' },
+  { value: 'friends', label: 'Friends', hint: 'Only people you follow who follow you back.' },
+  { value: 'close_friends', label: 'Close friends', hint: 'Only friends on your close friends list (on your profile).' },
 ]
 
 export type StopDraft = {
@@ -54,6 +60,8 @@ export type TrailDraft = {
   durationMinutes: number | null
   /** Who can see it: null = everyone, else only this community (task G6). */
   communityId: string | null
+  /** Who can see it: everyone, friends (mutual follows) or close friends. */
+  visibility: TrailVisibility
   /** Remix (task G8): the trail this one is copied from. Only used when creating. */
   remixedFrom: string | null
   stops: StopDraft[]
@@ -67,6 +75,7 @@ export const emptyDraft = (): TrailDraft => ({
   scheduledLocal: '',
   durationMinutes: null,
   communityId: null,
+  visibility: 'public',
   remixedFrom: null,
   stops: [],
 })
@@ -114,6 +123,7 @@ export function toSavePayload(draft: TrailDraft, status: 'draft' | 'published') 
     estimated_duration_minutes: minutes,
     neighborhood: draft.stops[0]?.neighborhood ?? null,
     community_id: draft.communityId,
+    visibility: draft.visibility,
     remixed_from: draft.remixedFrom,
     stops: draft.stops.map((s, i) => ({
       experience_id: s.experienceId,

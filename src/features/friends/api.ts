@@ -8,8 +8,13 @@
  *   trails of the people you follow, newest first. loadFriendsActivity adds each
  *   trail's card details (only trails you can see come back, by RLS).
  * - suggestPeople: trail makers you don't follow yet, for the empty Friends tab.
+ * - Friends and privacy: friends are people who follow each other
+ *   (getRelationship, getFriends); a private account's trails are only visible
+ *   to friends (setPrivateAccount); close friends lists for close-friends-only
+ *   trails (getCloseFriendIds, setCloseFriend). Enforced by RLS (migration
+ *   add_trail_visibility_and_close_friends).
  *
- * Used by FollowBar (profiles), FriendsActivity (You page) and the Explore
+ * Used by FollowBar (profiles), PrivacySettings and FriendsActivity (You page) and the Explore
  * Friends tab (src/features/explore/FriendsPanel.tsx).
  */
 
@@ -160,4 +165,65 @@ export async function suggestPeople(viewerId: string, limit = 5): Promise<TrailC
     if (person?.username && !skip.has(person.id) && !people.has(person.id)) people.set(person.id, person)
   }
   return [...people.values()].slice(0, limit)
+}
+
+// ---------------------------------------------------------------------------
+// Friends (mutual follows), private accounts and close friends
+// ---------------------------------------------------------------------------
+
+/** How two people are connected: friends = they follow each other. */
+export type Relationship = { following: boolean; followsYou: boolean }
+
+export async function getRelationship(viewerId: string, userId: string): Promise<Relationship> {
+  const { data, error } = await supabase
+    .from('follows')
+    .select('follower_id, following_id')
+    .or(
+      `and(follower_id.eq.${viewerId},following_id.eq.${userId}),and(follower_id.eq.${userId},following_id.eq.${viewerId})`,
+    )
+  if (error) throw friendlyError(error)
+  const rows = data ?? []
+  return {
+    following: rows.some((r) => r.follower_id === viewerId),
+    followsYou: rows.some((r) => r.follower_id === userId),
+  }
+}
+
+/** Your friends (people you follow who follow you back), A to Z by name. */
+export async function getFriends(viewerId: string): Promise<TrailCreator[]> {
+  const [mine, theirs] = await Promise.all([
+    supabase
+      .from('follows')
+      .select('person:profiles!follows_following_id_fkey(id, username, display_name, avatar_url)')
+      .eq('follower_id', viewerId),
+    supabase.from('follows').select('follower_id').eq('following_id', viewerId),
+  ])
+  if (mine.error || theirs.error) throw friendlyError(mine.error ?? theirs.error)
+  const followers = new Set((theirs.data ?? []).map((r) => r.follower_id))
+  return (mine.data ?? [])
+    .map((r) => r.person)
+    .filter((p): p is TrailCreator => p !== null && followers.has(p.id))
+    .sort((a, b) => (a.display_name || a.username || '').localeCompare(b.display_name || b.username || ''))
+}
+
+/** Ids on your close friends list (only you can read it). */
+export async function getCloseFriendIds(viewerId: string): Promise<Set<string>> {
+  const { data, error } = await supabase.from('close_friends').select('friend_id').eq('owner_id', viewerId)
+  if (error) throw friendlyError(error)
+  return new Set((data ?? []).map((r) => r.friend_id))
+}
+
+export async function setCloseFriend(viewerId: string, friendId: string, on: boolean) {
+  const { error } = on
+    ? await supabase.from('close_friends').insert({ owner_id: viewerId, friend_id: friendId })
+    : await supabase.from('close_friends').delete().eq('owner_id', viewerId).eq('friend_id', friendId)
+  // Already on the list counts as done; 42501 = they aren't a friend (anymore).
+  if (error?.code === '42501') throw new Error('Only friends (people who follow you back) can be close friends.')
+  if (error && error.code !== '23505') throw friendlyError(error)
+}
+
+/** Make your account private (trails only visible to friends) or public. */
+export async function setPrivateAccount(viewerId: string, isPrivate: boolean) {
+  const { error } = await supabase.from('profiles').update({ is_private: isPrivate }).eq('id', viewerId)
+  if (error) throw friendlyError(error)
 }

@@ -1,6 +1,7 @@
 /**
  * Make a trail (docs/mockups/Web-Create + Mobile-Create): basics (name,
- * description, category, anytime vs. a date), 2–8 stops picked from the place
+ * description, category, anytime vs. a date, who can see it: everyone / friends /
+ * close friends), 2–8 stops picked from the place
  * library or added by hand, a crumb at each stop and how to get there, a live
  * preview card with a route map, and the "Ready to publish" checklist. Save draft / Publish trail
  * call save_trail() through ./api, which saves everything in one transaction.
@@ -21,6 +22,7 @@ import {
   CATEGORY_OPTIONS,
   MAX_STOPS,
   TRAVEL_OPTIONS,
+  VISIBILITY_OPTIONS,
   canPublish,
   emptyDraft,
   publishChecklist,
@@ -331,6 +333,26 @@ export function MakeTrailForm({
                   <p className="mt-1.5 text-sm text-muted-foreground">Dated trails show a time and let people join.</p>
                 </fieldset>
               </div>
+              <fieldset>
+                <legend className={labelClass}>Who can see it</legend>
+                <div className="flex flex-wrap gap-2">
+                  {VISIBILITY_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className="tab"
+                      aria-pressed={draft.visibility === option.value}
+                      aria-selected={draft.visibility === option.value}
+                      onClick={() => update({ visibility: option.value })}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  {VISIBILITY_OPTIONS.find((o) => o.value === draft.visibility)?.hint}
+                </p>
+              </fieldset>
               {SHOW_COMMUNITIES ? (
                 <VisibilityField
                   value={draft.communityId}

@@ -100,6 +100,7 @@ export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
     scheduledLocal: trail.scheduledAt ? toLocalInput(trail.scheduledAt) : '',
     durationMinutes: trail.estimatedMinutes,
     communityId: trail.communityId,
+    visibility: trail.visibility,
     // Edits never change a remix credit (save_trail ignores it), so leave it out.
     remixedFrom: null,
     stops,

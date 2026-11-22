@@ -124,6 +124,7 @@ export function TrailDetailPage() {
     trail.category ? CATEGORY_LABELS[trail.category] : null,
     scheduled ? formatSchedule(trail.scheduledAt!) : 'Anytime',
     trail.isCurated ? 'Curated' : null,
+    trail.visibility === 'friends' ? 'Friends only' : trail.visibility === 'close_friends' ? 'Close friends only' : null,
   ]
     .filter(Boolean)
     .join(' · ')
