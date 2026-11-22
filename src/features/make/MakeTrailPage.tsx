@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Check, Circle, Plus, X } from 'lucide-react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Dropdown } from '@/components/Dropdown'
 import { RouteMap } from '@/components/RouteMap'
 import { TrailCard } from '@/components/TrailCard'
 import { useSession } from '@/lib/useSession'
@@ -493,20 +494,16 @@ export function MakeTrailForm({
                     {index > 0 ? (
                       <div className="flex items-center gap-2 py-2 pl-[13px]">
                         <span aria-hidden className="h-6 border-l-2 border-dotted border-crumb" />
-                        <label className="ml-4 flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="ml-4 flex items-center gap-2 text-sm text-muted-foreground">
                           Getting here
-                          <select
-                            className="rounded-pill border border-line-strong bg-white px-2.5 py-1 text-sm font-semibold text-ink outline-none focus-visible:shadow-[var(--focus-ring)]"
+                          <Dropdown
+                            label={`Getting to ${stop.placeName}`}
                             value={stop.travelMode}
-                            onChange={(e) => updateStop(stop.key, { travelMode: e.target.value as TravelMode })}
-                          >
-                            {TRAVEL_OPTIONS.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                            options={TRAVEL_OPTIONS}
+                            onChange={(v) => updateStop(stop.key, { travelMode: v as TravelMode })}
+                            buttonClassName="rounded-pill border border-line-strong bg-white px-3 py-1 text-sm font-semibold text-ink outline-none focus-visible:shadow-[var(--focus-ring)]"
+                          />
+                        </span>
                       </div>
                     ) : null}
 
@@ -628,22 +625,21 @@ export function MakeTrailForm({
               </div>
               <div>
                 <dt className="text-muted-foreground">
-                  <label htmlFor="trail-duration">About how long</label>
+                  <span id="trail-duration-label">About how long</span>
                 </dt>
                 <dd className="mt-0.5">
-                  <select
+                  <Dropdown
                     id="trail-duration"
-                    className="w-full rounded-[8px] border border-line-strong bg-white px-2 py-1.5 font-bold text-ink outline-none focus-visible:shadow-[var(--focus-ring)]"
-                    value={minutes ?? ''}
-                    onChange={(e) => update({ durationMinutes: e.target.value ? Number(e.target.value) : null })}
-                  >
-                    {minutes === null ? <option value="">—</option> : null}
-                    {DURATION_OPTIONS.map((m) => (
-                      <option key={m} value={m}>
-                        {formatMinutes(m)}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full"
+                    label="About how long"
+                    value={minutes === null ? '' : String(minutes)}
+                    options={[
+                      ...(minutes === null ? [{ value: '', label: '—' }] : []),
+                      ...DURATION_OPTIONS.map((m) => ({ value: String(m), label: formatMinutes(m) })),
+                    ]}
+                    onChange={(v) => update({ durationMinutes: v ? Number(v) : null })}
+                    buttonClassName="w-full rounded-[8px] border border-line-strong bg-white px-2.5 py-1.5 font-bold text-ink outline-none focus-visible:shadow-[var(--focus-ring)]"
+                  />
                 </dd>
                 <dd className="text-xs text-muted-foreground">
                   {draft.durationMinutes === null ? 'Suggested, change it if needed' : 'Set by you'}
