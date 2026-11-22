@@ -10,99 +10,18 @@
  * Google fails) it falls back to the stored travel mode ("Take the T to …") and
  * never invents steps. The first stop has no previous stop, so it just points to
  * Google Maps, which routes from the phone's own location. Used by ActiveTrailStops.
+ *
+ * LegSummary is the minimal version for the Trail detail page: one line between
+ * two stops ("Walk about 8 min to …", or the line to ride and the total time) that
+ * opens the same step list on tap. Route data: ./legRoute.
  */
 
 import { useEffect, useState } from 'react'
-import { Bike, Bus, Footprints, Navigation, TrainFront } from 'lucide-react'
+import { Bike, Bus, ChevronDown, Footprints, Navigation, TrainFront } from 'lucide-react'
 import type { TrailStop } from '@/lib/api/trails'
-import { googleTravelMode, loadGoogleMaps } from '@/lib/maps'
 import { cn } from '@/lib/utils'
-import type { TravelMode } from '@/types/db-values'
 import { directionsLink } from './directions-link'
-
-type Step =
-  | { kind: 'walk' | 'bike'; minutes: number; to: string | null }
-  | { kind: 'ride'; vehicle: 'subway' | 'bus' | 'train'; line: string; color: string | null; headsign: string | null; stops: number | null; offAt: string | null }
-
-type Route = { minutes: number; steps: Step[] }
-
-/** Routes reused while the page is open (keyed by from|to|mode). null = Google had no route. */
-const routeCache = new Map<string, Route | null>()
-
-/** "about 4 min", rounded so it reads like a rough guide, not a timetable. */
-function roughMinutes(minutes: number) {
-  if (minutes <= 1) return '1 min'
-  if (minutes < 10) return `${Math.round(minutes)} min`
-  if (minutes < 60) return `${Math.round(minutes / 5) * 5} min`
-  const hours = Math.floor(minutes / 60)
-  const rest = Math.round((minutes % 60) / 15) * 15
-  return rest === 0 || rest === 60 ? `${rest === 60 ? hours + 1 : hours} hr` : `${hours} hr ${rest} min`
-}
-
-const FALLBACK: Record<TravelMode, { verb: string; icon: typeof Footprints }> = {
-  walk: { verb: 'Walk to', icon: Footprints },
-  train: { verb: 'Take the T to', icon: TrainFront },
-  bus: { verb: 'Take the bus to', icon: Bus },
-  bike: { verb: 'Bike to', icon: Bike },
-}
-
-function vehicleOf(type: string | undefined): 'subway' | 'bus' | 'train' {
-  if (type === 'BUS' || type === 'TROLLEYBUS' || type === 'SHARE_TAXI') return 'bus'
-  if (type === 'HEAVY_RAIL' || type === 'COMMUTER_TRAIN' || type === 'RAIL' || type === 'HIGH_SPEED_TRAIN') return 'train'
-  return 'subway'
-}
-
-/** Turns Google's steps into our short list, merging back-to-back walks. */
-function toRoute(leg: google.maps.DirectionsLeg): Route {
-  const steps: Step[] = []
-  for (const step of leg.steps) {
-    const minutes = (step.duration?.value ?? 0) / 60
-    if (step.travel_mode === 'TRANSIT' && step.transit) {
-      const t = step.transit
-      steps.push({
-        kind: 'ride',
-        vehicle: vehicleOf(t.line?.vehicle?.type),
-        line: t.line?.short_name || t.line?.name || 'Transit',
-        color: t.line?.color || null,
-        headsign: t.headsign || null,
-        stops: t.num_stops ?? null,
-        offAt: t.arrival_stop?.name ?? null,
-      })
-      // The walk before this ride heads to where it leaves from.
-      const prev = steps[steps.length - 2]
-      if (prev && prev.kind === 'walk') prev.to = t.departure_stop?.name ?? null
-    } else {
-      const kind = step.travel_mode === 'BICYCLING' ? 'bike' : 'walk'
-      const last = steps[steps.length - 1]
-      if (last && last.kind === kind) last.minutes += minutes
-      else steps.push({ kind, minutes, to: null })
-    }
-  }
-  return { minutes: (leg.duration?.value ?? 0) / 60, steps }
-}
-
-async function findRoute(from: TrailStop, to: TrailStop): Promise<Route | null> {
-  if (from.latitude === null || from.longitude === null || to.latitude === null || to.longitude === null) return null
-  const mode = googleTravelMode(to.travelModeToStop)
-  const key = `${from.latitude},${from.longitude}|${to.latitude},${to.longitude}|${mode}`
-  if (routeCache.has(key)) return routeCache.get(key) ?? null
-  try {
-    const maps = await loadGoogleMaps()
-    const travelMode = { walking: maps.TravelMode.WALKING, transit: maps.TravelMode.TRANSIT, bicycling: maps.TravelMode.BICYCLING }[mode]
-    const result = await new maps.DirectionsService().route({
-      origin: { lat: from.latitude, lng: from.longitude },
-      destination: { lat: to.latitude, lng: to.longitude },
-      travelMode,
-    })
-    const leg = result.routes[0]?.legs[0]
-    const route = leg && leg.steps.length ? toRoute(leg) : null
-    routeCache.set(key, route)
-    return route
-  } catch {
-    routeCache.set(key, null)
-    return null
-  }
-}
+import { FALLBACK, findRoute, roughMinutes, type Route, type Step } from './legRoute'
 
 function StepIcon({ step }: { step: Step }) {
   const Icon =
@@ -201,5 +120,114 @@ export function LegDirections({ from, to, className }: { from: TrailStop | null;
       {body}
       {link}
     </section>
+  )
+}
+
+/** One line for a route: the line(s) to ride, or the walk / bike, with rough total time. */
+function summaryOf(route: Route, to: TrailStop) {
+  const rides = route.steps.filter((s): s is Extract<Step, { kind: 'ride' }> => s.kind === 'ride')
+  const total = `about ${roughMinutes(route.minutes)}`
+  if (rides.length === 0) {
+    const mode = route.steps.some((s) => s.kind === 'bike') ? 'Bike' : 'Walk'
+    return { icon: mode === 'Bike' ? Bike : Footprints, rides, text: `${mode} ${total} to ${to.placeName}` }
+  }
+  return { icon: rides[0].vehicle === 'bus' ? Bus : TrainFront, rides, text: `to ${to.placeName} · ${total}` }
+}
+
+/**
+ * Trail detail: how to get from `from` to `to`, kept to one line until tapped.
+ * Shows the stored travel mode ("Walk to …") until the route loads, or if there isn't one.
+ */
+export function LegSummary({ from, to }: { from: TrailStop; to: TrailStop }) {
+  const [route, setRoute] = useState<Route | null | undefined>(undefined)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    findRoute(from, to).then((r) => !cancelled && setRoute(r))
+    return () => {
+      cancelled = true
+    }
+  }, [from, to])
+
+  if (!route) {
+    // No route yet (or none at all): the stored travel mode, if the trail has one. Never a guess.
+    if (!to.travelModeToStop) return null
+    const fallback = FALLBACK[to.travelModeToStop]
+    return (
+      <p className="stop__leg">
+        <fallback.icon aria-hidden />
+        {fallback.verb} {to.placeName}
+      </p>
+    )
+  }
+
+  const summary = summaryOf(route, to)
+  const steps = route.steps.filter((step) => step.kind === 'ride' || step.minutes >= 0.5)
+  const mapsLink = (
+    <a
+      href={directionsLink(to, from)}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1 text-sm font-semibold text-crumb-strong hover:text-crumb-deep"
+    >
+      <Navigation aria-hidden className="size-3.5" />
+      {summary.rides.length === 0 ? 'Map' : 'Open in Google Maps'}
+      <span className="sr-only"> (directions from {from.placeName} to {to.placeName}, opens in a new tab)</span>
+    </a>
+  )
+
+  // A plain walk or bike: one line is the whole story, so nothing to open.
+  if (summary.rides.length === 0) {
+    return (
+      <p className="stop__leg">
+        <summary.icon aria-hidden />
+        <span className="min-w-0">
+          {summary.text} · {mapsLink}
+        </span>
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="stop__leg m-0 cursor-pointer border-0 bg-transparent p-0 text-left hover:text-ink"
+      >
+        <summary.icon aria-hidden />
+        <span className="min-w-0">
+          {summary.rides.map((ride, i) => (
+            <span
+              key={i}
+              className="mr-1 inline-block rounded-pill px-1.5 py-px text-[11px] leading-tight font-bold text-white"
+              style={{ backgroundColor: ride.color ?? 'var(--color-ink-2)' }}
+            >
+              {ride.line}
+            </span>
+          ))}
+          {summary.text}
+        </span>
+        <ChevronDown aria-hidden className={cn('transition-transform', open && 'rotate-180')} />
+        <span className="sr-only">{open ? ', hide directions' : ', show directions'}</span>
+      </button>
+      {open ? (
+        <div className="mt-2 rounded-[var(--radius-md)] bg-paper px-3 py-2.5">
+          <ol className="m-0 flex list-none flex-col gap-1.5 p-0">
+            {steps.map((step, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm leading-snug text-ink">
+                <StepIcon step={step} />
+                <span className="min-w-0">
+                  <StepText step={step} />
+                </span>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-2">{mapsLink}</div>
+        </div>
+      ) : null}
+    </div>
   )
 }

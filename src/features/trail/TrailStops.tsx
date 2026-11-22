@@ -1,26 +1,20 @@
 /**
  * "The trail" on the Trail detail page: numbered stops joined by dotted lines, each
  * with its address, what to do there, its crumbs (See / Do) and how to get to the
- * next stop (walk, T, bus, bike) in that leg's color (@/lib/transitColors), plus
+ * next stop in that leg's color (@/lib/transitColors): one line ("Walk about 8 min
+ * to …", or the T line to ride) that opens step-by-step directions (LegSummary), plus
  * the nearest T station (StopTransit, collapsed: live arrivals, buses and
  * Bluebikes open on tap, so the plan stays readable).
- * Only shows travel modes that are stored; no
+ * Directions come from Google; without them it shows the stored travel mode. No
  * invented times or routes. Styled by .stops / .stop / .crumb-item in components.css.
  */
 
 import type { CSSProperties } from 'react'
-import { Bike, Bus, Footprints, TrainFront } from 'lucide-react'
 import { StopTransit } from '@/components/StopTransit'
 import type { TrailCrumb, TrailStop } from '@/lib/api/trails'
 import { legColor } from '@/lib/transitColors'
-import type { TransitLine, TravelMode } from '@/types/db-values'
-
-const LEG: Record<TravelMode, { verb: string; icon: typeof Footprints }> = {
-  walk: { verb: 'Walk to', icon: Footprints },
-  train: { verb: 'Take the T to', icon: TrainFront },
-  bus: { verb: 'Take the bus to', icon: Bus },
-  bike: { verb: 'Bike to', icon: Bike },
-}
+import type { TransitLine } from '@/types/db-values'
+import { LegSummary } from './LegDirections'
 
 function CrumbItem({ crumb }: { crumb: TrailCrumb }) {
   return (
@@ -51,7 +45,6 @@ export function TrailStops({
       <ol className="stops m-0">
         {stops.map((stop, i) => {
           const next = stops[i + 1]
-          const leg = next?.travelModeToStop ? LEG[next.travelModeToStop] : null
           const showActivity = stop.plannedActivity && stop.plannedActivity !== stop.description
           return (
             <li
@@ -77,12 +70,7 @@ export function TrailStops({
                   </ul>
                 ) : null}
                 {stop.notes ? <p className="mt-2 text-sm text-muted-foreground">{stop.notes}</p> : null}
-                {leg && next ? (
-                  <p className="stop__leg">
-                    <leg.icon aria-hidden />
-                    {leg.verb} {next.placeName}
-                  </p>
-                ) : null}
+                {next ? <LegSummary from={stop} to={next} /> : null}
               </div>
             </li>
           )
