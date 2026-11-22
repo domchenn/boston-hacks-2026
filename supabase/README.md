@@ -88,5 +88,6 @@ npm run db:types
 | `20261122011131_seed_researched_places_and_chinatown_tour` | BU/BC communities, Jason's ~30 researched places, the Chinatown Food Tour (moved from `seed.sql` so it reaches the live project) |
 | `20261122014142_add_trail_photos_storage` | Public `trail-photos` Storage bucket (5 MB, images) with rules: users upload/delete only in their own folder |
 | `20261122015804_add_trail_attendees_functions` | `trail_attendees(p_trail_id, p_limit)` and `trail_going_counts(p_trail_ids)`: who's going on a scheduled trail (count + public profile fields only, for trails you can see), since progress rows are private |
+| `20261122022403_add_community_to_save_trail` | `save_trail()` accepts an optional `community_id` ("Who can see this": everyone or only your own community); leaving it out keeps the current setting |
 
 Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.
