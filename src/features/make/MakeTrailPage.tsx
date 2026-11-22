@@ -1,11 +1,11 @@
 /**
  * Make a trail (docs/mockups/Web-Create + Mobile-Create): basics (name,
- * description, category, anytime vs. a date, who can see it: everyone / friends /
- * close friends), 2–8 stops picked from the place
+ * description, category, anytime vs. a date), 2–8 stops picked from the place
  * library or added by hand, a crumb at each stop and how to get there, a live
  * preview card with a route map, and the "Ready to publish" checklist. Save draft / Publish trail
  * call save_trail() through ./api, which saves everything in one transaction.
  * Logged-out users are sent to /login?next=/make.
+ * Basics also has "Who can see it": everyone / friends / close friends.
  * Route: /make · Owner: Dom
  */
 
