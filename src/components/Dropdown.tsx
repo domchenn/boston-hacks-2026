@@ -128,7 +128,7 @@ export function Dropdown({ value, options, onChange, label, buttonClassName, pan
             className={cn(
               'fixed inset-x-0 bottom-0 z-40 rounded-t-[var(--radius-sheet)] border-t border-line bg-white pt-3 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] shadow-[var(--shadow-sheet)]',
               'animate-in slide-in-from-bottom-4 fade-in duration-200 motion-reduce:animate-none',
-              'md:absolute md:inset-x-auto md:top-full md:bottom-auto md:left-0 md:mt-1.5 md:min-w-full md:rounded-card md:border md:py-1 md:shadow-[var(--shadow-float)] md:slide-in-from-top-1',
+              'md:absolute md:inset-x-auto md:top-full md:bottom-auto md:left-0 md:mt-1.5 md:min-w-full md:overflow-hidden md:rounded-card md:border md:py-1 md:shadow-[var(--shadow-float)] md:slide-in-from-top-1',
               panelClassName,
             )}
           >
