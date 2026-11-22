@@ -21,7 +21,7 @@ insert into auth.users (id, email) values
   ('44444444-4444-4444-4444-444444444444', 'cy@test.dev'),
   ('55555555-5555-5555-5555-555555555555', 'dee@test.dev');
 update public.profiles set username = 'ben', bio = 'not for the feed' where id = '33333333-3333-3333-3333-333333333333';
-update public.profiles set username = 'cy'  where id = '44444444-4444-4444-4444-444444444444';
+update public.profiles set username = 'cyd'  where id = '44444444-4444-4444-4444-444444444444';
 update public.profiles set username = 'dee' where id = '55555555-5555-5555-5555-555555555555';
 
 insert into public.communities (id, name, slug) values
@@ -72,13 +72,13 @@ select set_config('request.jwt.claims', '{"sub": "22222222-2222-2222-2222-222222
 
 select results_eq(
   $$select username, kind, sidequest_id from public.friends_activity()$$,
-  $$values ('cy',  'joined',   'a0000000-0000-0000-0000-000000000003'::uuid),
+  $$values ('cyd',  'joined',   'a0000000-0000-0000-0000-000000000003'::uuid),
            ('ben', 'finished', 'a0000000-0000-0000-0000-000000000003'::uuid),
            ('ben', 'made',     'a0000000-0000-0000-0000-000000000001'::uuid)$$,
   'Ann sees her follows'' made / finished / joined trails, newest first; not saved, drafts, community trails or people she doesn''t follow');
 select results_eq(
   $$select username, kind from public.friends_activity(1)$$,
-  $$values ('cy', 'joined')$$,
+  $$values ('cyd', 'joined')$$,
   'p_limit keeps the newest rows');
 select is((select count(*)::int from public.user_sidequests where user_id <> '22222222-2222-2222-2222-222222222222'),
   0, 'progress rows stay private: Ann still can''t read other people''s rows directly');
@@ -87,8 +87,8 @@ select is((select count(*)::int from public.user_sidequests where user_id <> '22
 select set_config('request.jwt.claims', '{"sub": "55555555-5555-5555-5555-555555555555", "role": "authenticated"}', true);
 select results_eq(
   $$select username, kind, sidequest_id from public.friends_activity()$$,
-  $$values ('cy', 'joined', 'a0000000-0000-0000-0000-000000000004'::uuid),
-           ('cy', 'joined', 'a0000000-0000-0000-0000-000000000003'::uuid)$$,
+  $$values ('cyd', 'joined', 'a0000000-0000-0000-0000-000000000004'::uuid),
+           ('cyd', 'joined', 'a0000000-0000-0000-0000-000000000003'::uuid)$$,
   'community members also see activity on their community''s trails');
 
 -- ---------------------------------------------------------------- as Cara (follows no one)
