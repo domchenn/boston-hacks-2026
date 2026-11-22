@@ -10,6 +10,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { useCommunities } from '@/features/communities/api'
+import { CommunitySwitcher } from '@/features/communities/CommunitySwitcher'
 import { TrailCard } from '@/components/TrailCard'
 import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
@@ -98,8 +100,14 @@ function FeedMessage({ title, picture = true, children }: { title: string; pictu
 }
 
 export function ExplorePage() {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const q = (params.get('q') ?? '').trim()
+  // Community switcher (task G6), kept in ?community=<slug> so it can be shared.
+  const communitySlug = params.get('community') ?? ''
+  const communities = useCommunities()
+  const communityId = communities?.find((c) => c.slug === communitySlug)?.id
+  // Wait for the communities list before loading a ?community= link (no flash of "All").
+  const communityPending = communitySlug !== '' && communities === null
   const [tab, setTab] = useState<Tab>('for-you')
   const [cost, setCost] = useState('')
   const [length, setLength] = useState('')
@@ -110,14 +118,16 @@ export function ExplorePage() {
   const [mapAvailable, setMapAvailable] = useState(true)
   const navigate = useNavigate()
 
-  const key = `${cost}|${length}|${attempt}`
+  const key = `${cost}|${length}|${communityPending ? 'pending' : (communityId ?? '')}|${attempt}`
   const loading = result?.key !== key
 
   useEffect(() => {
+    if (communityPending) return
     let cancelled = false
     loadTrails({
       maxCost: cost === '' ? undefined : Number(cost),
       maxMinutes: length === '' ? undefined : Number(length),
+      communityId,
     }).then(
       (trails) => !cancelled && setResult({ key, trails }),
       (error: unknown) =>
@@ -126,16 +136,28 @@ export function ExplorePage() {
     return () => {
       cancelled = true
     }
-  }, [key, cost, length])
+  }, [key, cost, length, communityId, communityPending])
 
   const trails = (result?.trails ?? []).filter((t) => !q || matchesSearch(t, q))
-  const filtered = cost !== '' || length !== ''
+  const filtered = cost !== '' || length !== '' || communityId !== undefined
   // The map shows the same trails as the grid (nothing on the coming-soon tabs).
   const mapTrails = tab === 'for-you' && !loading ? trails : []
 
   function clearFilters() {
     setCost('')
     setLength('')
+    setCommunity('')
+  }
+
+  function setCommunity(slug: string) {
+    setParams(
+      (p) => {
+        if (slug) p.set('community', slug)
+        else p.delete('community')
+        return p
+      },
+      { replace: true },
+    )
   }
 
   let body: ReactNode
@@ -234,6 +256,11 @@ export function ExplorePage() {
             </div>
           ) : null}
         </div>
+        {tab === 'for-you' ? (
+          <div className="mb-4">
+            <CommunitySwitcher value={communitySlug} onChange={setCommunity} />
+          </div>
+        ) : null}
 
         {q && tab === 'for-you' && !loading && trails.length > 0 ? (
           <p className="mb-3 text-sm text-muted-foreground">
