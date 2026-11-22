@@ -11,8 +11,8 @@ export type SidequestStatus = 'draft' | 'published' | 'archived'
 /** user_sidequests.status: a user's progress on one sidequest */
 export type UserSidequestStatus = 'saved' | 'signed_up' | 'in_progress' | 'completed' | 'aborted'
 
-/** experiences.category and sidequests.category */
-export type Category = 'food_drink' | 'outdoors' | 'arts_culture' | 'shopping' | 'attractions' | 'affordable'
+/** experiences.category and sidequests.category ('other' = the creator's own, named in sidequests.custom_category) */
+export type Category = 'food_drink' | 'outdoors' | 'arts_culture' | 'shopping' | 'attractions' | 'affordable' | 'other'
 
 /** sidequest_stops.travel_mode_to_stop */
 export type TravelMode = 'walk' | 'bike' | 'bus' | 'train'

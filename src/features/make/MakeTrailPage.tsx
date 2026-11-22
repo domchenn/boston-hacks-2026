@@ -11,6 +11,7 @@
  * On /make the form is kept on this device as you type (./localDraft), so a
  * refresh doesn't lose it; a note offers "Start over". Cleared on publish.
  * Logged-out users are sent to /login?next=/make.
+ * Category: one of the six, or Custom (type your own; saved as category 'other').
  * Basics also has "Who can see it": everyone / friends / close friends.
  * Route: /make · Owner: Dom
  */
@@ -28,6 +29,7 @@ import { saveTrail } from './api'
 import type { FoundPlace } from './googlePlaces'
 import {
   CATEGORY_OPTIONS,
+  MAX_CUSTOM_CATEGORY,
   MAX_STOPS,
   TRAVEL_OPTIONS,
   VISIBILITY_OPTIONS,
@@ -179,6 +181,7 @@ export function MakeTrailForm({
   // Set after a Publish tap with something missing: marks the fields that still need work.
   const [showMissing, setShowMissing] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const customCategoryRef = useRef<HTMLInputElement>(null)
 
   const update = (patch: Partial<TrailDraft>) => {
     setDraft((d) => ({ ...d, ...patch }))
@@ -261,6 +264,7 @@ export function MakeTrailForm({
     id: trailId ?? 'preview',
     title: draft.title.trim() || 'Your trail name',
     category: draft.category,
+    customCategory: draft.customCategory,
     neighborhood: draft.stops[0]?.neighborhood ?? null,
     estimatedCost: cost,
     estimatedMinutes: minutes,
@@ -379,6 +383,8 @@ export function MakeTrailForm({
                     Category
                     {missing('basics') && draft.category === null ? (
                       <span className="ml-2 font-normal text-crumb-deep">Pick one</span>
+                    ) : missing('basics') && draft.category === 'other' && draft.customCategory.trim() === '' ? (
+                      <span className="ml-2 font-normal text-crumb-deep">Type your category</span>
                     ) : null}
                   </legend>
                   <div className="flex flex-wrap gap-2">
@@ -389,12 +395,30 @@ export function MakeTrailForm({
                         className="tab"
                         aria-pressed={draft.category === option.value}
                         aria-selected={draft.category === option.value}
-                        onClick={() => update({ category: option.value })}
+                        onClick={() => {
+                          update({ category: option.value })
+                          // Custom: jump straight into typing the name.
+                          if (option.value === 'other') setTimeout(() => customCategoryRef.current?.focus(), 0)
+                        }}
                       >
                         {option.label}
                       </button>
                     ))}
                   </div>
+                  {draft.category === 'other' ? (
+                    <input
+                      ref={customCategoryRef}
+                      aria-label="Your category"
+                      className={cn(
+                        'mt-2 h-10 w-full max-w-xs rounded-[10px] border bg-white px-3 text-base outline-none focus:shadow-[var(--focus-ring)]',
+                        missing('basics') && draft.customCategory.trim() === '' ? 'border-crumb-strong' : 'border-line-strong',
+                      )}
+                      placeholder="e.g. Rooftops, Study spots"
+                      maxLength={MAX_CUSTOM_CATEGORY}
+                      value={draft.customCategory}
+                      onChange={(e) => update({ customCategory: e.target.value })}
+                    />
+                  ) : null}
                 </fieldset>
               </div>
               <fieldset>

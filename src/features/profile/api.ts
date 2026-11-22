@@ -25,6 +25,8 @@ export type ProfileTrail = {
   id: string
   title: string
   category: string | null
+  /** The creator's own category name when category is 'other'. */
+  customCategory: string | null
   scheduledAt: string | null
   estimatedCost: number | null
   durationMinutes: number | null
@@ -41,7 +43,7 @@ export type ProgressTab = Extract<UserSidequestStatus, 'completed' | 'saved' | '
 const PROFILE_COLUMNS =
   'id, username, display_name, avatar_url, university, bio, is_private, community:communities!profiles_community_id_fkey(name, slug)'
 const TRAIL_COLUMNS =
-  'id, title, category, scheduled_at, estimated_cost, estimated_duration_minutes, neighborhood, status'
+  'id, title, category, custom_category, scheduled_at, estimated_cost, estimated_duration_minutes, neighborhood, status'
 
 const NETWORK_ERROR = 'We couldn’t reach Breadcrumb. Check your connection and try again.'
 const GENERIC_ERROR = 'Something went wrong loading this. Please try again.'
@@ -56,6 +58,7 @@ type TrailRow = Pick<
   | 'id'
   | 'title'
   | 'category'
+  | 'custom_category'
   | 'scheduled_at'
   | 'estimated_cost'
   | 'estimated_duration_minutes'
@@ -68,6 +71,7 @@ function toTrail(row: TrailRow, extra: Partial<ProfileTrail> = {}): ProfileTrail
     id: row.id,
     title: row.title,
     category: row.category,
+    customCategory: row.custom_category,
     scheduledAt: row.scheduled_at,
     estimatedCost: row.estimated_cost,
     durationMinutes: row.estimated_duration_minutes,

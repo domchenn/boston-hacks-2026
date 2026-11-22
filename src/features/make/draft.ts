@@ -16,7 +16,12 @@ export const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
   { value: 'shopping', label: 'Shopping' },
   { value: 'attractions', label: 'Sights' },
   { value: 'affordable', label: 'Budget' },
+  // Your own: typed into draft.customCategory.
+  { value: 'other', label: 'Custom' },
 ]
+
+/** Longest custom category name (matches the database). */
+export const MAX_CUSTOM_CATEGORY = 30
 
 export const TRAVEL_OPTIONS: { value: TravelMode; label: string }[] = [
   { value: 'walk', label: 'Walk' },
@@ -53,6 +58,8 @@ export type TrailDraft = {
   title: string
   description: string
   category: Category | null
+  /** Your own category name, used when category is 'other'. */
+  customCategory: string
   /** Minutes; null = use the suggestion. */
   durationMinutes: number | null
   /** Who can see it: null = everyone, else only this community (task G6). */
@@ -68,6 +75,7 @@ export const emptyDraft = (): TrailDraft => ({
   title: '',
   description: '',
   category: null,
+  customCategory: '',
   durationMinutes: null,
   communityId: null,
   visibility: 'public',
@@ -93,7 +101,14 @@ export type ChecklistItem = { key: ChecklistKey; label: string; done: boolean }
 /** The "Ready to publish" list. Publishing is allowed when every item is done. Crumbs are optional. */
 export function publishChecklist(draft: TrailDraft): ChecklistItem[] {
   return [
-    { key: 'basics', label: 'A name and a category', done: draft.title.trim() !== '' && draft.category !== null },
+    {
+      key: 'basics',
+      label: 'A name and a category',
+      done:
+        draft.title.trim() !== '' &&
+        draft.category !== null &&
+        (draft.category !== 'other' || draft.customCategory.trim() !== ''),
+    },
     { key: 'stops', label: `At least ${MIN_STOPS} stops`, done: draft.stops.length >= MIN_STOPS },
   ]
 }
@@ -108,6 +123,7 @@ export function toSavePayload(draft: TrailDraft, status: 'draft' | 'published') 
     title: draft.title.trim(),
     description: draft.description.trim() || null,
     category: draft.category,
+    custom_category: draft.category === 'other' ? draft.customCategory.trim() || null : null,
     // Trails are go-anytime: saving clears any date an old trail had.
     scheduled_at: null,
     status,

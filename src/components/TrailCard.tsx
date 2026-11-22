@@ -13,7 +13,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Star } from 'lucide-react'
 import { Link } from 'react-router'
 import { TrailLine } from '@/components/TrailLine'
-import { CATEGORY_LABELS, formatCost, formatDistance, formatMinutes } from '@/components/trailFormat'
+import { categoryLabel, formatCost, formatDistance, formatMinutes } from '@/components/trailFormat'
 import { cn } from '@/lib/utils'
 import { lineColor } from '@/lib/transitColors'
 import type { Category, TransitLine, UserSidequestStatus } from '@/types/db-values'
@@ -36,6 +36,8 @@ export type TrailCardData = {
   distanceMiles?: number
   /** Main T line; colors the dots and rings in that line's color. Optional. */
   primaryLine?: TransitLine | null
+  /** The creator's own category name (category 'other'); shown instead of "Other". */
+  customCategory?: string | null
   /** Who made it; shown as "@username" under the title when there is one. */
   creator?: { username: string | null } | null
 }
@@ -58,7 +60,7 @@ function waveSeed(id: string) {
 
 export function TrailCard({ trail, progress, selected, className }: TrailCardProps) {
   const done = progress === 'completed'
-  const eyebrow = [trail.category ? CATEGORY_LABELS[trail.category] : null, done ? 'Finished' : null]
+  const eyebrow = [categoryLabel(trail.category, trail.customCategory), done ? 'Finished' : null]
     .filter(Boolean)
     .join(' · ')
   const labels = [trail.firstStopName, trail.lastStopName].filter((name): name is string => Boolean(name))
