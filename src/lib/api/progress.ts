@@ -1,5 +1,5 @@
 /**
- * Trail actions for the logged-in user: save, join, start, finish, abort, and
+ * Trail actions for the logged-in user: save, join, leave, start, finish, abort, and
  * ticking crumbs. Each action writes the user's single user_sidequests row (one
  * per user per trail) with an upsert on (user_id, sidequest_id); toggleCrumb
  * inserts or deletes a checklist_completions row.
@@ -9,13 +9,13 @@
  *
  * What each action does from the row's current status ("–" = left unchanged):
  *
- *   current \ action   save    unsave           join       start        finish     abort
- *   (no row)           saved   –                signed_up  in_progress  completed  –
- *   saved              –       removed (1)      signed_up  in_progress  completed  aborted
- *   signed_up          –       –                –          in_progress  completed  aborted
- *   in_progress        saved   –                –          – (resume)   completed  aborted
- *   completed          –       –                –          –            –          –
- *   aborted            saved   –                signed_up  in_progress  completed  –
+ *   current \ action   save    unsave           join       leave   start        finish     abort
+ *   (no row)           saved   –                signed_up  –       in_progress  completed  –
+ *   saved              –       removed (1)      signed_up  –       in_progress  completed  aborted
+ *   signed_up          –       –                –          saved   in_progress  completed  aborted
+ *   in_progress        saved   –                –          –       – (resume)   completed  aborted
+ *   completed          –       –                –          –       –            –          –
+ *   aborted            saved   –                signed_up  –       in_progress  completed  –
  *
  *   (1) Deleted if the trail was never started; if it was paused mid-trail
  *       ("save for later") it becomes aborted, which keeps the history.
@@ -188,6 +188,14 @@ export async function unsaveTrail(trailId: string): Promise<void> {
 /** Sign up for a scheduled trail (status 'signed_up'). Only works if scheduled_at is set. */
 export function joinTrail(trailId: string): Promise<void> {
   return transition(trailId, 'signed_up', [null, 'saved', 'aborted'])
+}
+
+/**
+ * Leave a scheduled trail you signed up for: back to 'saved', so it stays
+ * bookmarked (unsave it to remove it entirely). Added in task G5.
+ */
+export function leaveTrail(trailId: string): Promise<void> {
+  return transition(trailId, 'saved', ['signed_up'])
 }
 
 /** Start the trail (status 'in_progress'). Resumes if already started. */

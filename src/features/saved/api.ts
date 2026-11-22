@@ -4,6 +4,7 @@
  * tagged with that status. user_sidequests rows are private to their owner
  * (RLS). Used by SavedPage.tsx.
  */
+import { getGoingCounts } from '@/lib/api/attendees'
 import { supabase } from '@/lib/supabase'
 import type { TrailCardData } from '@/components/TrailCard'
 import type { Category, UserSidequestStatus } from '@/types/db-values'
@@ -56,6 +57,11 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
       }
     }
 
+    // "6 going" on scheduled cards; decoration only, so failures are ignored.
+    const going = await getGoingCounts(
+      rows.filter((row) => row.sidequest!.scheduled_at !== null).map((row) => row.sidequest!.id),
+    ).catch(() => null)
+
     const trails = rows.map<SavedTrail>((row) => {
       const trail = row.sidequest!
       const stops = [...trail.sidequest_stops].sort((a, b) => a.stop_order - b.stop_order)
@@ -71,6 +77,7 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
         firstStopName: stops[0]?.place_name ?? null,
         lastStopName: stops.length > 1 ? stops[stops.length - 1].place_name : null,
         rating: ratings.get(trail.id) ?? { average: null, count: 0 },
+        goingCount: trail.scheduled_at !== null && going ? (going.get(trail.id) ?? 0) : undefined,
         status: row.status as SavedStatus,
         updatedAt: row.updated_at,
       }
