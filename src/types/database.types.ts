@@ -552,6 +552,7 @@ export type Database = {
           is_curated: boolean
           neighborhood: string | null
           primary_line: string | null
+          remixed_from: string | null
           scheduled_at: string | null
           status: string
           title: string
@@ -570,6 +571,7 @@ export type Database = {
           is_curated?: boolean
           neighborhood?: string | null
           primary_line?: string | null
+          remixed_from?: string | null
           scheduled_at?: string | null
           status?: string
           title: string
@@ -588,6 +590,7 @@ export type Database = {
           is_curated?: boolean
           neighborhood?: string | null
           primary_line?: string | null
+          remixed_from?: string | null
           scheduled_at?: string | null
           status?: string
           title?: string
@@ -606,6 +609,13 @@ export type Database = {
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sidequests_remixed_from_fkey"
+            columns: ["remixed_from"]
+            isOneToOne: false
+            referencedRelation: "sidequests"
             referencedColumns: ["id"]
           },
         ]

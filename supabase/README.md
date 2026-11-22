@@ -92,5 +92,6 @@ npm run db:types
 | `20261122034829_add_reports_and_admin_moderation` | `reports` table, `profiles.is_admin` (users can't set it: profile updates limited to the columns the app edits), admin powers to hide trails and remove reviews/photos |
 | `20261122015804_add_trail_attendees_functions` | `trail_attendees(p_trail_id, p_limit)` and `trail_going_counts(p_trail_ids)`: who's going on a scheduled trail (count + public profile fields only, for trails you can see), since progress rows are private |
 | `20261122022403_add_community_to_save_trail` | `save_trail()` accepts an optional `community_id` ("Who can see this": everyone or only your own community); leaving it out keeps the current setting |
+| `20261122034826_add_trail_remixes` | `sidequests.remixed_from` (credit for remixed trails, guarded by a trigger so it can't be forged or changed) and `save_trail()` support for it |
 
 Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.
