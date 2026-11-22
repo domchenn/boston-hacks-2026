@@ -638,7 +638,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      save_trail: {
+        Args: { p_trail: Json; p_trail_id?: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

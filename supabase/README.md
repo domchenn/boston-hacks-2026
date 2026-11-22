@@ -84,5 +84,6 @@ npm run db:types
 | `20261121120004_create_ratings` | `sidequest_ratings` (price/time/enjoyment/memorability), `creator_ratings`, rating average views |
 | `20261121220540_grant_api_access_to_app_tables` | Lets the app's API roles reach the tables (newer Supabase projects don't do this automatically); RLS still controls rows |
 | `20261121225902_seed_curated_demo_trails` | Demo content: the "breadcrumb" team account, 9 real places, 3 curated trails (Sunday Café Hop, North End Cannoli Duel, Harvard Square Bookstores) with stops and crumbs |
+| `20261121233400_add_save_trail_function` | `save_trail(p_trail, p_trail_id)`: Make a trail saves a trail + stops + crumbs in one transaction, enforcing the publish checklist |
 
 Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.
