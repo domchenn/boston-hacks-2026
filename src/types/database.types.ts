@@ -591,6 +591,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           creator_id: string
+          custom_category: string | null
           description: string | null
           estimated_cost: number | null
           estimated_duration_minutes: number | null
@@ -611,6 +612,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           creator_id: string
+          custom_category?: string | null
           description?: string | null
           estimated_cost?: number | null
           estimated_duration_minutes?: number | null
@@ -631,6 +633,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           creator_id?: string
+          custom_category?: string | null
           description?: string | null
           estimated_cost?: number | null
           estimated_duration_minutes?: number | null
