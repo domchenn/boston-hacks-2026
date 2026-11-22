@@ -638,6 +638,18 @@ export type Database = {
       }
     }
     Functions: {
+      friends_activity: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          happened_at: string
+          kind: string
+          sidequest_id: string
+          user_id: string
+          username: string
+        }[]
+      }
       save_trail: {
         Args: { p_trail: Json; p_trail_id?: string }
         Returns: string
