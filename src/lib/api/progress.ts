@@ -205,6 +205,27 @@ export function abortTrail(trailId: string): Promise<void> {
   return transition(trailId, 'aborted', ['saved', 'signed_up', 'in_progress'])
 }
 
+/**
+ * Ids of the crumbs the user has ticked on a trail, so an active trail can show
+ * its ticks again after a refresh. Empty when logged out. (Added in task G3.)
+ */
+export async function getMyTickedCrumbs(trailId: string): Promise<Set<string>> {
+  const { data: auth } = await supabase.auth.getSession()
+  const userId = auth.session?.user.id
+  if (!userId) return new Set()
+  try {
+    const { data, error } = await supabase
+      .from('checklist_completions')
+      .select('checklist_item_id, checklist_items!inner(sidequest_id)')
+      .eq('user_id', userId)
+      .eq('checklist_items.sidequest_id', trailId)
+    if (error) throw toProgressError(error, 'crumb')
+    return new Set(data.map((row) => row.checklist_item_id))
+  } catch (error) {
+    throw error instanceof ProgressError ? error : toProgressError(null, 'crumb')
+  }
+}
+
 /** Tick or untick a crumb (checklist_items row) during an active trail. */
 export async function toggleCrumb(crumbId: string, done: boolean): Promise<void> {
   const userId = await requireUserId()
