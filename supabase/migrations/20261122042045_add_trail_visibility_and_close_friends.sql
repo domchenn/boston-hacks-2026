@@ -31,7 +31,9 @@
 --
 -- 6. save_trail() reads an optional "visibility" ('public' | 'friends' |
 --    'close_friends'). Key absent = keep the current value (new trails: public).
---    Everything else is exactly as in add_trail_remixes.
+--    Crumbs are now optional: publishing no longer needs a crumb at every stop
+--    (a stop can just be a place to go). Everything else is exactly as in
+--    add_trail_remixes.
 --
 -- Runs after: add_stop_to_trail_photos.
 -- Used by: Make / Edit trail visibility picker, profile Private account switch
@@ -216,7 +218,7 @@ $$;
 
 
 -- -----------------------------------------------------------------------------
--- 6. save_trail() with visibility
+-- 6. save_trail() with visibility, and crumbs optional
 -- -----------------------------------------------------------------------------
 create or replace function public.save_trail(p_trail jsonb, p_trail_id uuid default null)
 returns uuid
@@ -270,19 +272,13 @@ begin
     raise exception 'A trail can have at most 8 stops' using errcode = '23514';
   end if;
 
-  -- Publish checklist (drafts can be incomplete).
+  -- Publish checklist (drafts can be incomplete). Crumbs are optional.
   if v_status = 'published' then
     if v_category is null then
       raise exception 'Pick a category before publishing' using errcode = '23514';
     end if;
     if v_count < 2 then
       raise exception 'Add at least 2 stops before publishing' using errcode = '23514';
-    end if;
-    if exists (
-      select 1 from jsonb_array_elements(v_stops) s
-      where nullif(btrim(coalesce(s ->> 'crumb', '')), '') is null
-    ) then
-      raise exception 'Add a crumb at every stop before publishing' using errcode = '23514';
     end if;
   end if;
 
