@@ -19,6 +19,7 @@ import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
 import { cn } from '@/lib/utils'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { loadNeighborhoods, loadTrails, matchesSearch, NEAR_T_MILES, type MapTrail } from './api'
+import { NearbyPanel } from './NearbyPanel'
 import {
   CATEGORY_OPTIONS,
   COST_OPTIONS,
@@ -178,7 +179,7 @@ export function ExplorePage() {
   const trails = (result?.trails ?? []).filter((t) => !q || matchesSearch(t, q))
   const ready = tab === 'for-you' && !loading && !result?.error
   // The map shows the same trails as the grid (nothing on the coming-soon tabs).
-  const mapTrails = tab === 'for-you' && !loading ? trails : []
+  const mapTrails = (tab === 'for-you' || tab === 'nearby') && !loading ? trails : []
 
   // A shared link may name a neighborhood with no trails right now; keep it selectable.
   const neighborhoodNames =
@@ -201,12 +202,21 @@ export function ExplorePage() {
   const clearSearch = () => setParams(withFilter(params, 'q', ''))
 
   let body: ReactNode
-  if (tab !== 'for-you') {
+  if (tab === 'nearby') {
+    // Nearby (task G7): the same trails, sorted by distance from you. See ./NearbyPanel.
     body = (
-      <FeedMessage title={tab === 'nearby' ? 'Nearby is coming soon' : 'Friends is coming soon'}>
-        {tab === 'nearby'
-          ? 'Trails close to where you are right now. Your location is used live and never saved.'
-          : 'Trails your friends made, saved or finished.'}
+      <NearbyPanel
+        trails={loading ? null : trails}
+        error={loading ? null : (result?.error ?? null)}
+        onRetry={() => setAttempt((n) => n + 1)}
+        hoverId={hoverId}
+        onHover={setHoverId}
+      />
+    )
+  } else if (tab !== 'for-you') {
+    body = (
+      <FeedMessage title="Friends is coming soon">
+        Trails your friends made, saved or finished.
       </FeedMessage>
     )
   } else if (loading) {

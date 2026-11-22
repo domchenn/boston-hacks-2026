@@ -13,7 +13,7 @@ import { Star } from 'lucide-react'
 import { Link } from 'react-router'
 import { TrailLine } from '@/components/TrailLine'
 import { hasHappened } from '@/lib/api/attendees'
-import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
+import { CATEGORY_LABELS, formatCost, formatDistance, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { cn } from '@/lib/utils'
 import { lineColor } from '@/lib/transitColors'
 import type { Category, TransitLine, UserSidequestStatus } from '@/types/db-values'
@@ -34,6 +34,8 @@ export type TrailCardData = {
   rating: { average: number | null; count: number }
   /** Scheduled trails: how many are going. Shown as "6 going" in place of the neighborhood. */
   goingCount?: number
+  /** Explore's Nearby tab: miles from the user to the first stop, shown as "0.4 mi away" (task G7). */
+  distanceMiles?: number
   /** Main T line; colors the dots and rings in that line's color. Optional. */
   primaryLine?: TransitLine | null
 }
@@ -95,7 +97,9 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
     >
       <div className="trail-card__head">
         <span className="trail-card__eyebrow shrink-0">{eyebrow}</span>
-        {scheduled && trail.goingCount ? (
+        {trail.distanceMiles !== undefined ? (
+          <span className="trail-card__meta min-w-0 truncate">{formatDistance(trail.distanceMiles)}</span>
+        ) : scheduled && trail.goingCount ? (
           <span className="trail-card__meta min-w-0 truncate">{trail.goingCount} going</span>
         ) : trail.neighborhood ? (
           <span className="trail-card__meta min-w-0 truncate">{trail.neighborhood}</span>

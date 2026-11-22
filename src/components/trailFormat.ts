@@ -34,6 +34,12 @@ export function formatSchedule(iso: string) {
   return `${get('weekday')} ${get('month')} ${get('day')}, ${get('hour')}${minute} ${get('dayPeriod')}`
 }
 
+/** Explore's Nearby tab: 0.04 → "Under 0.1 mi away", 0.42 → "0.4 mi away", 12.6 → "13 mi away". */
+export function formatDistance(miles: number) {
+  if (miles < 0.1) return 'Under 0.1 mi away'
+  return `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi away`
+}
+
 /** 0 → "Free", 24.5 → "~$25". */
 export function formatCost(cost: number) {
   return cost <= 0 ? 'Free' : `~$${Math.round(cost)}`
