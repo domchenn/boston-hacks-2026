@@ -199,9 +199,9 @@ Branch: `feat/join-flow`
 
 ### D6 · Dom · Demo prep
 Branch: `feat/demo-prep`
-- A migration seeding 2–3 demo accounts (no passwords) with finished trails, ratings and reviews on the curated trails, so cards show real ★ ratings and the You page has history. Plus one demo login account the judges can use (share its password privately, not in the repo).
+- A migration seeding 2–3 demo accounts (no passwords) with finished trails, ratings and reviews on the curated trails, so cards show real ★ ratings and the You page has history. ✅ (#29). No shared judges' login: people sign up with Google or email like real users.
 - Check every curated trail in the live app: coordinates on the map, T nearby, crumbs, photos. Fix anything off with a new migration.
-- Run the PRD §13 demo end to end on a phone against the Vercel URL and write `docs/DEMO.md`: the script, which account to use, and what to click.
+- Run the PRD §13 demo end to end on a phone against the Vercel URL and write `docs/DEMO.md`: the script and what to click (sign up fresh with Google during the demo).
 
 ### J6 · Jason · Explore filters + search
 Branch: `feat/explore-filters`
