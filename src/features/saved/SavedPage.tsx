@@ -1,8 +1,7 @@
 /**
  * Saved page: the signed-in user's trails, grouped In progress / Going (signed
  * up for a scheduled trail) / Saved, each as a <TrailCard>. Saved trails can be
- * removed here (unsaveTrail). Saved cards show friends who saved the same trail
- * ("Also saved by @joey", friends_also_saved()). Logged-out visitors are sent to /login?next=/saved.
+ * removed here (unsaveTrail). Logged-out visitors are sent to /login?next=/saved.
  * Route: /saved · Owner: Gio
  */
 import { useEffect, useState, type ReactNode } from 'react'
@@ -36,7 +35,7 @@ type State = { status: 'loading' } | { status: 'error'; message: string } | { st
 
 function SavedList({ userId }: { userId: string }) {
   const [state, setState] = useState<State>({ status: 'loading' })
-  // Friends who saved the same trails ("Also saved by @joey").
+  // Friends who saved the same trails: "Also saved by @joey" under saved cards (friends_also_saved()).
   const alsoSaved = useFriendsAlsoSaved(userId)
   const [attempt, setAttempt] = useState(0)
 
