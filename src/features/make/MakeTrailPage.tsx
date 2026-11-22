@@ -7,6 +7,8 @@
  * Publish is always tappable: if something is missing it says what, marks the
  * fields and scrolls to the first one. "+ Add another stop" jumps back to the
  * search box.
+ * On /make the form is kept on this device as you type (./localDraft), so a
+ * refresh doesn't lose it; a note offers "Start over". Cleared on publish.
  * Logged-out users are sent to /login?next=/make.
  * Basics also has "Who can see it": everyone / friends / close friends.
  * Route: /make · Owner: Dom
@@ -39,6 +41,7 @@ import { SHOW_COMMUNITIES } from '@/features/communities/api'
 import { VisibilityField } from '@/features/communities/VisibilityField'
 import { PlacePicker } from './PlacePicker'
 import { RemixTrail } from './RemixTrail'
+import { clearLocalDraft, readLocalDraft, writeLocalDraft } from './localDraft'
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180, 240, 300]
 
@@ -119,7 +122,7 @@ export function MakeTrailPage() {
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />
   }
   if (remixId) return <RemixTrail key={remixId} trailId={remixId} userId={session.user.id} />
-  return <MakeTrailForm />
+  return <MakeTrailForm autosaveFor={session.user.id} />
 }
 
 export type MakeTrailFormProps = {
@@ -133,6 +136,8 @@ export type MakeTrailFormProps = {
   subheading?: string
   /** Extra panels at the bottom of the sidebar (e.g. Unpublish / Delete on Edit trail). */
   aside?: ReactNode
+  /** Keep the form on this device for this user (plain /make only), so a refresh doesn't lose it. */
+  autosaveFor?: string
 }
 
 export function MakeTrailForm({
@@ -142,12 +147,29 @@ export function MakeTrailForm({
   heading = 'Make a trail',
   subheading = `Pick 2 to ${MAX_STOPS} stops and publish. Crumbs (small things to do at a stop) are optional.`,
   aside,
+  autosaveFor,
 }: MakeTrailFormProps = {}) {
   const navigate = useNavigate()
-  const [draft, setDraft] = useState<TrailDraft>(() => initialDraft ?? emptyDraft())
+  // A trail-in-progress kept on this device from before a refresh (plain /make only).
+  const [restored] = useState(() => (autosaveFor && !initialDraft ? readLocalDraft(autosaveFor) : null))
+  const [showRestored, setShowRestored] = useState(restored !== null)
+  const [draft, setDraft] = useState<TrailDraft>(() => restored?.draft ?? initialDraft ?? emptyDraft())
   const [places, setPlaces] = useState<Place[]>([])
   const [placesError, setPlacesError] = useState(false)
-  const [trailId, setTrailId] = useState<string | null>(initialTrailId)
+  const [trailId, setTrailId] = useState<string | null>(restored?.trailId ?? initialTrailId)
+
+  // Keep the form on this device as you type.
+  useEffect(() => {
+    if (autosaveFor) writeLocalDraft(autosaveFor, draft, trailId)
+  }, [autosaveFor, draft, trailId])
+
+  function startOver() {
+    clearLocalDraft()
+    setDraft(emptyDraft())
+    setTrailId(null)
+    setShowRestored(false)
+    setMessage(null)
+  }
   // /trails/:id/edit has no phone tab bar, so the action bar sits at the very bottom there.
   const editing = initialTrailId !== null
   const [saving, setSaving] = useState<'draft' | 'published' | null>(null)
@@ -236,7 +258,10 @@ export function MakeTrailForm({
       return
     }
     setTrailId(result.id)
-    if (status === 'published') navigate(`/trails/${result.id}`)
+    if (status === 'published') {
+      if (autosaveFor) clearLocalDraft()
+      navigate(`/trails/${result.id}`)
+    }
     else setMessage({ tone: 'ok', text: 'Draft saved. Only you can see it.' })
   }
 
@@ -298,6 +323,21 @@ export function MakeTrailForm({
         </div>
       </div>
 
+      {showRestored && !message ? (
+        <p
+          role="status"
+          className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-paper px-4 py-3 text-sm text-ink-2"
+        >
+          <span>We kept the trail you were working on.</span>
+          <button
+            type="button"
+            onClick={startOver}
+            className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:text-crumb-deep hover:underline"
+          >
+            Start over
+          </button>
+        </p>
+      ) : null}
       {message ? (
         <p
           role={message.tone === 'error' ? 'alert' : 'status'}
