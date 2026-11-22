@@ -6,7 +6,7 @@ The database schema is managed with the **Supabase CLI**, the standard Supabase 
 |---|---|
 | `config.toml` | CLI settings (created by `supabase init`) |
 | `migrations/` | One SQL file per schema change, applied in timestamp order |
-| `seed.sql` | Demo/dev data. Runs automatically on a local `supabase db reset` |
+| `seed.sql` | Local/CI-only test data (demo content lives in migrations so it reaches the live project) |
 
 The CLI is a dev dependency, so `npm install` gets it. Run it with `npx supabase …` or the npm scripts below.
 
@@ -85,5 +85,6 @@ npm run db:types
 | `20261121220540_grant_api_access_to_app_tables` | Lets the app's API roles reach the tables (newer Supabase projects don't do this automatically); RLS still controls rows |
 | `20261121225902_seed_curated_demo_trails` | Demo content: the "breadcrumb" team account, 9 real places, 3 curated trails (Sunday Café Hop, North End Cannoli Duel, Harvard Square Bookstores) with stops and crumbs |
 | `20261121233400_add_save_trail_function` | `save_trail(p_trail, p_trail_id)`: Make a trail saves a trail + stops + crumbs in one transaction, enforcing the publish checklist |
+| `20261122011131_seed_researched_places_and_chinatown_tour` | BU/BC communities, Jason's ~30 researched places, the Chinatown Food Tour (moved from `seed.sql` so it reaches the live project) |
 
 Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.
