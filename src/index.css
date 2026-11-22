@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap");
+
 @import "tailwindcss";
 @import "tw-animate-css";
 /* Breadcrumb style guide (docs/STYLE_GUIDE.md): tokens + ready-made classes (.btn, .trail-card, .stops…). */
