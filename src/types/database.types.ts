@@ -754,6 +754,17 @@ export type Database = {
       }
     }
     Functions: {
+      friends_also_saved: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          friend_id: string
+          saved_at: string
+          sidequest_id: string
+          username: string
+        }[]
+      }
       friends_activity: {
         Args: { p_limit?: number }
         Returns: {
