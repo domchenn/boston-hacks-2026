@@ -15,6 +15,14 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   shopping: 'Shopping',
   attractions: 'Sights',
   affordable: 'Budget',
+  other: 'Other',
+}
+
+/** The eyebrow word for a trail: the creator's own category when they typed one, else the short label. */
+export function categoryLabel(category: Category | null, custom?: string | null): string | null {
+  if (!category) return null
+  if (category === 'other' && custom?.trim()) return custom.trim()
+  return CATEGORY_LABELS[category]
 }
 
 /** Explore's Nearby tab: 0.04 → "Under 0.1 mi away", 0.42 → "0.4 mi away", 12.6 → "13 mi away". */

@@ -91,7 +91,7 @@ export async function unfollow(viewerId: string, userId: string) {
 // Activity
 // ---------------------------------------------------------------------------
 
-const CARD_COLUMNS = `id, title, category, neighborhood, estimated_cost, estimated_duration_minutes, scheduled_at,
+const CARD_COLUMNS = `id, title, category, custom_category, neighborhood, estimated_cost, estimated_duration_minutes, scheduled_at,
   sidequest_stops(place_name, stop_order), creator:profiles!sidequests_creator_id_fkey(username)`
 
 /** Card details (and ratings) for these trails, keyed by id. Trails you can't see are left out. */
@@ -111,6 +111,7 @@ export async function loadCards(ids: string[]) {
       id: row.id,
       title: row.title,
       category: row.category as Category | null,
+      customCategory: row.custom_category,
       neighborhood: row.neighborhood,
       estimatedCost: num(row.estimated_cost),
       estimatedMinutes: row.estimated_duration_minutes,

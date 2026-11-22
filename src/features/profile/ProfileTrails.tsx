@@ -192,6 +192,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   shopping: 'Shopping',
   attractions: 'Attractions',
   affordable: 'Affordable',
+  other: 'Other',
 }
 
 const dayFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
@@ -218,7 +219,12 @@ function eyebrowFor(trail: ProfileTrail, tab: TrailTabId): { text: string; varia
     return { text: trail.completedAt ? `Finished · ${dayFormat.format(new Date(trail.completedAt))}` : 'Finished', variant: 'done' }
   }
   if (trail.trailStatus === 'draft') return { text: 'Draft', variant: 'draft' }
-  const category = trail.category ? CATEGORY_LABELS[trail.category] ?? null : null
+  const category =
+    trail.category === 'other' && trail.customCategory
+      ? trail.customCategory
+      : trail.category
+        ? (CATEGORY_LABELS[trail.category] ?? null)
+        : null
   return { text: category ?? 'Trail', variant: 'anytime' }
 }
 

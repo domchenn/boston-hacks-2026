@@ -14,7 +14,7 @@ import { Link, useLocation, useParams } from 'react-router'
 import { RouteMap } from '@/components/RouteMap'
 import { ReportButton } from '@/features/reports/ReportButton'
 import { TransitAlerts } from '@/components/TransitAlerts'
-import { CATEGORY_LABELS, formatCost, formatMinutes } from '@/components/trailFormat'
+import { categoryLabel, formatCost, formatMinutes } from '@/components/trailFormat'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
 import { YourTrailBar } from '@/features/make/YourTrailBar'
 import { TrailRemixRow } from '@/features/make/TrailRemixRow'
@@ -116,7 +116,7 @@ export function TrailDetailPage() {
   }
 
   const eyebrow = [
-    trail.category ? CATEGORY_LABELS[trail.category] : null,
+    categoryLabel(trail.category, trail.customCategory),
     trail.isCurated ? 'Curated' : null,
     trail.visibility === 'friends' ? 'Friends only' : trail.visibility === 'close_friends' ? 'Close friends only' : null,
   ]

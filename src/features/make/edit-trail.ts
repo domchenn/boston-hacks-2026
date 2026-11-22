@@ -90,6 +90,7 @@ export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
     title: trail.title,
     description: trail.description ?? '',
     category: trail.category,
+    customCategory: trail.customCategory ?? '',
     durationMinutes: trail.estimatedMinutes,
     communityId: trail.communityId,
     visibility: trail.visibility,

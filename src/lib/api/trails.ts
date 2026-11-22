@@ -32,6 +32,8 @@ export type FeedTrail = {
   title: string
   description: string | null
   category: Category | null
+  /** The creator's own category name when category is 'other'. */
+  customCategory: string | null
   neighborhood: string | null
   coverImageUrl: string | null
   /** Rough total cost per person in USD. */
@@ -182,7 +184,7 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
   let query = supabase
     .from('sidequests')
     .select(
-      `id, title, description, category, neighborhood, cover_image_url, estimated_cost,
+      `id, title, description, category, custom_category, neighborhood, cover_image_url, estimated_cost,
        estimated_duration_minutes, scheduled_at, primary_line, is_curated, created_at,
        creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS}),
        sidequest_stops(place_name, stop_order, latitude, longitude, experience:experiences(open_late)),
@@ -214,6 +216,7 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
       title: row.title,
       description: row.description,
       category: row.category as Category | null,
+      customCategory: row.custom_category,
       neighborhood: row.neighborhood,
       coverImageUrl: row.cover_image_url,
       estimatedCost: num(row.estimated_cost),
@@ -260,7 +263,7 @@ export async function getTrail(id: string): Promise<TrailDetail | null> {
   const { data: row, error } = await supabase
     .from('sidequests')
     .select(
-      `id, title, description, category, neighborhood, cover_image_url, estimated_cost,
+      `id, title, description, category, custom_category, neighborhood, cover_image_url, estimated_cost,
        estimated_duration_minutes, scheduled_at, primary_line, is_curated, created_at,
        status, visibility, community_id, remixed_from,
        creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS}),
@@ -315,6 +318,7 @@ export async function getTrail(id: string): Promise<TrailDetail | null> {
     title: row.title,
     description: row.description,
     category: row.category as Category | null,
+      customCategory: row.custom_category,
     neighborhood: row.neighborhood,
     coverImageUrl: row.cover_image_url,
     estimatedCost: num(row.estimated_cost),

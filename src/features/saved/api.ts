@@ -30,7 +30,7 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
       .from('user_sidequests')
       .select(
         `status, updated_at,
-         sidequest:sidequests(id, title, category, neighborhood, estimated_cost,
+         sidequest:sidequests(id, title, category, custom_category, neighborhood, estimated_cost,
            estimated_duration_minutes, sidequest_stops(place_name, stop_order),
            creator:profiles!sidequests_creator_id_fkey(username))`,
       )
@@ -64,6 +64,7 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
         id: trail.id,
         title: trail.title,
         category: trail.category as Category | null,
+        customCategory: trail.custom_category,
         neighborhood: trail.neighborhood,
         estimatedCost: num(trail.estimated_cost),
         estimatedMinutes: trail.estimated_duration_minutes,
