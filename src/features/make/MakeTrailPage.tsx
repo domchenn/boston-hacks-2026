@@ -1,15 +1,18 @@
 /**
  * Make a trail (docs/mockups/Web-Create + Mobile-Create): basics (name,
  * description, category, anytime vs. a date), 2–8 stops picked from the place
- * library or added by hand, a crumb at each stop and how to get there, a live
+ * library or added by hand, an optional crumb at each stop and how to get there, a live
  * preview card with a route map, and the "Ready to publish" checklist. Save draft / Publish trail
  * call save_trail() through ./api, which saves everything in one transaction.
+ * Publish is always tappable: if something is missing it says what, marks the
+ * fields and scrolls to the first one. "+ Add another stop" jumps back to the
+ * search box.
  * Logged-out users are sent to /login?next=/make.
  * Route: /make · Owner: Dom
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Check, Circle, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ArrowDown, ArrowUp, Check, Circle, Plus, X } from 'lucide-react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { RouteMap } from '@/components/RouteMap'
 import { TrailCard } from '@/components/TrailCard'
@@ -26,6 +29,7 @@ import {
   publishChecklist,
   suggestedCost,
   suggestedMinutes,
+  type ChecklistKey,
   type StopDraft,
   type TrailDraft,
 } from './draft'
@@ -72,10 +76,24 @@ function formatMinutes(minutes: number) {
   return minutes < 60 ? `${minutes} min` : `${minutes / 60} hr`
 }
 
+/** What to tell people when they tap Publish with this checklist item missing. */
+const MISSING_TEXT: Record<ChecklistKey, string> = {
+  basics: 'a name and a category',
+  stops: 'at least 2 stops',
+  date: 'a future date',
+}
+
+/** Where to scroll for each missing checklist item. */
+const MISSING_TARGET: Record<ChecklistKey, string> = {
+  basics: 'trail-basics',
+  stops: 'trail-stops',
+  date: 'trail-when',
+}
+
 /** White rounded box used for each section of the form. */
-function Panel({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
+function Panel({ id, title, aside, children }: { id?: string; title: string; aside?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-card border border-line bg-white p-4 shadow-[var(--shadow-card)] md:p-5">
+    <section id={id} className="scroll-mt-24 rounded-card border border-line bg-white p-4 shadow-[var(--shadow-card)] md:p-5">
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <h2 className="text-md font-bold text-ink">{title}</h2>
         {aside ? <span className="text-sm text-muted-foreground">{aside}</span> : null}
@@ -120,7 +138,7 @@ export function MakeTrailForm({
   trailId: initialTrailId = null,
   published = false,
   heading = 'Make a trail',
-  subheading = `Pick 2 to ${MAX_STOPS} stops, add a crumb at each, and publish.`,
+  subheading = `Pick 2 to ${MAX_STOPS} stops and publish. Crumbs (small things to do at a stop) are optional.`,
   aside,
 }: MakeTrailFormProps = {}) {
   const navigate = useNavigate()
@@ -132,6 +150,9 @@ export function MakeTrailForm({
   const editing = initialTrailId !== null
   const [saving, setSaving] = useState<'draft' | 'published' | null>(null)
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
+  // Set after a Publish tap with something missing: marks the fields that still need work.
+  const [showMissing, setShowMissing] = useState(false)
+  const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadPlaces()
@@ -153,11 +174,41 @@ export function MakeTrailForm({
     update({ stops })
   }
   const addStop = (stop: StopDraft) => {
-    if (draft.stops.length < MAX_STOPS) update({ stops: [...draft.stops, stop] })
+    if (draft.stops.length >= MAX_STOPS) return
+    update({ stops: [...draft.stops, stop] })
+  }
+
+  const focusSearch = () => {
+    searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    searchRef.current?.focus({ preventScroll: true })
+  }
+
+  /** Scroll to (and focus, where there's one field) the first thing a checklist item needs. */
+  function jumpTo(key: ChecklistKey) {
+    const field =
+      key === 'basics' && draft.title.trim() === ''
+        ? document.getElementById('trail-title')
+        : key === 'stops'
+          ? searchRef.current
+          : null
+    const section = document.getElementById(MISSING_TARGET[key])
+    ;(field ?? section)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    field?.focus({ preventScroll: true })
+  }
+
+  function publish() {
+    if (canPublish(draft)) return save('published')
+    const missing = publishChecklist(draft).filter((item) => !item.done)
+    setShowMissing(true)
+    setMessage({
+      tone: 'error',
+      text: `Almost there. Before publishing, add ${missing.map((m) => MISSING_TEXT[m.key]).join(', ')}.`,
+    })
+    jumpTo(missing[0].key)
   }
 
   const checklist = publishChecklist(draft)
-  const publishable = canPublish(draft)
+  const missing = (key: ChecklistKey) => showMissing && !checklist.find((item) => item.key === key)?.done
   const cost = suggestedCost(draft.stops)
   const minutes = draft.durationMinutes ?? suggestedMinutes(draft.stops.length)
   const usedPlaceIds = useMemo(
@@ -227,9 +278,8 @@ export function MakeTrailForm({
           <button
             type="button"
             className="btn btn--sm flex-1 md:flex-none"
-            onClick={() => (publishable ? save('published') : undefined)}
-            aria-disabled={!publishable || saving !== null}
-            title={publishable ? undefined : 'Finish the "Ready to publish" list first'}
+            onClick={publish}
+            aria-disabled={saving !== null}
           >
             {saving === 'published'
               ? published
@@ -257,7 +307,7 @@ export function MakeTrailForm({
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-8">
         <div className="flex min-w-0 flex-col gap-4">
           {/* ---------------------------------------------------------- Basics */}
-          <Panel title="Basics">
+          <Panel id="trail-basics" title="Basics">
             <div className="flex flex-col gap-4">
               <div>
                 <label htmlFor="trail-title" className={labelClass}>
@@ -265,7 +315,8 @@ export function MakeTrailForm({
                 </label>
                 <input
                   id="trail-title"
-                  className={fieldClass}
+                  className={cn(fieldClass, missing('basics') && draft.title.trim() === '' && 'border-crumb-strong')}
+                  aria-invalid={missing('basics') && draft.title.trim() === '' ? true : undefined}
                   maxLength={120}
                   placeholder="Rainy Day Bookshop Crawl"
                   value={draft.title}
@@ -287,7 +338,12 @@ export function MakeTrailForm({
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <fieldset>
-                  <legend className={labelClass}>Category</legend>
+                  <legend className={labelClass}>
+                    Category
+                    {missing('basics') && draft.category === null ? (
+                      <span className="ml-2 font-normal text-crumb-deep">Pick one</span>
+                    ) : null}
+                  </legend>
                   <div className="flex flex-wrap gap-2">
                     {CATEGORY_OPTIONS.map((option) => (
                       <button
@@ -303,7 +359,7 @@ export function MakeTrailForm({
                     ))}
                   </div>
                 </fieldset>
-                <fieldset>
+                <fieldset id="trail-when" className="scroll-mt-24">
                   <legend className={labelClass}>When</legend>
                   <div className="flex gap-2">
                     {(['anytime', 'scheduled'] as const).map((when) => (
@@ -323,7 +379,7 @@ export function MakeTrailForm({
                     <input
                       type="datetime-local"
                       aria-label="Date and time"
-                      className={cn(fieldClass, 'mt-2')}
+                      className={cn(fieldClass, 'mt-2', missing('date') && 'border-crumb-strong')}
                       value={draft.scheduledLocal}
                       onChange={(e) => update({ scheduledLocal: e.target.value })}
                     />
@@ -342,8 +398,9 @@ export function MakeTrailForm({
           </Panel>
 
           {/* ----------------------------------------------------------- Stops */}
-          <Panel title="Stops" aside={`${draft.stops.length} of ${MAX_STOPS} · use the arrows to reorder`}>
+          <Panel id="trail-stops" title="Stops" aside={`${draft.stops.length} of ${MAX_STOPS} · use the arrows to reorder`}>
             <PlacePicker
+              inputRef={searchRef}
               places={places}
               usedPlaceIds={usedPlaceIds}
               disabled={draft.stops.length >= MAX_STOPS}
@@ -355,8 +412,13 @@ export function MakeTrailForm({
             ) : null}
 
             {draft.stops.length === 0 ? (
-              <p className="mt-4 rounded-[10px] border border-dashed border-line-strong px-4 py-6 text-center text-sm text-muted-foreground">
-                Search above to add your first stop.
+              <p
+                className={cn(
+                  'mt-4 rounded-[10px] border border-dashed px-4 py-6 text-center text-sm',
+                  missing('stops') ? 'border-crumb-strong text-crumb-deep' : 'border-line-strong text-muted-foreground',
+                )}
+              >
+                Search a place above, or type any name and tap <b>Add</b>. A trail needs at least 2 stops.
               </p>
             ) : (
               <ol className="mt-4 flex flex-col">
@@ -431,8 +493,11 @@ export function MakeTrailForm({
                         </div>
                       </div>
                       <label className="mt-3 block">
-                        <span className="mb-1 block text-xs font-semibold tracking-wide text-crumb-strong uppercase">Crumb</span>
+                        <span className="mb-1 block text-xs font-semibold tracking-wide text-crumb-strong uppercase">
+                          Crumb <span className="font-normal tracking-normal text-muted-foreground normal-case">(optional)</span>
+                        </span>
                         <input
+                          id={`crumb-${stop.key}`}
                           className="w-full rounded-[8px] border border-line-strong bg-white px-3 py-2 text-sm outline-none focus:shadow-[var(--focus-ring)]"
                           maxLength={200}
                           placeholder="A small thing to do here, e.g. Dig through the outdoor sale lot"
@@ -445,6 +510,20 @@ export function MakeTrailForm({
                 ))}
               </ol>
             )}
+            {draft.stops.length > 0 && draft.stops.length < MAX_STOPS ? (
+              <button
+                type="button"
+                onClick={focusSearch}
+                className={cn(
+                  'mt-3 flex w-full items-center justify-center gap-2 rounded-[12px] border border-dashed px-4 py-3 text-sm font-semibold',
+                  'cursor-pointer hover:bg-paper focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none',
+                  missing('stops') ? 'border-crumb-strong text-crumb-deep' : 'border-line-strong text-ink-2',
+                )}
+              >
+                <Plus aria-hidden className="size-4" />
+                {draft.stops.length === 1 ? 'Add a second stop' : 'Add another stop'}
+              </button>
+            ) : null}
           </Panel>
         </div>
 
@@ -508,14 +587,23 @@ export function MakeTrailForm({
           <Panel title="Ready to publish">
             <ul className="flex flex-col gap-2 text-sm">
               {checklist.map((item) => (
-                <li key={item.label} className="flex items-center gap-2">
-                  {item.done ? (
-                    <Check aria-hidden className="size-4 rounded-full bg-done p-0.5 text-white" />
-                  ) : (
-                    <Circle aria-hidden className="size-4 text-line-strong" />
-                  )}
-                  <span className={item.done ? 'text-ink' : 'text-muted-foreground'}>{item.label}</span>
-                  <span className="sr-only">{item.done ? '(done)' : '(not done yet)'}</span>
+                <li key={item.key}>
+                  <button
+                    type="button"
+                    onClick={() => jumpTo(item.key)}
+                    disabled={item.done}
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-[6px] text-left focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none disabled:cursor-default"
+                  >
+                    {item.done ? (
+                      <Check aria-hidden className="size-4 shrink-0 rounded-full bg-done p-0.5 text-white" />
+                    ) : (
+                      <Circle aria-hidden className={cn('size-4 shrink-0', showMissing ? 'text-crumb-strong' : 'text-line-strong')} />
+                    )}
+                    <span className={item.done ? 'text-ink' : showMissing ? 'text-crumb-deep underline' : 'text-muted-foreground hover:underline'}>
+                      {item.label}
+                    </span>
+                    <span className="sr-only">{item.done ? '(done)' : '(not done yet, go to it)'}</span>
+                  </button>
                 </li>
               ))}
             </ul>
