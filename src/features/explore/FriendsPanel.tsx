@@ -1,8 +1,8 @@
 /**
  * Explore "Friends" tab (task J7): trails the people you follow made, finished or
  * joined, newest first, each card topped with who did what ("@ben finished · 2 d").
- * Logged out: a nudge to log in. Signed in: "Find people" (search + suggestions,
- * FindPeople) is always on top, so you can keep following people; then the
+ * Logged out: a nudge to log in. Signed in: a "Find friends" button (FindPeople:
+ * opens search + suggestions) is always on top, so you can keep following people; then the
  * activity, or a nudge when there's none. Renders the items of Explore's feed
  * grid. Data: @/features/friends (friends_activity, follows).
  */
@@ -111,7 +111,7 @@ export function FriendsPanel() {
       <>
         {findPeople}
         <PanelMessage title={following === 0 ? 'Follow people to see their trails' : 'Nothing new from your friends yet'}>
-          <p>When the people you follow make, finish or join a trail, it shows up here.</p>
+          <p>When the people you follow make, finish or join a trail, it shows up here. Tap <b>Find friends</b> to follow people.</p>
         </PanelMessage>
       </>
     )

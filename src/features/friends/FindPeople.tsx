@@ -1,6 +1,7 @@
 /**
- * "Find people" box at the top of Explore's Friends tab, always shown so you can
- * keep following people after your first: a search by name or @username
+ * "Find friends" on Explore's Friends tab: an orange button at the top right
+ * (always there, so you can keep following people after your first) that opens
+ * a panel with a search by name or @username
  * (searchPeople) and, when the box is empty, suggestions (suggestPeopleToFollow: people
  * who follow you first, then trail makers, then recent members). Each person has
  * a Follow / Follow back button and links to their profile. People you just
@@ -9,7 +10,7 @@
 
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { Search } from 'lucide-react'
+import { Search, UserPlus, X } from 'lucide-react'
 import type { TrailCreator } from '@/lib/api/trails'
 import { searchPeople, suggestPeopleToFollow } from './findPeopleApi'
 import { FollowButton } from './FollowBar'
@@ -22,6 +23,29 @@ type Props = {
 }
 
 export function FindPeople({ viewerId, onFollowChange }: Props) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="col-span-full">
+      <div className="flex items-center justify-between gap-3">
+        <p className="m-0 text-sm text-muted-foreground">Trails the people you follow made, finished or joined.</p>
+        <button
+          type="button"
+          className="btn btn--sm shrink-0"
+          aria-expanded={open}
+          aria-controls="find-people-panel"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? <X aria-hidden /> : <UserPlus aria-hidden />}
+          {open ? 'Close' : 'Find friends'}
+        </button>
+      </div>
+      {open ? <FindPeoplePanel viewerId={viewerId} onFollowChange={onFollowChange} /> : null}
+    </div>
+  )
+}
+
+/** The opened panel: search + suggestions. Loads suggestions when it opens. */
+function FindPeoplePanel({ viewerId, onFollowChange }: Props) {
   const [query, setQuery] = useState('')
   const [suggested, setSuggested] = useState<TrailCreator[] | null>(null)
   const [results, setResults] = useState<{ q: string; list: TrailCreator[] } | null>(null)
@@ -63,15 +87,20 @@ export function FindPeople({ viewerId, onFollowChange }: Props) {
   const list = searching ? (results?.q === q ? results.list : null) : suggested
 
   return (
-    <section aria-labelledby="find-people-title" className="col-span-full rounded-card border border-line bg-white px-4 py-4 md:px-5">
+    <section
+      id="find-people-panel"
+      aria-labelledby="find-people-title"
+      className="mt-3 rounded-card border border-line bg-white px-4 py-4 md:px-5"
+    >
       <h2 id="find-people-title" className="m-0 text-base font-bold">
-        Find people
+        Find friends
       </h2>
       <label className="mt-3 flex h-11 items-center gap-2 rounded-pill border border-line-strong bg-paper px-4 focus-within:shadow-[var(--focus-ring)]">
         <Search aria-hidden className="size-4 shrink-0 text-muted-foreground" />
         <span className="sr-only">Search people by name or username</span>
         <input
           type="search"
+          autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or @username"
