@@ -1,6 +1,6 @@
 /**
- * Saved page: the signed-in user's trails, grouped In progress / Going (signed
- * up for a scheduled trail) / Saved, each as a <TrailCard>. Saved trails can be
+ * Saved page: the signed-in user's trails, grouped In progress / Saved, each as a
+ * <TrailCard> (old sign-ups for dated trails show as Saved). Saved trails can be
  * removed here (unsaveTrail). Logged-out visitors are sent to /login?next=/saved.
  * Route: /saved · Owner: Gio
  */
@@ -15,7 +15,6 @@ import { getSavedTrails, type SavedStatus, type SavedTrail } from './api'
 
 const SECTIONS: { status: SavedStatus; title: string }[] = [
   { status: 'in_progress', title: 'In progress' },
-  { status: 'signed_up', title: 'Going' },
   { status: 'saved', title: 'Saved' },
 ]
 
@@ -97,12 +96,8 @@ function SavedList({ userId }: { userId: string }) {
     <SavedShell>
       <div className="grid gap-8">
         {SECTIONS.map(({ status, title }) => {
-          let items = trails.filter((t) => t.status === status)
+          const items = trails.filter((t) => t.status === status)
           if (items.length === 0) return null
-          // Going: soonest first. The others stay most-recently-touched first.
-          if (status === 'signed_up') {
-            items = [...items].sort((a, b) => (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? ''))
-          }
           const headingId = `saved-${status}`
           return (
             <section key={status} aria-labelledby={headingId}>
@@ -178,7 +173,7 @@ function SavedShell({ children }: { children: ReactNode }) {
       >
         Saved
       </h1>
-      <p className="mt-1.5 mb-5 text-md text-ink-2 md:mt-2 md:text-lg">Trails you’ve bookmarked, joined, or started.</p>
+      <p className="mt-1.5 mb-5 text-md text-ink-2 md:mt-2 md:text-lg">Trails you’ve bookmarked or started.</p>
       {children}
     </section>
   )

@@ -1,8 +1,7 @@
 /**
  * Make a trail, pre-filled from someone else's trail (/make?remix=<id>, task G8).
  * Copies the name, description, category, length, stops (with their place-library
- * links) and the first crumb at each stop into MakeTrailForm; not the date or who
- * can see it. Saving sends remixed_from, so the new trail is yours and credited
+ * links) and the first crumb at each stop into MakeTrailForm; not who can see it. Saving sends remixed_from, so the new trail is yours and credited
  * "Remixed from @user". Says up front what wasn't copied. Your own trails go to
  * Edit instead.
  */
@@ -33,9 +32,7 @@ async function loadRemix(trailId: string, userId: string): Promise<State> {
     if (!library.ok) return { status: 'error', message: library.message }
     const draft: TrailDraft = {
       ...draftFromTrail({ trail, library: library.data }),
-      // A remix is a fresh trail: no date, visible to everyone, credited to the original.
-      when: 'anytime',
-      scheduledLocal: '',
+      // A remix is a fresh trail: visible to everyone, credited to the original.
       communityId: null,
       // A remix starts public; the remixer can change it before publishing.
       visibility: 'public',
@@ -129,7 +126,6 @@ function RemixNote({ trail }: { trail: TrailDetail }) {
   const otherCrumbs = losses.extraCrumbs + losses.betweenCrumbs
   if (otherCrumbs > 0) left.push(`${otherCrumbs} more ${otherCrumbs === 1 ? 'crumb' : 'crumbs'} (one crumb per stop is copied)`)
   if (losses.stopsWithDetails > 0) left.push('the notes on each stop')
-  if (trail.scheduledAt) left.push('the date')
   return (
     <div role="note" className="mb-5 flex items-start gap-3 rounded-card border border-line bg-white p-4 text-sm leading-normal text-ink-2 md:p-5">
       <Shuffle aria-hidden className="mt-0.5 size-4 flex-none text-crumb-strong" />

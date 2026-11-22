@@ -1,5 +1,5 @@
 /**
- * The viewer's status on one trail (getMyStatus) and the Start / Save / Join actions
+ * The viewer's status on one trail (getMyStatus) and the Start / Save actions
  * from @/lib/api/progress. Once the trail is finished it also checks getMyRating so
  * the page can offer "Rate this trail" (not rated yet) or "Edit your rating".
  * Logged-out viewers are sent to /login?next=/trails/:id.
@@ -8,13 +8,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { getMyStatus, joinTrail, leaveTrail, saveTrail, startTrail, unsaveTrail } from '@/lib/api/progress'
+import { getMyStatus, saveTrail, startTrail, unsaveTrail } from '@/lib/api/progress'
 import { getMyRating } from '@/lib/api/ratings'
 import { useSession } from '@/lib/useSession'
 import type { UserSidequestStatus } from '@/types/db-values'
 import { loginPath } from './trailLinks'
 
-type Action = 'start' | 'save' | 'join' | 'leave'
+type Action = 'start' | 'save'
 
 /** Turns API errors into something a person can act on. */
 function friendlyError(error: unknown) {
@@ -104,9 +104,6 @@ export function useTrailActions(trailId: string) {
       current === 'saved'
         ? run('save', () => unsaveTrail(trailId), null)
         : run('save', () => saveTrail(trailId), 'saved'),
-    join: () => run('join', () => joinTrail(trailId), 'signed_up'),
-    // Back to saved, so it stays bookmarked (task G5).
-    leave: () => run('leave', () => leaveTrail(trailId), 'saved'),
   }
 }
 

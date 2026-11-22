@@ -17,23 +17,6 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   affordable: 'Budget',
 }
 
-/** "Sun Nov 29, 11 AM" (or "Sat Nov 28, 2:30 PM") in Boston time. */
-const scheduleFormat = new Intl.DateTimeFormat('en-US', {
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  timeZone: 'America/New_York',
-})
-
-export function formatSchedule(iso: string) {
-  const parts = scheduleFormat.formatToParts(new Date(iso))
-  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? ''
-  const minute = get('minute') === '00' ? '' : `:${get('minute')}`
-  return `${get('weekday')} ${get('month')} ${get('day')}, ${get('hour')}${minute} ${get('dayPeriod')}`
-}
-
 /** Explore's Nearby tab: 0.04 → "Under 0.1 mi away", 0.42 → "0.4 mi away", 12.6 → "13 mi away". */
 export function formatDistance(miles: number) {
   if (miles < 0.1) return 'Under 0.1 mi away'
