@@ -58,7 +58,7 @@ Every route already exists in `src/App.tsx` and points at a placeholder page. **
 | `getDirectionsLink(to, mode, from?)`, `getTrailDirectionsLink(places)`, `loadGoogleMaps()` | `@/lib/maps` | ✅ done (D3) |
 | `<NearbyStations latitude longitude limit? />`, `loadStations()`, `nearestStations()` | `@/components/NearbyStations`, `@/lib/mbta` | ✅ done (D4) |
 | `getMyRating`, `rateTrail`, `deleteMyRating` | `@/lib/api/ratings` | ✅ done (J3) |
-| `uploadCrumbPhoto`, `addTrailPhoto`, `getTrailPhotos`, `deletePhoto` | `@/lib/api/photos` | ⏳ stubs exist; filled in by task D5 |
+| `uploadCrumbPhoto`, `addTrailPhoto`, `getTrailPhotos`, `deletePhoto` | `@/lib/api/photos` | ✅ done (D5). Camera button only on ticked crumbs. |
 
 Call shared functions by these names even before they're finished, so nobody waits.
 
@@ -172,7 +172,7 @@ Branch: `feat/edit-trail`
 Branch: `feat/photos`
 - Migration: a Supabase Storage bucket `trail-photos` (public read, 5 MB limit, images only) with policies: logged-in users upload only into a folder named after their own user id, and delete only their own files.
 - Fill in `src/lib/api/photos.ts` (keep the names):
-  - `uploadCrumbPhoto(crumbId, file)`: uploads, then sets `checklist_completions.photo_url` on the user's tick (ticks the crumb if it isn't yet). Private proof photo.
+  - `uploadCrumbPhoto(crumbId, file)`: uploads, then sets `checklist_completions.photo_url` on the user's tick (the crumb must be ticked first).
   - `addTrailPhoto(trailId, file, caption?)`: uploads and inserts into `quest_photos` (public on the trail, PRD §5.4). Only allowed once the user has started, saved or finished the trail (the database already checks this).
   - `getTrailPhotos(trailId)`: public photos with the uploader's profile, newest first.
   - `deletePhoto(photoId)`: removes the row and the file (own photos only).

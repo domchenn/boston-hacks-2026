@@ -1,7 +1,8 @@
 /**
  * Active trail ("Start trail" mode), per docs/mockups/Mobile-Run.dc.html: live map
  * with the user's position, the current stop with directions and its crumbs, the
- * whole trail's crumbs grouped by stop, and Finished / Save for later / Abort.
+ * whole trail's crumbs grouped by stop, photos (camera on ticked crumbs, Add photos;
+ * see ActiveTrailPhotos), and Finished / Save for later / Abort.
  * Opening the page starts (or resumes) the trail. Location is asked for only here
  * and never stored; the screen stays awake while the page is open.
  * Route: /trails/:id/go · Owner: Gio
@@ -22,6 +23,7 @@ import type { TrailDetail } from '@/lib/api/trails'
 import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
 import { CrumbChecklist, TrailChecklist } from './ActiveTrailCrumbs'
+import { CrumbPhotoButton, TrailPhotosPanel } from './ActiveTrailPhotos'
 import { directionsLink } from './directions-link'
 import { useActiveTrail } from './useActiveTrail'
 import { useLiveLocation, type LocationState } from './useLiveLocation'
@@ -86,6 +88,7 @@ function ActiveTrailView({
 }: ViewProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [confirmAbort, setConfirmAbort] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   const { stops } = trail
 
   const allCrumbs = [...stops.flatMap((s) => s.crumbs), ...trail.betweenStopCrumbs]
@@ -207,6 +210,9 @@ function ActiveTrailView({
               ticked={ticked}
               pending={pendingCrumbs}
               onToggle={toggle}
+              renderDoneExtra={(crumb) => (
+                <CrumbPhotoButton crumbId={crumb.id} label={crumb.label} onError={setPhotoError} />
+              )}
             />
           </>
         ) : (
@@ -216,6 +222,9 @@ function ActiveTrailView({
         )}
 
         {crumbError ? <InlineError>{crumbError}</InlineError> : null}
+        {photoError ? <InlineError>{photoError}</InlineError> : null}
+
+        <TrailPhotosPanel trailId={trail.id} />
 
         <h2 className="mt-8 mb-0 flex items-baseline justify-between gap-3 text-base font-bold">
           The whole trail
