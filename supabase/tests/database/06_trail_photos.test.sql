@@ -34,12 +34,15 @@ select throws_ok(
   $$insert into storage.objects (bucket_id, name) values ('trail-photos', '22222222-2222-2222-2222-222222222222/trails/x/1.jpg')$$,
   '42501', null, 'users cannot upload into someone else''s folder');
 
-select set_config('request.jwt.claims', '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}', true);
-delete from storage.objects where bucket_id = 'trail-photos' and name = '11111111-1111-1111-1111-111111111111/trails/x/1.jpg';
-select set_config('request.jwt.claims', '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}', true);
-select is(
-  (select count(*)::int from storage.objects where name = '11111111-1111-1111-1111-111111111111/trails/x/1.jpg'),
-  1, 'nobody can delete someone else''s photo (delete was ignored)');
+-- Supabase blocks deleting storage rows with SQL (deletes go through the Storage
+-- API), so check the delete rule itself: only files in your own folder.
+select ok(
+  exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects' and cmd = 'DELETE'
+      and policyname = 'Users delete their own trail photos'
+      and qual like '%foldername%' and qual like '%auth.uid()%'),
+  'users can only delete photos in their own folder (policy check)');
 
 -- ---------------------------------------------------------------- photo records
 select throws_ok(
