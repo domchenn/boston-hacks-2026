@@ -1,5 +1,6 @@
 /**
- * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main): tabs For you /
+ * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main) with a
+ * time-of-day greeting under it (./greeting): tabs For you /
  * Nearby (./NearbyPanel) / Friends (./FriendsPanel), filters (category, neighborhood,
  * cost range, length, Late night, Near a T station), a grid of TrailCards and, on wide
  * screens, a map of where the shown trails start (TrailsMap), its top level with
@@ -33,6 +34,8 @@ import {
   type FilterKey,
 } from './filters'
 import { CostRangeFilter } from './CostRangeFilter'
+import { exploreGreeting } from './greeting'
+import { useSession } from '@/lib/useSession'
 
 type Tab = 'for-you' | 'nearby' | 'friends'
 
@@ -147,6 +150,11 @@ export function ExplorePage() {
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [mapAvailable, setMapAvailable] = useState(true)
   const navigate = useNavigate()
+  const { profile } = useSession()
+  // Picked once per visit: changes with the time of day and rotates daily (./greeting).
+  const firstName = profile?.display_name?.trim().split(/\s+/)[0] ?? null
+  const [greetingTime] = useState(() => new Date())
+  const greeting = exploreGreeting(greetingTime, firstName)
 
   // Everything that changes what loadTrails() returns. The search (q) is applied below instead.
   const key = JSON.stringify([values, communityPending ? 'pending' : (communityId ?? ''), attempt])
@@ -292,6 +300,7 @@ export function ExplorePage() {
       >
         Trails for you
       </h1>
+      <p className="mt-1.5 text-md text-ink-2 md:mt-2 md:text-lg">{greeting}</p>
       <div className="mt-4 md:mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-8">
         <section aria-labelledby="feed-title" className="min-w-0">
           <div role="tablist" aria-label="Feed" className="flex flex-wrap gap-2">
