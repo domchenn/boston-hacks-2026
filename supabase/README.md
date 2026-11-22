@@ -7,6 +7,7 @@ The database schema is managed with the **Supabase CLI**, the standard Supabase 
 | `config.toml` | CLI settings (created by `supabase init`) |
 | `migrations/` | One SQL file per schema change, applied in timestamp order |
 | `seed.sql` | Local/CI-only test data (demo content lives in migrations so it reaches the live project) |
+| `launch/` | SQL to run **at launch only**, kept out of `migrations/` so `db:push` can't apply it early. `remove_demo_data.sql` deletes the demo accounts and their reviews. |
 
 The CLI is a dev dependency, so `npm install` gets it. Run it with `npx supabase …` or the npm scripts below.
 
@@ -88,6 +89,7 @@ npm run db:types
 | `20261122011131_seed_researched_places_and_chinatown_tour` | BU/BC communities, Jason's ~30 researched places, the Chinatown Food Tour (moved from `seed.sql` so it reaches the live project) |
 | `20261122014142_add_trail_photos_storage` | Public `trail-photos` Storage bucket (5 MB, images) with rules: users upload/delete only in their own folder |
 | `20261122022417_seed_demo_activity_and_fix_coordinates` | Verified coordinates for 6 curated places/stops; demo accounts @maya_k, @jrod, @priya_s with finished trails, ratings, reviews and sign-ups |
+| `20261122034829_add_reports_and_admin_moderation` | `reports` table, `profiles.is_admin` (users can't set it: profile updates limited to the columns the app edits), admin powers to hide trails and remove reviews/photos |
 | `20261122015804_add_trail_attendees_functions` | `trail_attendees(p_trail_id, p_limit)` and `trail_going_counts(p_trail_ids)`: who's going on a scheduled trail (count + public profile fields only, for trails you can see), since progress rows are private |
 | `20261122022403_add_community_to_save_trail` | `save_trail()` accepts an optional `community_id` ("Who can see this": everyone or only your own community); leaving it out keeps the current setting |
 

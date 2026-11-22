@@ -10,6 +10,8 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { AuthPage } from '@/features/auth/AuthPage'
 import { SessionProvider } from '@/lib/SessionProvider'
 import { OnboardingPage } from '@/features/auth/OnboardingPage'
+import { PrivacyPage, TermsPage } from '@/features/legal/LegalPages'
+import { AdminReportsPage } from '@/features/reports/AdminReportsPage'
 import { ExplorePage } from '@/features/explore/ExplorePage'
 import { EditTrailPage } from '@/features/make/EditTrailPage'
 import { MakeTrailPage } from '@/features/make/MakeTrailPage'
@@ -43,6 +45,9 @@ const router = createBrowserRouter([
       { path: 'u/:username', element: <ProfilePage /> }, // Gio
       { path: 'onboarding', element: <OnboardingPage /> }, // Gio
       { path: 'map', element: <MapPage /> }, // later (P1)
+      { path: 'privacy', element: <PrivacyPage /> }, // Dom
+      { path: 'terms', element: <TermsPage /> }, // Dom
+      { path: 'admin/reports', element: <AdminReportsPage /> }, // Dom (team admins only)
       { path: 'login', element: <AuthPage mode="login" /> }, // Gio
       { path: 'signup', element: <AuthPage mode="signup" /> }, // Gio
       { path: '*', element: <NotFoundPage /> },

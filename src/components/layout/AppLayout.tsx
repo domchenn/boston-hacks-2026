@@ -263,6 +263,16 @@ export function AppLayout() {
         )}
       >
         <Outlet />
+        {onMapPage ? null : (
+          <footer className="mt-12 flex gap-4 border-t border-line pt-4 text-sm text-muted-foreground">
+            <Link to="/privacy" className="hover:text-ink">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-ink">
+              Terms
+            </Link>
+          </footer>
+        )}
       </main>
 
       {onTrailPage ? null : <TabBar />}

@@ -59,6 +59,7 @@ Every route already exists in `src/App.tsx` and points at a placeholder page. **
 | `<StopTransit latitude longitude refreshMs? />` (T stations + next trains, nearest bus stop + next buses, Bluebikes dock), `<TransitAlerts stops />` | `@/components/StopTransit`, `@/components/TransitAlerts` | ✅ done (D7; replaced D4's NearbyStations) |
 | `loadStations()`, `nearestStations()`, `getArrivals()`, `getNearbyBusStops()`, `getAlerts()` · `getNearbyDocks()` | `@/lib/mbta` · `@/lib/bluebikes` | ✅ done (D4, D7) |
 | `getMyRating`, `rateTrail`, `deleteMyRating` | `@/lib/api/ratings` | ✅ done (J3) |
+| `<ReportButton targetType targetId ownerId? />`, admin queue at `/admin/reports` | `@/features/reports` | ✅ done (D8) |
 | `uploadCrumbPhoto`, `addTrailPhoto`, `getTrailPhotos`, `deletePhoto` | `@/lib/api/photos` | ✅ done (D5). Camera button only on ticked crumbs. |
 
 Call shared functions by these names even before they're finished, so nobody waits.
