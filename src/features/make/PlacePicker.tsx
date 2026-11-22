@@ -6,7 +6,7 @@
  * Esc to close. `inputRef` lets the page focus the box ("+ Add another stop").
  */
 
-import { useId, useMemo, useState, type Ref } from 'react'
+import { useId, useMemo, useRef, useState, type Ref } from 'react'
 import { MapPin, Plus, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Place } from './api'
@@ -29,6 +29,13 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const listId = useId()
+  // Closing on blur waits a moment (so a click on an option still lands). If the
+  // box gets focus back meanwhile (e.g. "+ Add another stop"), that close is cancelled.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = null
+  }
 
   const options = useMemo<Option[]>(() => {
     const q = query.trim().toLowerCase()
@@ -87,8 +94,15 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
             setOpen(true)
             setActive(0)
           }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 120)}
+          onFocus={() => {
+            cancelClose()
+            setOpen(true)
+          }}
+          onClick={() => setOpen(true)}
+          onBlur={() => {
+            cancelClose()
+            closeTimer.current = setTimeout(() => setOpen(false), 120)
+          }}
           onKeyDown={onKeyDown}
           className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
         />
