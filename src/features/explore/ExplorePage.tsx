@@ -272,7 +272,8 @@ export function ExplorePage() {
       <p className="mt-1.5 text-md text-ink-2 md:mt-2 md:text-lg">{greeting}</p>
       <div className="mt-4 md:mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-8">
         <section aria-labelledby="feed-title" className="min-w-0">
-          <div role="tablist" aria-label="Feed" className="flex flex-wrap gap-2">
+          {/* Phones: four equal tabs on one row. Wider: pills that size to their text. */}
+          <div role="tablist" aria-label="Feed" className="grid grid-cols-4 gap-1.5 md:flex md:flex-wrap md:gap-2">
             {TABS.map(({ id, label }) => (
               <button
                 key={id}
@@ -281,7 +282,7 @@ export function ExplorePage() {
                 role="tab"
                 aria-selected={tab === id}
                 aria-controls="feed-panel"
-                className="tab"
+                className="tab max-md:px-0! max-md:text-[15px]!"
                 onClick={() => setTab(id)}
               >
                 {label}

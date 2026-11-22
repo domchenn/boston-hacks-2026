@@ -35,7 +35,8 @@
 
 /* ---------- Card --------------------------------------------------------- */
 .auth-card {
-  width: 440px;
+  /* 440 wide on desktop, never wider than the screen on phones. */
+  width: min(440px, 100%);
   display: grid;
   gap: var(--space-5);
   padding: var(--space-6) var(--space-5);
