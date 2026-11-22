@@ -7,7 +7,7 @@
  * (hidden on /trails/:id pages, which have their own sticky Start trail bar). On
  * /map the shell is exactly one screen tall and <main> has no padding, so the map
  * fills everything between the header and the tab bar.
- * Search sends you to Explore with ?q=…; the current route's page renders in <Outlet />.
+ * Search sends you to Explore with ?q=… (keeping any Explore filters); the current route's page renders in <Outlet />.
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
@@ -24,7 +24,7 @@ const NAV = [
   { to: '/me', label: 'You', icon: User, end: false },
 ] as const
 
-/** Search trails by name, place or neighborhood; submits to Explore as /?q=… */
+/** Search trails by name, place or neighborhood; submits to Explore as /?q=… (keeping Explore's filters). */
 function SearchBox({ id, autoFocus, onDone }: { id: string; autoFocus?: boolean; onDone?: () => void }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -42,7 +42,12 @@ function SearchBox({ id, autoFocus, onDone }: { id: string; autoFocus?: boolean;
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const q = value.trim()
-    navigate(q ? `/?q=${encodeURIComponent(q)}` : '/')
+    // On Explore, keep the filters that are already in the URL (?category=…) and only change q.
+    const next = new URLSearchParams(pathname === '/' ? params : undefined)
+    if (q) next.set('q', q)
+    else next.delete('q')
+    const query = next.toString()
+    navigate(query ? `/?${query}` : '/')
     onDone?.()
   }
 
