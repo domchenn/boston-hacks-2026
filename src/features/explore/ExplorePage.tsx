@@ -1,17 +1,20 @@
 /**
  * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main): tabs For you /
  * Nearby / Friends (only For you works for now), cost and length filters, a grid of
- * TrailCards and a map placeholder on the right (desktop). Reads ?q= from the header
- * search. Data comes from ./api (loadFeed), which switches to getFeed() once D1 lands.
+ * TrailCards and, on wide screens, a map of where the shown trails start (TrailsMap).
+ * Hovering a card highlights its pin and vice versa; clicking a pin opens the trail.
+ * Reads ?q= from the header search. Data: loadTrails() in ./api (getFeed + starts).
  * Route: / · Owner: Jason
  */
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronDown, MapIcon } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router'
+import { ChevronDown } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { TrailCard } from '@/components/TrailCard'
+import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
+import { cn } from '@/lib/utils'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
-import { loadFeed, type FeedTrail } from './api'
+import { loadTrails, matchesSearch, type MapTrail } from './api'
 
 type Tab = 'for-you' | 'nearby' | 'friends'
 
@@ -56,7 +59,7 @@ function FilterSelect({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={
-          'h-[38px] cursor-pointer appearance-none rounded-pill bg-white pr-9 pl-3.5 text-sm font-semibold outline-none focus-visible:shadow-[var(--focus-ring)] ' +
+          'h-11 cursor-pointer appearance-none rounded-pill md:h-[38px] bg-white pr-9 pl-3.5 text-sm font-semibold outline-none focus-visible:shadow-[var(--focus-ring)] ' +
           (active
             ? 'text-ink shadow-[inset_0_0_0_1.5px_var(--color-ink)]'
             : 'text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line-strong)]')
@@ -95,14 +98,6 @@ function FeedMessage({ title, children }: { title: string; children?: ReactNode 
   )
 }
 
-/** Matches the header search against a trail's title, neighborhood and stop names. */
-function matchesSearch(trail: FeedTrail, q: string) {
-  const needle = q.toLowerCase()
-  return [trail.title, trail.neighborhood, trail.firstStopName, trail.lastStopName, trail.description].some((field) =>
-    field?.toLowerCase().includes(needle),
-  )
-}
-
 export function ExplorePage() {
   const [params] = useSearchParams()
   const q = (params.get('q') ?? '').trim()
@@ -110,14 +105,18 @@ export function ExplorePage() {
   const [cost, setCost] = useState('')
   const [length, setLength] = useState('')
   const [attempt, setAttempt] = useState(0)
-  const [result, setResult] = useState<{ key: string; trails?: FeedTrail[]; error?: string } | null>(null)
+  const [result, setResult] = useState<{ key: string; trails?: MapTrail[]; error?: string } | null>(null)
+  // The trail being pointed at, and whether that's from its card or its map pin.
+  const [hover, setHover] = useState<{ id: string; from: 'card' | 'pin' } | null>(null)
+  const [mapAvailable, setMapAvailable] = useState(true)
+  const navigate = useNavigate()
 
   const key = `${cost}|${length}|${attempt}`
   const loading = result?.key !== key
 
   useEffect(() => {
     let cancelled = false
-    loadFeed({
+    loadTrails({
       maxCost: cost === '' ? undefined : Number(cost),
       maxMinutes: length === '' ? undefined : Number(length),
     }).then(
@@ -132,6 +131,8 @@ export function ExplorePage() {
 
   const trails = (result?.trails ?? []).filter((t) => !q || matchesSearch(t, q))
   const filtered = cost !== '' || length !== ''
+  // The map shows the same trails as the grid (nothing on the coming-soon tabs).
+  const mapTrails = tab === 'for-you' && !loading ? trails : []
 
   function clearFilters() {
     setCost('')
@@ -177,7 +178,21 @@ export function ExplorePage() {
       </FeedMessage>
     )
   } else {
-    body = trails.map((trail) => <TrailCard key={trail.id} trail={trail} />)
+    body = trails.map((trail) => (
+      <div
+        key={trail.id}
+        className={cn(
+          'rounded-card transition-shadow',
+          hover?.id === trail.id && hover.from === 'pin' && 'shadow-[0_0_0_2px_var(--color-crumb)]',
+        )}
+        onMouseEnter={() => setHover({ id: trail.id, from: 'card' })}
+        onMouseLeave={() => setHover(null)}
+        onFocus={() => setHover({ id: trail.id, from: 'card' })}
+        onBlur={() => setHover(null)}
+      >
+        <TrailCard trail={trail} className="h-full" />
+      </div>
+    ))
   }
 
   return (
@@ -237,13 +252,15 @@ export function ExplorePage() {
       </section>
 
       <aside aria-label="Trails on the map" className="sticky top-24 hidden lg:block">
-        <div className="grid aspect-[440/600] place-items-center rounded-card border border-line bg-sand p-8 text-center">
-          <div>
-            <MapIcon aria-hidden className="mx-auto size-8 text-muted-foreground" />
-            <p className="mt-3 font-bold text-ink">Map coming soon</p>
-            <p className="mt-1 text-sm text-muted-foreground">Trails will show here on a real map of Boston.</p>
-          </div>
-        </div>
+        <TrailsMap
+          trails={mapTrails}
+          highlightedId={hover?.id ?? null}
+          onHover={(id) => setHover(id ? { id, from: 'pin' } : null)}
+          onSelect={(id) => navigate(`/trails/${id}`)}
+          onStatusChange={(status) => setMapAvailable(status !== 'unavailable')}
+          className="aspect-[440/600] max-h-[calc(100dvh-160px)] w-full"
+        />
+        {mapAvailable && mapTrails.length > 0 ? <TrailsMapLegend trails={mapTrails} className="mt-3" /> : null}
       </aside>
     </div>
   )

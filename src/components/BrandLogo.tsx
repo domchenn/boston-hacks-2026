@@ -9,7 +9,7 @@ import logoMark from '../../docs/assets/svg/logo-mark.svg'
 
 export function BrandLogo() {
   return (
-    <Link to="/" className="brand" aria-label="breadcrumb, home">
+    <Link to="/" className="brand min-h-11" aria-label="breadcrumb, home">
       <img className="brand__mark" src={logoMark} alt="" aria-hidden="true" />
       breadcrumb
     </Link>

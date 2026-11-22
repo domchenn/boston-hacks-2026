@@ -90,3 +90,14 @@
     @apply min-h-dvh bg-background font-sans text-foreground antialiased;
   }
 }
+
+/* Phones: the style guide's small buttons and tabs (38 px) grow to a 44 px tap
+   target. Same layer as components.css, so utilities can still override them. */
+@media (max-width: 767.98px) {
+  @layer components {
+    .btn--sm,
+    .tab {
+      height: 44px;
+    }
+  }
+}

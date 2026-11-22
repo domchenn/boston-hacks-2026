@@ -1,7 +1,8 @@
 /**
  * Shared wording for trails: short category names, cost ("~$25" / "Free"),
- * length ("2.5 hr") and scheduled dates in Boston time ("Sun Nov 29, 11 AM").
- * Used by TrailCard and the Trail detail page so both say things the same way.
+ * length ("2.5 hr"), scheduled dates in Boston time ("Sun Nov 29, 11 AM") and T line
+ * names / colours. Used by TrailCard, the Trail detail page and the trail maps so
+ * they all say things the same way.
  */
 
 import type { Category, TransitLine } from '@/types/db-values'
@@ -53,6 +54,11 @@ export const LINE_INFO: Record<TransitLine, { name: string; color: string | null
   bl: { name: 'Blue Line', color: 'var(--line-blue)' },
   sl: { name: 'Silver Line', color: 'var(--line-silver)' },
   cr: { name: 'Commuter Rail', color: null },
+}
+
+/** A trail's colour on maps: its T line's, or the trail orange for no line / Commuter Rail. */
+export function lineColor(line: TransitLine | null) {
+  return (line && LINE_INFO[line].color) || 'var(--color-crumb)'
 }
 
 /** "Nov 9" in Boston time (review dates). */
