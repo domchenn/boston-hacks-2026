@@ -39,7 +39,7 @@ type TrailsMapProps = {
   /** "greedy" for a full-screen map; "cooperative" when the page scrolls past it. */
   gestureHandling?: 'cooperative' | 'greedy'
   /** Where the zoom buttons go; "top" keeps them clear of a bottom card rail. */
-  controls?: 'top' | 'bottom'
+  controls?: 'top' | 'middle' | 'bottom'
   /** Told when the map becomes ready or turns out to be unavailable (e.g. to hide a legend). */
   onStatusChange?: (status: 'loading' | 'ready' | 'unavailable') => void
   className?: string
@@ -138,7 +138,12 @@ export function TrailsMap({
           disableDefaultUI: true,
           zoomControl: true,
           zoomControlOptions: {
-            position: controls === 'top' ? maps.ControlPosition.RIGHT_TOP : maps.ControlPosition.RIGHT_BOTTOM,
+            position:
+              controls === 'top'
+                ? maps.ControlPosition.RIGHT_TOP
+                : controls === 'middle'
+                  ? maps.ControlPosition.RIGHT_CENTER
+                  : maps.ControlPosition.RIGHT_BOTTOM,
           },
           clickableIcons: false,
           gestureHandling,

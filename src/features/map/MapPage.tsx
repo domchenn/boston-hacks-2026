@@ -1,6 +1,10 @@
 /**
- * Map tab: every published trail on a full-screen map (TrailsMap, one pin per trail
- * start, coloured by T line). Desktop: a scrolling list of TrailCards on the left;
+ * Map tab: every published trail you can see on a full-screen map (TrailsMap, one
+ * pin per trail start, coloured by T line), not just a personalised feed. The same
+ * filters as Explore (TrailFilters: category, neighborhood, cost, length, late
+ * night, near a T) narrow both the pins and the cards; they live in the URL, so a
+ * filtered map can be shared and survives refresh. Trails with no mapped stop still
+ * get a card. Desktop: a scrolling list of TrailCards on the left;
  * hovering a card highlights its pin. Phones: a swipeable card rail above the tab
  * bar; the card in the middle is highlighted and the map pans to it. Tapping a pin
  * brings its card into view. Data: loadTrails() from the Explore lane's api.
@@ -8,10 +12,12 @@
  */
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { TrailCard } from '@/components/TrailCard'
 import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
-import { loadTrails, type MapTrail } from '@/features/explore/api'
+import { loadTrails, matchesSearch, type MapTrail } from '@/features/explore/api'
+import { activeFilterCount, readFilterValues, toExploreFilters, withoutFilters } from '@/features/explore/filters'
+import { TrailFilters } from '@/features/explore/TrailFilters'
 
 const PHONE_QUERY = '(max-width: 767px)'
 
@@ -39,29 +45,34 @@ function RailMessage({ title, children }: { title: string; children?: ReactNode 
 
 export function MapPage() {
   const isPhone = useIsPhone()
+  const [params, setParams] = useSearchParams()
+  const q = (params.get('q') ?? '').trim()
+  const filterKey = JSON.stringify(readFilterValues(params))
+  const activeCount = activeFilterCount(params)
   const railRef = useRef<HTMLUListElement>(null)
   const settleTimer = useRef<number | undefined>(undefined)
   const [attempt, setAttempt] = useState(0)
-  const [result, setResult] = useState<{ key: number; trails?: MapTrail[]; error?: string } | null>(null)
+  const [result, setResult] = useState<{ key: string; trails?: MapTrail[]; error?: string } | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [mapAvailable, setMapAvailable] = useState(true)
 
-  const loading = result?.key !== attempt
-  const trails = !loading ? (result?.trails ?? []) : []
+  // Everything that changes what loadTrails() returns; the header search (q) is applied below.
+  const key = `${filterKey}:${attempt}`
+  const loading = result?.key !== key
+  const trails = !loading ? (result?.trails ?? []).filter((t) => !q || matchesSearch(t, q)) : []
 
   useEffect(() => {
     let cancelled = false
-    loadTrails().then(
-      (list) => !cancelled && setResult({ key: attempt, trails: list }),
+    loadTrails(toExploreFilters(JSON.parse(filterKey))).then(
+      (list) => !cancelled && setResult({ key, trails: list }),
       (error: unknown) =>
-        !cancelled &&
-        setResult({ key: attempt, error: error instanceof Error ? error.message : 'Something went wrong.' }),
+        !cancelled && setResult({ key, error: error instanceof Error ? error.message : 'Something went wrong.' }),
     )
     return () => {
       cancelled = true
     }
-  }, [attempt])
+  }, [key, filterKey])
 
   useEffect(() => () => window.clearTimeout(settleTimer.current), [])
 
@@ -112,6 +123,21 @@ export function MapPage() {
         </button>
       </RailMessage>
     )
+  } else if (trails.length === 0 && (activeCount > 0 || q)) {
+    items = (
+      <RailMessage title="No trails match">
+        <p>{q ? `Nothing found for “${q}” with these filters.` : 'Nothing matches these filters.'}</p>
+        {activeCount > 0 ? (
+          <button
+            type="button"
+            className="btn btn--sm btn--secondary mt-3"
+            onClick={() => setParams(withoutFilters(params), { replace: true })}
+          >
+            Clear filters
+          </button>
+        ) : null}
+      </RailMessage>
+    )
   } else if (trails.length === 0) {
     items = (
       <RailMessage title="No trails yet">
@@ -146,11 +172,16 @@ export function MapPage() {
         onSelect={selectFromMap}
         followHighlight={isPhone}
         gestureHandling="greedy"
-        controls={isPhone ? 'top' : 'bottom'}
+        controls={isPhone ? 'middle' : 'bottom'}
         onStatusChange={(status) => setMapAvailable(status !== 'unavailable')}
-        padding={isPhone ? { top: 56, right: 40, bottom: 250, left: 40 } : { top: 56, right: 56, bottom: 56, left: 56 }}
+        padding={isPhone ? { top: 80, right: 48, bottom: 250, left: 40 } : { top: 56, right: 56, bottom: 56, left: 56 }}
         className="absolute inset-0 rounded-none border-0 md:relative md:inset-auto md:min-w-0 md:flex-1"
       />
+
+      {/* Phones: the filters float over the top of the map, scrolling sideways (z-40 so their sheets cover the card rail). */}
+      <div className="absolute inset-x-0 top-0 z-40 md:hidden">
+        <TrailFilters params={params} setParams={setParams} className="px-4 pt-3 pb-2" />
+      </div>
 
       <section
         aria-label="Trails on the map"
@@ -161,6 +192,11 @@ export function MapPage() {
           Trails on the map
         </h1>
         <h1 className="sr-only md:hidden">Trails on the map</h1>
+        <TrailFilters params={params} setParams={setParams} className="mt-3 hidden px-5 md:flex" />
+        <p role="status" className="sr-only">
+          {loading ? 'Loading trails…' : `${trails.length} ${trails.length === 1 ? 'trail' : 'trails'}`}
+          {!loading && activeCount > 0 ? ' match these filters' : ''}
+        </p>
         {mapAvailable && !loading && trails.length > 0 ? <TrailsMapLegend trails={trails} className="mt-2 hidden px-5 md:flex" /> : null}
         <ul
           ref={railRef}
