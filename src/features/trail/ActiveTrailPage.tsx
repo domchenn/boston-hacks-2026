@@ -1,32 +1,23 @@
 /**
  * Active trail ("Start trail" mode), per docs/mockups/Mobile-Run.dc.html: live map
- * with the user's position, the current stop with directions and its crumbs, the
- * whole trail's crumbs grouped by stop, photos (camera on ticked crumbs, Add photos;
- * see ActiveTrailPhotos), and Finished / Save for later / Abort.
+ * with the user's position and the trail as an accordion of stops
+ * (ActiveTrailStops): the stop you're at is open with how to get there, its
+ * crumbs and a photo button; finishing a stop (its circle, "Done here", or the
+ * last crumb) folds it away and opens the next. Then Finished / Save for later / Abort.
  * Opening the page starts (or resumes) the trail. Location is asked for only here
  * and never stored; the screen stays awake while the page is open.
  * Route: /trails/:id/go · Owner: Gio
  */
 import { useState, type ReactNode } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
-import {
-  ChevronLeft,
-  ChevronRight,
-  CircleAlert,
-  LoaderCircle,
-  LocateFixed,
-  LocateOff,
-  Navigation,
-} from 'lucide-react'
+import { ChevronLeft, CircleAlert, LoaderCircle, LocateFixed, LocateOff } from 'lucide-react'
 import { RouteMap } from '@/components/RouteMap'
-import { StopTransit } from '@/components/StopTransit'
 import { TransitAlerts } from '@/components/TransitAlerts'
-import type { TrailDetail } from '@/lib/api/trails'
+import type { TrailDetail, TrailStop } from '@/lib/api/trails'
 import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
-import { CrumbChecklist, TrailChecklist } from './ActiveTrailCrumbs'
-import { CrumbPhotoButton, TrailPhotosPanel } from './ActiveTrailPhotos'
-import { directionsLink } from './directions-link'
+import { useStopPhotos } from './useStopPhotos'
+import { ActiveTrailStops } from './ActiveTrailStops'
 import { useActiveTrail } from './useActiveTrail'
 import { useLiveLocation, type LocationState } from './useLiveLocation'
 import { useWakeLock } from './useWakeLock'
@@ -84,28 +75,32 @@ function ActiveTrailView({
   pendingCrumbs,
   crumbError,
   toggle,
+  setCrumbs,
   busy,
   actionError,
   run,
 }: ViewProps) {
+  const { session } = useSession()
+  const photos = useStopPhotos(trail.id, session?.user.id ?? null)
   const [searchParams, setSearchParams] = useSearchParams()
   const [confirmAbort, setConfirmAbort] = useState(false)
-  const [photoError, setPhotoError] = useState<string | null>(null)
   const { stops } = trail
 
   const allCrumbs = [...stops.flatMap((s) => s.crumbs), ...trail.betweenStopCrumbs]
   const doneCount = allCrumbs.filter((c) => ticked.has(c.id)).length
+  const allDone = allCrumbs.length > 0 && doneCount === allCrumbs.length
+  // Next up: the first stop with crumbs left (-1 when every stop is done).
+  const nextIndex = stops.findIndex((s) => s.crumbs.some((c) => !ticked.has(c.id)))
 
-  // Current stop: ?stop= (1-based, survives refresh), else the first stop with crumbs left.
+  // The stop in focus: ?stop= (1-based, survives refresh), else the next stop.
   const requested = Number(searchParams.get('stop'))
-  const firstOpen = stops.findIndex((s) => s.crumbs.some((c) => !ticked.has(c.id)))
-  const currentIndex =
-    Number.isInteger(requested) && requested >= 1 && requested <= stops.length
-      ? requested - 1
-      : Math.max(firstOpen, 0)
-  const current = stops[currentIndex] ?? null
+  const focusedIndex =
+    Number.isInteger(requested) && requested >= 1 && requested <= stops.length ? requested - 1 : Math.max(nextIndex, 0)
+  const focused = stops[focusedIndex] ?? null
+  // Open stops: starts with the stop in focus.
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set(focused ? [focused.id] : []))
 
-  const goToStop = (index: number) =>
+  const rememberStop = (index: number) =>
     setSearchParams(
       (params) => {
         params.set('stop', String(index + 1))
@@ -113,6 +108,49 @@ function ActiveTrailView({
       },
       { replace: true },
     )
+
+  const scrollToStop = (stopId: string) =>
+    setTimeout(() => document.getElementById(`stop-${stopId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+
+  function openStop(index: number) {
+    const stop = stops[index]
+    if (!stop) return
+    setOpenIds((prev) => new Set(prev).add(stop.id))
+    rememberStop(index)
+    scrollToStop(stop.id)
+  }
+
+  /** Done at stop `index`: fold it away and open the next stop that still has crumbs. */
+  function moveOn(index: number) {
+    const later = stops.findIndex((s, j) => j > index && s.crumbs.some((c) => !ticked.has(c.id)))
+    const target = later >= 0 ? later : index + 1 < stops.length ? index + 1 : -1
+    setOpenIds((prev) => {
+      const next = new Set(prev)
+      next.delete(stops[index].id)
+      if (target >= 0) next.add(stops[target].id)
+      return next
+    })
+    if (target >= 0) {
+      rememberStop(target)
+      scrollToStop(stops[target].id)
+    }
+  }
+
+  function toggleCrumb(crumbId: string) {
+    const index = stops.findIndex((s) => s.crumbs.some((c) => c.id === crumbId))
+    const ticking = !ticked.has(crumbId)
+    toggle(crumbId)
+    // Ticking the last crumb at a stop moves on, like "Done here".
+    if (index >= 0 && ticking && stops[index].crumbs.every((c) => c.id === crumbId || ticked.has(c.id))) moveOn(index)
+  }
+
+  function setStop(stop: TrailStop, done: boolean) {
+    setCrumbs(
+      stop.crumbs.map((c) => c.id),
+      done,
+    )
+    if (done) moveOn(stops.indexOf(stop))
+  }
 
   return (
     <div className="pb-48 md:pb-0 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(380px,460px)] lg:items-start lg:gap-8">
@@ -123,11 +161,8 @@ function ActiveTrailView({
           primaryLine={trail.primaryLine}
           mode="live"
           userLocation={location.status === 'on' ? location.location : null}
-          selectedStopId={current?.id ?? null}
-          onSelectStop={(stopId) => {
-            const index = stops.findIndex((s) => s.id === stopId)
-            if (index >= 0) goToStop(index)
-          }}
+          selectedStopId={focused?.id ?? null}
+          onSelectStop={(stopId) => openStop(stops.findIndex((s) => s.id === stopId))}
           className="aspect-auto h-[42vh] min-h-[260px] rounded-none border-0 md:rounded-card md:border lg:h-[calc(100dvh-8rem)]"
         />
         <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
@@ -149,110 +184,65 @@ function ActiveTrailView({
 
       {/* Sheet */}
       <section
-        aria-labelledby="active-stop-title"
+        aria-labelledby="active-trail-title"
         className="relative -mx-4 -mt-6 rounded-t-[var(--radius-sheet)] bg-paper px-4 pt-5 shadow-[var(--shadow-sheet)] md:mx-0 md:mt-6 md:rounded-none md:bg-transparent md:px-0 md:pt-0 md:shadow-none lg:order-1 lg:mt-0"
       >
         <LocationNote location={location} />
+
+        <div className="mt-4 flex items-baseline justify-between gap-3">
+          <h1
+            id="active-trail-title"
+            className="m-0 text-[1.5rem] leading-[var(--leading-tight)] font-extrabold tracking-[var(--tracking-title)] text-ink"
+          >
+            {trail.title}
+          </h1>
+          {allCrumbs.length > 0 ? (
+            <span className="flex-none text-sm text-muted-foreground" aria-live="polite">
+              {doneCount} of {allCrumbs.length} crumbs
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 mb-0 text-sm text-ink-2">
+          Tap a stop’s circle when you’re done there. The next stop opens by itself.
+        </p>
 
         {finished ? (
           <p className="mt-3 rounded-card bg-[var(--color-green-tint)] px-4 py-3 text-base text-ink">
             <b>You finished this trail.</b> You can still look back over your crumbs.
           </p>
+        ) : allDone ? (
+          <p className="mt-3 rounded-card bg-[var(--color-green-tint)] px-4 py-3 text-base text-ink">
+            <b>Every crumb done.</b> Tap <b>Finished</b> to wrap up and rate the trail.
+          </p>
         ) : null}
 
-        {current ? (
-          <>
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <p className="m-0 text-sm font-semibold text-crumb-strong">
-                Stop {currentIndex + 1} of {stops.length}
-                {firstOpen === currentIndex && !finished ? ' · next up' : ''}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="icon-btn disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Previous stop"
-                  disabled={currentIndex === 0}
-                  onClick={() => goToStop(currentIndex - 1)}
-                >
-                  <ChevronLeft aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Next stop"
-                  disabled={currentIndex === stops.length - 1}
-                  onClick={() => goToStop(currentIndex + 1)}
-                >
-                  <ChevronRight aria-hidden />
-                </button>
-              </div>
-            </div>
-            <h1
-              id="active-stop-title"
-              className="mt-1.5 text-[1.75rem] leading-[var(--leading-tight)] font-extrabold tracking-[var(--tracking-title)] text-ink"
-            >
-              {current.placeName}
-            </h1>
-            {current.address ? <p className="mt-1 text-base text-ink-2">{current.address}</p> : null}
-            {current.plannedActivity ? <p className="mt-3 text-base leading-normal text-ink">{current.plannedActivity}</p> : null}
-            <a
-              href={directionsLink(current)}
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn--secondary btn--sm mt-4"
-            >
-              <Navigation aria-hidden />
-              Open in Google Maps
-              <span className="sr-only"> (directions to {current.placeName}, opens in a new tab)</span>
-            </a>
-            {current.latitude !== null && current.longitude !== null ? (
-              <StopTransit latitude={current.latitude} longitude={current.longitude} refreshMs={30_000} className="mt-3" />
-            ) : null}
-            <TransitAlerts stops={stops} className="mt-3" />
-
-            <CrumbChecklist
-              title="Crumbs here"
-              crumbs={current.crumbs}
-              ticked={ticked}
-              pending={pendingCrumbs}
-              onToggle={toggle}
-              renderDoneExtra={(crumb) => (
-                <CrumbPhotoButton crumbId={crumb.id} label={crumb.label} onError={setPhotoError} />
-              )}
-            />
-          </>
-        ) : (
-          <h1 id="active-stop-title" className="mt-4 text-2xl font-extrabold">
-            {trail.title}
-          </h1>
-        )}
+        <TransitAlerts stops={stops} className="mt-3" />
 
         {crumbError ? <InlineError>{crumbError}</InlineError> : null}
-        {photoError ? <InlineError>{photoError}</InlineError> : null}
+        {photos.error ? <InlineError>{photos.error}</InlineError> : null}
 
-        <TrailPhotosPanel trailId={trail.id} />
-
-        <h2 className="mt-8 mb-0 flex items-baseline justify-between gap-3 text-base font-bold">
-          The whole trail
-          {allCrumbs.length > 0 ? (
-            <span className="text-sm font-normal text-muted-foreground" aria-live="polite">
-              {doneCount} of {allCrumbs.length} crumbs
-            </span>
-          ) : null}
-        </h2>
-        <TrailChecklist
+        <ActiveTrailStops
           stops={stops}
-          primaryLine={trail.primaryLine}
           betweenStopCrumbs={trail.betweenStopCrumbs}
-          currentIndex={currentIndex}
-          onSelectStop={(i) => {
-            goToStop(i)
-            document.getElementById('active-stop-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          primaryLine={trail.primaryLine}
+          nextIndex={nextIndex}
+          openIds={openIds}
+          onToggleOpen={(stopId) => {
+            const next = new Set(openIds)
+            if (next.has(stopId)) next.delete(stopId)
+            else {
+              next.add(stopId)
+              rememberStop(stops.findIndex((s) => s.id === stopId))
+            }
+            setOpenIds(next)
           }}
           ticked={ticked}
           pending={pendingCrumbs}
-          onToggle={toggle}
+          onToggleCrumb={toggleCrumb}
+          onSetStop={setStop}
+          onNext={moveOn}
+          photos={photos}
+          finished={finished}
         />
 
         {/* Bottom actions: a fixed bar on phones, inline on larger screens. */}

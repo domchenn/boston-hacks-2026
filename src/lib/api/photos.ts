@@ -8,7 +8,10 @@
  * Images are shrunk in the browser before upload (longest side 1600 px, JPEG),
  * so phone photos stay small and fit the 5 MB limit.
  *
- * Used by: Active trail (camera on crumbs, Add photos), Trail detail and the
+ * A photo can be pinned to one stop (quest_photos.stop_id), for the photo button
+ * on each stop of Active trail.
+ *
+ * Used by: Active trail (photos per stop), Trail detail and the
  * Finished / Rate screen (photo grid).
  */
 
@@ -20,6 +23,8 @@ export type TrailPhoto = {
   url: string
   caption: string | null
   createdAt: string
+  /** The stop it was taken at, if it was added from a stop on Active trail. */
+  stopId: string | null
   uploader: TrailCreator | null
 }
 
@@ -105,14 +110,19 @@ export async function uploadCrumbPhoto(crumbId: string, file: File): Promise<str
   return url
 }
 
-/** Add a public photo to a trail you've started, saved or finished. */
-export async function addTrailPhoto(trailId: string, file: File, caption?: string): Promise<TrailPhoto> {
+/** Add a public photo to a trail you've started, saved or finished, optionally at one of its stops. */
+export async function addTrailPhoto(
+  trailId: string,
+  file: File,
+  caption?: string,
+  stopId?: string,
+): Promise<TrailPhoto> {
   const userId = await currentUserId()
   const { path, url } = await upload(file, `trails/${trailId}`)
   const { data, error } = await supabase
     .from('quest_photos')
-    .insert({ user_id: userId, sidequest_id: trailId, photo_url: url, caption: caption?.trim() || null })
-    .select('id, photo_url, caption, created_at, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
+    .insert({ user_id: userId, sidequest_id: trailId, photo_url: url, caption: caption?.trim() || null, stop_id: stopId ?? null })
+    .select('id, photo_url, caption, created_at, stop_id, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
     .single()
   if (error || !data) {
     await supabase.storage.from(BUCKET).remove([path])
@@ -120,14 +130,21 @@ export async function addTrailPhoto(trailId: string, file: File, caption?: strin
       error?.code === '42501' ? 'Start or save this trail before adding photos.' : 'Couldn’t save that photo. Please try again.',
     )
   }
-  return { id: data.id, url: data.photo_url, caption: data.caption, createdAt: data.created_at, uploader: data.uploader }
+  return {
+    id: data.id,
+    url: data.photo_url,
+    caption: data.caption,
+    createdAt: data.created_at,
+    stopId: data.stop_id,
+    uploader: data.uploader,
+  }
 }
 
 /** Public photos on a trail, newest first. */
 export async function getTrailPhotos(trailId: string): Promise<TrailPhoto[]> {
   const { data, error } = await supabase
     .from('quest_photos')
-    .select('id, photo_url, caption, created_at, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
+    .select('id, photo_url, caption, created_at, stop_id, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
     .eq('sidequest_id', trailId)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -136,6 +153,7 @@ export async function getTrailPhotos(trailId: string): Promise<TrailPhoto[]> {
     url: p.photo_url,
     caption: p.caption,
     createdAt: p.created_at,
+    stopId: p.stop_id,
     uploader: p.uploader,
   }))
 }

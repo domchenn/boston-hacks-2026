@@ -1,6 +1,7 @@
 /**
  * State behind the Active trail page: loads the trail, starts (or resumes) it with
- * startTrail, restores the user's ticked crumbs, and runs the crumb toggles and the
+ * startTrail, restores the user's ticked crumbs, and runs the crumb toggles (one at a
+ * time, or every crumb at a stop with setCrumbs) and the
  * Finished / Save for later / Abort actions from @/lib/api/progress. A login that
  * expired mid-trail sends the user to /login and back here.
  */
@@ -85,10 +86,18 @@ export function useActiveTrail(trailId: string) {
   }
 
   /** Ticks or unticks a crumb right away, then saves; undoes it if saving fails. */
-  async function toggle(crumbId: string) {
+  function toggle(crumbId: string) {
+    return setCrumb(crumbId, !ticked.has(crumbId))
+  }
+
+  /** Ticks (or unticks) several crumbs at once, e.g. "done here" on a stop. Already-right ones are skipped. */
+  function setCrumbs(crumbIds: string[], done: boolean) {
+    return Promise.all(crumbIds.filter((id) => ticked.has(id) !== done).map((id) => setCrumb(id, done)))
+  }
+
+  async function setCrumb(crumbId: string, done: boolean) {
     if (inFlight.current.has(crumbId)) return
     inFlight.current.add(crumbId)
-    const done = !ticked.has(crumbId)
     const apply = (on: boolean) =>
       setTicked((prev) => {
         const next = new Set(prev)
@@ -140,5 +149,5 @@ export function useActiveTrail(trailId: string) {
     }
   }
 
-  return { load, retry, ticked, pendingCrumbs, crumbError, toggle, busy, actionError, run }
+  return { load, retry, ticked, pendingCrumbs, crumbError, toggle, setCrumbs, busy, actionError, run }
 }
