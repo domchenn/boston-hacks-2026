@@ -642,6 +642,23 @@ export type Database = {
         Args: { p_trail: Json; p_trail_id?: string }
         Returns: string
       }
+      trail_attendees: {
+        Args: { p_limit?: number; p_trail_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          going_count: number
+          user_id: string
+          username: string
+        }[]
+      }
+      trail_going_counts: {
+        Args: { p_trail_ids: string[] }
+        Returns: {
+          going_count: number
+          sidequest_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
