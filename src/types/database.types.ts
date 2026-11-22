@@ -787,6 +787,14 @@ export type Database = {
           sidequest_id: string
         }[]
       }
+      trending_trails: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          people: number
+          score: number
+          sidequest_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
