@@ -181,8 +181,12 @@ export function MakeTrailForm({
   }
 
   const focusSearch = () => {
-    searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    searchRef.current?.focus({ preventScroll: true })
+    const input = searchRef.current
+    if (!input) return
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Already focused (list maybe closed with Esc)? Refocus so the list opens again.
+    if (document.activeElement === input) input.blur()
+    input.focus({ preventScroll: true })
   }
 
   /** Scroll to (and focus, where there's one field) the first thing a checklist item needs. */
@@ -535,6 +539,8 @@ export function MakeTrailForm({
             {draft.stops.length > 0 && draft.stops.length < MAX_STOPS ? (
               <button
                 type="button"
+                // Don't take focus from the search box on press; focusSearch handles it.
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={focusSearch}
                 className={cn(
                   'mt-3 flex w-full items-center justify-center gap-2 rounded-[12px] border border-dashed px-4 py-3 text-sm font-semibold',
@@ -543,7 +549,7 @@ export function MakeTrailForm({
                 )}
               >
                 <Plus aria-hidden className="size-4" />
-                {draft.stops.length === 1 ? 'Add a second stop' : 'Add another stop'}
+                Add another stop
               </button>
             ) : null}
           </Panel>
