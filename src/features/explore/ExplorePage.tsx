@@ -12,7 +12,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Check, ChevronDown, Moon, TrainFront } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
-import { useCommunities } from '@/features/communities/api'
+import { SHOW_COMMUNITIES, useCommunities } from '@/features/communities/api'
 import { CommunitySwitcher } from '@/features/communities/CommunitySwitcher'
 import { TrailCard } from '@/components/TrailCard'
 import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
@@ -130,7 +130,7 @@ export function ExplorePage() {
   const q = (params.get('q') ?? '').trim()
   const values = readFilterValues(params)
   // Community switcher (task G6), kept in ?community=<slug> so it can be shared.
-  const communitySlug = params.get('community') ?? ''
+  const communitySlug = SHOW_COMMUNITIES ? (params.get('community') ?? '') : ''
   const communities = useCommunities()
   const communityId = communities?.find((c) => c.slug === communitySlug)?.id
   // Wait for the communities list before loading a ?community= link (no flash of "All").
@@ -295,7 +295,7 @@ export function ExplorePage() {
             </button>
           ))}
         </div>
-        {tab === 'for-you' ? (
+        {SHOW_COMMUNITIES && tab === 'for-you' ? (
           <div className="mb-4">
             <CommunitySwitcher value={communitySlug} onChange={setCommunity} />
           </div>

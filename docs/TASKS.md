@@ -210,7 +210,7 @@ Branch: `feat/explore-filters`
 - Search across title, description, neighborhood and stop names.
 - Extend `getFeed()` in `@/lib/api/trails` with any new filter parameters it needs (small additive change; mention it in the PR).
 
-### G6 · Gio · Communities (BU / BC) ✅ (#30, #31)
+### G6 · Gio · Communities (BU / BC) ✅ (#30, #31) · UI hidden for now (`SHOW_COMMUNITIES = false` in `src/features/communities/api.ts`)
 Branch: `feat/communities`
 - Settings on the You page: join one community (BU or BC) or none, saved to `profiles.community_id`.
 - Explore: a community switcher (All / BU / BC). Community-only trails are already hidden from non-members by the database.
