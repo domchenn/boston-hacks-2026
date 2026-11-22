@@ -235,10 +235,9 @@ Branch: `feat/friends`
 - Explore **Friends** tab: trails made, finished or joined by people you follow, newest first. Empty state with a nudge to follow people.
 - A small "Friends' activity" list on the You page ("@maya_k finished Sunday Café Hop · 2 d"). Only use data that is already public (finished trails need a small SECURITY DEFINER function in a `db/…` migration, since progress is private; Dom reviews).
 
-### G7 · Gio · Nearby + installable app
-Branch: `feat/nearby-and-pwa`
+### G7 · Gio · Nearby tab
+Branch: `feat/nearby`
 - Explore **Nearby** tab: ask for location only when the tab is tapped, then sort trails by distance from you to their first stop ("0.4 mi away" on cards). Location stays in the browser and is never stored. Friendly fallback if denied.
-- Make the app installable: web app manifest (name, icons from the logo, theme colors), Add to Home Screen support on iPhone and Android, and a simple offline page. Keep it light (no heavy service-worker caching of data).
 
 ---
 
