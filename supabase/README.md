@@ -87,6 +87,7 @@ npm run db:types
 | `20261121233400_add_save_trail_function` | `save_trail(p_trail, p_trail_id)`: Make a trail saves a trail + stops + crumbs in one transaction, enforcing the publish checklist |
 | `20261122011131_seed_researched_places_and_chinatown_tour` | BU/BC communities, Jason's ~30 researched places, the Chinatown Food Tour (moved from `seed.sql` so it reaches the live project) |
 | `20261122014142_add_trail_photos_storage` | Public `trail-photos` Storage bucket (5 MB, images) with rules: users upload/delete only in their own folder |
+| `20261122022417_seed_demo_activity_and_fix_coordinates` | Verified coordinates for 6 curated places/stops; demo accounts @maya_k, @jrod, @priya_s with finished trails, ratings, reviews and sign-ups |
 | `20261122015804_add_trail_attendees_functions` | `trail_attendees(p_trail_id, p_limit)` and `trail_going_counts(p_trail_ids)`: who's going on a scheduled trail (count + public profile fields only, for trails you can see), since progress rows are private |
 | `20261122022403_add_community_to_save_trail` | `save_trail()` accepts an optional `community_id` ("Who can see this": everyone or only your own community); leaving it out keeps the current setting |
 
