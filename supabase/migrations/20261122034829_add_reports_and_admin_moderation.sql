@@ -13,7 +13,8 @@
 --    report per person per item). Only admins can read and resolve reports;
 --    reporters can see their own.
 --
--- 3. Admin moderation powers (checked by private.is_admin()):
+-- 3. Admin moderation powers (checked by private.is_admin()), and admins can
+--    see everything attached to any trail (private.can_view_sidequest):
 --    - archive (hide) any trail: update sidequests.status
 --    - delete any review (sidequest_ratings) or trail photo (quest_photos)
 --
@@ -45,6 +46,29 @@ as $$
 $$;
 revoke all on function private.is_admin() from public;
 grant execute on function private.is_admin() to anon, authenticated;
+
+-- Admins can see everything attached to any trail (stops, crumbs, reviews,
+-- photos), including archived ones: Postgres only lets you delete rows you can
+-- also see, so without this an admin couldn't remove a review on a trail they
+-- had just hidden. Same body as before, plus the admin clause.
+create or replace function private.can_view_sidequest(p_sidequest_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.sidequests s
+    where s.id = p_sidequest_id
+      and (
+        s.creator_id = (select auth.uid())
+        or (s.status = 'published'
+            and (s.community_id is null or private.in_community(s.community_id)))
+        or private.is_admin()
+      )
+  );
+$$;
 
 
 -- -----------------------------------------------------------------------------
