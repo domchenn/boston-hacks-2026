@@ -124,9 +124,14 @@ export type TrailRatingBreakdown = TrailRating & {
 }
 
 /** Everything the Trail detail page shows. */
+/** The trail a remix was copied from (task G8). */
+export type TrailRemixSource = { id: string; title: string; creator: TrailCreator | null }
+
 export type TrailDetail = Omit<FeedTrail, 'rating'> & {
   status: SidequestStatus
   communityId: string | null
+  /** Set when this trail is a remix and the original is still visible to you; null otherwise. */
+  remixedFrom: TrailRemixSource | null
   stops: TrailStop[]
   /** Crumbs not tied to a stop (e.g. something to see between stops). */
   betweenStopCrumbs: TrailCrumb[]
@@ -240,6 +245,19 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
 // getTrail
 // ---------------------------------------------------------------------------
 
+/**
+ * The original a remix was copied from, if you can still see it (RLS). Only the
+ * credit line depends on it, so any failure just hides the credit.
+ */
+async function fetchRemixSource(id: string): Promise<TrailRemixSource | null> {
+  const { data, error } = await supabase
+    .from('sidequests')
+    .select(`id, title, creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS})`)
+    .eq('id', id)
+    .maybeSingle()
+  return error || !data ? null : { id: data.id, title: data.title, creator: data.creator }
+}
+
 /** One trail with everything the detail page needs, or null if it doesn't exist or isn't visible. */
 export async function getTrail(id: string): Promise<TrailDetail | null> {
   const { data: row, error } = await supabase
@@ -247,7 +265,7 @@ export async function getTrail(id: string): Promise<TrailDetail | null> {
     .select(
       `id, title, description, category, neighborhood, cover_image_url, estimated_cost,
        estimated_duration_minutes, scheduled_at, primary_line, is_curated, created_at,
-       status, community_id,
+       status, community_id, remixed_from,
        creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS}),
        sidequest_stops(id, stop_order, place_name, address, latitude, longitude, description,
                        planned_activity, travel_mode_to_stop, estimated_cost, notes),
@@ -310,6 +328,7 @@ export async function getTrail(id: string): Promise<TrailDetail | null> {
     createdAt: row.created_at,
     status: row.status as SidequestStatus,
     communityId: row.community_id,
+    remixedFrom: row.remixed_from ? await fetchRemixSource(row.remixed_from) : null,
     creator: row.creator,
     stopCount: stops.length,
     crumbCount: crumbs.length,
