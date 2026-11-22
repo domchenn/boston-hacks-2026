@@ -9,7 +9,7 @@ import type { Session } from '@supabase/supabase-js'
 import type { Tables } from '@/types/database.types'
 
 /** The signed-in user's public profile fields that the UI needs. */
-export type SessionProfile = Pick<Tables<'profiles'>, 'id' | 'username' | 'display_name' | 'avatar_url'>
+export type SessionProfile = Pick<Tables<'profiles'>, 'id' | 'username' | 'display_name' | 'avatar_url' | 'community_id'>
 
 export type SessionState = {
   /** Supabase session, or null when logged out. */

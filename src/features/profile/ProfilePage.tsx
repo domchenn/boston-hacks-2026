@@ -18,6 +18,7 @@ import {
   type PublicProfile,
   type QuestgiverRating,
 } from './api'
+import { CommunitySetting } from '@/features/communities/CommunitySetting'
 import { ProfileTrails } from './ProfileTrails'
 import './profile.css'
 
@@ -137,7 +138,9 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
         <div className="profile-head__text">
           <h1 className="profile-name">{name}</h1>
           <p className="profile-sub">
-            {[profile.username && `@${profile.username}`, profile.university].filter(Boolean).join(' · ')}
+            {[profile.username && `@${profile.username}`, profile.university, profile.community?.slug?.toUpperCase()]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
         </div>
         {isOwn && (
@@ -177,6 +180,9 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
           </dd>
         </div>
       </dl>
+
+      {/* Join BU / BC (or none). Reloads the header so the new community shows. */}
+      {isOwn ? <CommunitySetting onChanged={() => setAttempt((n) => n + 1)} /> : null}
 
       <ProfileTrails userId={profile.id} isOwn={isOwn} name={name} />
     </div>

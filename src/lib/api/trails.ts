@@ -58,6 +58,8 @@ export type FeedFilters = {
   maxCost?: number
   /** Only trails taking at most this many minutes. */
   maxMinutes?: number
+  /** Only trails limited to this community (task G6). Non-members get none: RLS hides them. */
+  communityId?: string
 }
 
 export type TrailCrumb = {
@@ -170,6 +172,7 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
   if (filters.category) query = query.eq('category', filters.category)
   if (filters.maxCost !== undefined) query = query.lte('estimated_cost', filters.maxCost)
   if (filters.maxMinutes !== undefined) query = query.lte('estimated_duration_minutes', filters.maxMinutes)
+  if (filters.communityId) query = query.eq('community_id', filters.communityId)
 
   const { data, error } = await query
   if (error) throw error

@@ -84,6 +84,7 @@ export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
     when: trail.scheduledAt ? 'scheduled' : 'anytime',
     scheduledLocal: trail.scheduledAt ? toLocalInput(trail.scheduledAt) : '',
     durationMinutes: trail.estimatedMinutes,
+    communityId: trail.communityId,
     stops,
   }
 }

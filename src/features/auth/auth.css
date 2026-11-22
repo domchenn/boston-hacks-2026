@@ -21,7 +21,7 @@
 @media (min-width: 1024px) {
   .auth {
     max-width: none;
-    grid-template-columns: minmax(0, 1fr) 440px;
+    grid-template-columns: 1fr 1fr;
     gap: var(--space-16);
     padding-block: var(--space-8);
   }
@@ -35,6 +35,7 @@
 
 /* ---------- Card --------------------------------------------------------- */
 .auth-card {
+  width: 440px;
   display: grid;
   gap: var(--space-5);
   padding: var(--space-6) var(--space-5);

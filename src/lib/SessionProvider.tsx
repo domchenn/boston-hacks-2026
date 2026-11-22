@@ -12,7 +12,7 @@ import { SessionContext, type SessionProfile, type SessionState } from '@/lib/se
 async function fetchProfile(userId: string): Promise<SessionProfile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, display_name, avatar_url')
+    .select('id, username, display_name, avatar_url, community_id')
     .eq('id', userId)
     .maybeSingle()
   if (error) {
