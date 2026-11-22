@@ -1,49 +1,29 @@
 /**
  * Trail detail page (docs/mockups/Web-Detail + Mobile-Detail), loaded with getTrail(id):
  * eyebrow, title, cost / time / stops / crumbs / rating, description, Start trail /
- * Save / Join (TrailActions), the stops with crumbs, Good to know, the creator and
- * reviews. The route map (RouteMap) sits on the right on desktop and above the stops on phones. Phones get a sticky action bar.
+ * Save / Join / Rate this trail (TrailActions), the stops with crumbs, Good to know,
+ * the creator and reviews. The route map (RouteMap) sits on the right on desktop and
+ * above the stops on phones. Phones get a sticky action bar. Shows the Rate page's
+ * "rating posted" notice from router state.
  * Route: /trails/:id · Owner: Jason
  */
 
-import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronLeft, Star } from 'lucide-react'
-import { Link, useParams } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Check, Star } from 'lucide-react'
+import { Link, useLocation, useParams } from 'react-router'
 import { RouteMap } from '@/components/RouteMap'
 import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
 import { TrailActions } from './TrailActions'
 import { TrailCreatorCard, TrailGoodToKnow } from './TrailGoodToKnow'
+import { BackLink, TrailMessage } from './TrailPageMessage'
 import { TrailReviews } from './TrailReviews'
 import { TrailStops } from './TrailStops'
+import { isTrailId, type TrailNotice } from './trailLinks'
 import { useTrailActions } from './useTrailActions'
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
 type LoadResult = { key: string; trail?: TrailDetail | null; error?: string }
-
-function BackLink() {
-  return (
-    <Link to="/" className="inline-flex h-10 items-center gap-1.5 text-base font-semibold text-ink-2 hover:text-ink">
-      <ChevronLeft aria-hidden className="size-[18px]" />
-      All trails
-    </Link>
-  )
-}
-
-/** Not found / error message in place of the page. */
-function TrailMessage({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div>
-      <BackLink />
-      <div className="mt-4 rounded-card border border-dashed border-line-strong bg-white px-6 py-12 text-center">
-        <p className="text-xl font-bold">{title}</p>
-        <div className="mt-2 text-base text-ink-2">{children}</div>
-      </div>
-    </div>
-  )
-}
 
 function TrailSkeleton() {
   return (
@@ -62,7 +42,9 @@ function TrailSkeleton() {
 
 export function TrailDetailPage() {
   const { id = '' } = useParams()
-  const valid = UUID.test(id)
+  const valid = isTrailId(id)
+  // "Thanks! Your rating is posted." etc., handed over by the Rate page.
+  const notice = (useLocation().state as TrailNotice | null)?.notice
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<LoadResult | null>(null)
   const actions = useTrailActions(id)
@@ -130,6 +112,15 @@ export function TrailDetailPage() {
   return (
     <div className="pb-28 md:pb-0">
       <BackLink />
+      {notice ? (
+        <p
+          role="status"
+          className="mt-2 mb-2 flex w-fit items-center gap-2 rounded-pill bg-[var(--color-green-tint)] px-4 py-2 text-sm font-semibold text-done"
+        >
+          <Check aria-hidden className="size-4 shrink-0" />
+          {notice}
+        </p>
+      ) : null}
 
       <div className="mt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-10">
         <article className="min-w-0">
@@ -163,7 +154,7 @@ export function TrailDetailPage() {
           ) : null}
 
           <div className="mt-6 hidden md:block">
-            <TrailActions actions={actions} scheduled={scheduled} layout="inline" />
+            <TrailActions trailId={trail.id} actions={actions} scheduled={scheduled} layout="inline" />
           </div>
 
           <h2 className="mt-8 text-xl font-bold tracking-[var(--tracking-tight)] md:mt-10">The trail</h2>
@@ -186,7 +177,7 @@ export function TrailDetailPage() {
         </aside>
       </div>
 
-      <TrailActions actions={actions} scheduled={scheduled} layout="bar" />
+      <TrailActions trailId={trail.id} actions={actions} scheduled={scheduled} layout="bar" />
     </div>
   )
 }
