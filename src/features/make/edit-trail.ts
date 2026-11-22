@@ -38,26 +38,35 @@ export async function loadEditableTrail(trailId: string, userId: string): Promis
     if (!trail) return { status: 'not_found' }
     if (trail.creator?.id !== userId) return { status: 'not_yours', trail }
 
-    const { data, error } = await supabase
-      .from('sidequest_stops')
-      .select('id, experience_id, experiences(neighborhood)')
-      .eq('sidequest_id', trailId)
-    if (error) return { status: 'error', message: messageFor(error) }
-    const library = new Map(
-      data.map((row) => [row.id, { experienceId: row.experience_id, neighborhood: row.experiences?.neighborhood ?? null }]),
-    )
-    return { status: 'ok', data: { trail, library } }
+    const library = await loadStopLibrary(trailId)
+    if (!library.ok) return { status: 'error', message: library.message }
+    return { status: 'ok', data: { trail, library: library.data } }
   } catch (error) {
     return { status: 'error', message: messageFor(error as { code?: string }) }
   }
 }
 
-/** ISO time → the "YYYY-MM-DDTHH:mm" a datetime-local input expects, in the user's time zone. */
-export function toLocalInput(iso: string): string {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+/** Each stop's place-library link and that place's neighborhood (getTrail doesn't return them). Used by Edit and Remix. */
+export async function loadStopLibrary(
+  trailId: string,
+): Promise<{ ok: true; data: EditableTrail['library'] } | { ok: false; message: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('sidequest_stops')
+      .select('id, experience_id, experiences(neighborhood)')
+      .eq('sidequest_id', trailId)
+    if (error) return { ok: false, message: messageFor(error) }
+    return {
+      ok: true,
+      data: new Map(
+        data.map((row) => [row.id, { experienceId: row.experience_id, neighborhood: row.experiences?.neighborhood ?? null }]),
+      ),
+    }
+  } catch (error) {
+    return { ok: false, message: messageFor(error as { code?: string }) }
+  }
 }
+
 
 /** The Make a trail form's draft for an existing trail. */
 export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
@@ -81,10 +90,11 @@ export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
     title: trail.title,
     description: trail.description ?? '',
     category: trail.category,
-    when: trail.scheduledAt ? 'scheduled' : 'anytime',
-    scheduledLocal: trail.scheduledAt ? toLocalInput(trail.scheduledAt) : '',
     durationMinutes: trail.estimatedMinutes,
     communityId: trail.communityId,
+    visibility: trail.visibility,
+    // Edits never change a remix credit (save_trail ignores it), so leave it out.
+    remixedFrom: null,
     stops,
   }
 }

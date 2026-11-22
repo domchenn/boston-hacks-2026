@@ -7,10 +7,14 @@
  * every `refreshMs` while the tab is visible. Every number comes from the MBTA
  * or Bluebikes APIs: nothing is estimated. Hidden entirely if nothing is nearby.
  * Used under each stop on Trail detail and for the current stop on Active trail.
+ *
+ * `collapsible` (Trail detail): starts as one quiet line, "Near [R] Charles/MGH ·
+ * 0.2 mi · Live times", and only loads arrivals, buses and bikes once opened, so
+ * planning a trail isn't buried in minute-by-minute numbers.
  */
 
 import { useEffect, useState } from 'react'
-import { Bike, Bus, TrainFront } from 'lucide-react'
+import { Bike, Bus, ChevronDown, TrainFront } from 'lucide-react'
 import { getNearbyDocks, type NearbyDock } from '@/lib/bluebikes'
 import {
   LINE_COLORS,
@@ -29,6 +33,8 @@ type StopTransitProps = {
   longitude: number
   /** How often to refresh arrivals and bikes (default 60 s; Active trail uses 30 s). */
   refreshMs?: number
+  /** Start as a one-line summary with a "Live times" toggle (Trail detail). */
+  collapsible?: boolean
   className?: string
 }
 
@@ -62,7 +68,8 @@ function ArrivalItem({ arrival }: { arrival: Arrival }) {
   )
 }
 
-export function StopTransit({ latitude, longitude, refreshMs = 60_000, className }: StopTransitProps) {
+export function StopTransit({ latitude, longitude, refreshMs = 60_000, collapsible = false, className }: StopTransitProps) {
+  const [open, setOpen] = useState(!collapsible)
   const [nearby, setNearby] = useState<Nearby | null>(null)
   const [arrivals, setArrivals] = useState<Arrival[]>([])
   const [docks, setDocks] = useState<NearbyDock[]>([])
@@ -85,7 +92,7 @@ export function StopTransit({ latitude, longitude, refreshMs = 60_000, className
   // 2. Live arrivals + bikes: now, then every refreshMs while the tab is visible.
   const stopIds = nearby ? [...nearby.stations.map((s) => s.id), ...nearby.busStops.map((s) => s.id)].join(',') : ''
   useEffect(() => {
-    if (!nearby) return
+    if (!nearby || !open) return
     let cancelled = false
     const run = () => {
       if (document.visibilityState !== 'visible') return
@@ -100,9 +107,43 @@ export function StopTransit({ latitude, longitude, refreshMs = 60_000, className
       clearInterval(id)
       document.removeEventListener('visibilitychange', run)
     }
-  }, [nearby, stopIds, latitude, longitude, refreshMs])
+  }, [nearby, open, stopIds, latitude, longitude, refreshMs])
 
   if (!nearby) return null
+
+  if (!open) {
+    const station = nearby.stations[0]
+    if (!station && nearby.busStops.length === 0) return null
+    return (
+      <p className={cn('mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground', className)}>
+        {station ? (
+          <span className="inline-flex items-center gap-1.5">
+            <TrainFront aria-hidden className="size-4 text-ink-2" />
+            Near
+            {station.lines.map((line) => (
+              <LinePill key={line} line={line} />
+            ))}
+            <span className="text-ink-2">{station.name}</span>· {miles(station.miles)}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5">
+            <Bus aria-hidden className="size-4 text-ink-2" />
+            Bus stop nearby
+          </span>
+        )}
+        <button
+          type="button"
+          aria-expanded={false}
+          onClick={() => setOpen(true)}
+          className="inline-flex cursor-pointer items-center gap-0.5 rounded-[var(--radius-sm)] border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:text-crumb-deep focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none"
+        >
+          Live times
+          <ChevronDown aria-hidden className="size-3.5" />
+        </button>
+      </p>
+    )
+  }
+
   const rail = arrivals.filter((a) => a.kind === 'subway' || a.kind === 'light_rail').slice(0, 4)
   const buses = arrivals.filter((a) => a.kind === 'bus').slice(0, 2)
   const busStop = nearby.busStops[0]
@@ -111,6 +152,17 @@ export function StopTransit({ latitude, longitude, refreshMs = 60_000, className
 
   return (
     <div className={cn('mt-2 flex flex-col gap-1.5 text-sm text-muted-foreground', className)} aria-live="polite">
+      {collapsible ? (
+        <button
+          type="button"
+          aria-expanded
+          onClick={() => setOpen(false)}
+          className="inline-flex w-fit cursor-pointer items-center gap-0.5 rounded-[var(--radius-sm)] border-0 bg-transparent p-0 text-sm font-semibold text-crumb-strong hover:text-crumb-deep focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none"
+        >
+          Hide live times
+          <ChevronDown aria-hidden className="size-3.5 rotate-180" />
+        </button>
+      ) : null}
       {nearby.stations.length > 0 ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="inline-flex items-center gap-1 font-semibold text-ink-2">

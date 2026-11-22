@@ -37,9 +37,8 @@ export function PrivacyPage() {
           reviews and trail photos are public.
         </li>
         <li>
-          <b>Your progress:</b> which trails you saved, joined, started or finished, and which crumbs you ticked. This is
-          private to you, except finished trails can appear on your profile and to people who follow you, and the
-          number of people going to a scheduled trail is shown.
+          <b>Your progress:</b> which trails you saved, started or finished, and which crumbs you ticked. This is
+          private to you, except finished trails can appear on your profile and to people who follow you.
         </li>
         <li>
           <b>Reports</b> you send about content, so our team can review them.
@@ -75,6 +74,10 @@ export function PrivacyPage() {
       <h2>Your choices</h2>
       <ul>
         <li>Edit your profile, and delete your trails, reviews and photos, at any time in the app.</li>
+        <li>
+          Choose who sees each trail (everyone, friends or close friends) and make your account private. Friends, meaning
+          people you follow who follow you back, can see when you&apos;ve both saved the same trail; unfollowing ends that.
+        </li>
         <li>To delete your account and everything linked to it, contact the team and we'll remove it.</li>
       </ul>
 

@@ -10,10 +10,9 @@
  * trails) is enforced by RLS, so these only ever return what the user may see.
  */
 
-import { getGoingCounts } from '@/lib/api/attendees'
 import { supabase } from '@/lib/supabase'
 import type { Tables } from '@/types/database.types'
-import type { Category, SidequestStatus, TransitLine, TravelMode, ChecklistItemType } from '@/types/db-values'
+import type { Category, SidequestStatus, TransitLine, TravelMode, ChecklistItemType, TrailVisibility } from '@/types/db-values'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,8 +48,6 @@ export type FeedTrail = {
   firstStopName: string | null
   lastStopName: string | null
   rating: TrailRating
-  /** Scheduled trails: how many people are going (trail_going_counts). Unset if unknown. */
-  goingCount?: number
   /** Every stop in order, for search and the map / "Near a T station" filter. Set by getFeed only. */
   places?: FeedPlace[]
 }
@@ -70,6 +67,8 @@ export type FeedFilters = {
   /** Only trails where at least one stop's place is open late. */
   lateNight?: boolean
   category?: Category
+  /** Only trails costing at least this many dollars. */
+  minCost?: number
   /** Only trails costing at most this many dollars. */
   maxCost?: number
   /** Only trails taking at most this many minutes. */
@@ -124,9 +123,16 @@ export type TrailRatingBreakdown = TrailRating & {
 }
 
 /** Everything the Trail detail page shows. */
+/** The trail a remix was copied from (task G8). */
+export type TrailRemixSource = { id: string; title: string; creator: TrailCreator | null }
+
 export type TrailDetail = Omit<FeedTrail, 'rating'> & {
   status: SidequestStatus
+  /** Who can see it: everyone, the creator's friends, or their close friends. */
+  visibility: TrailVisibility
   communityId: string | null
+  /** Set when this trail is a remix and the original is still visible to you; null otherwise. */
+  remixedFrom: TrailRemixSource | null
   stops: TrailStop[]
   /** Crumbs not tied to a stop (e.g. something to see between stops). */
   betweenStopCrumbs: TrailCrumb[]
@@ -187,6 +193,7 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
 
   if (filters.neighborhood) query = query.eq('neighborhood', filters.neighborhood)
   if (filters.category) query = query.eq('category', filters.category)
+  if (filters.minCost !== undefined) query = query.gte('estimated_cost', filters.minCost)
   if (filters.maxCost !== undefined) query = query.lte('estimated_cost', filters.maxCost)
   if (filters.maxMinutes !== undefined) query = query.lte('estimated_duration_minutes', filters.maxMinutes)
   if (filters.communityId) query = query.eq('community_id', filters.communityId)
@@ -198,10 +205,6 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
     (row) => !filters.lateNight || row.sidequest_stops.some((stop) => stop.experience?.open_late === true),
   )
   const stats = await fetchRatingStats(rows.map((r) => r.id))
-  // "6 going" on scheduled cards. Only decoration: the feed still loads if this fails.
-  const going = await getGoingCounts(rows.filter((r) => r.scheduled_at !== null).map((r) => r.id)).catch(
-    () => null,
-  )
 
   return rows.map((row) => {
     const stops = [...row.sidequest_stops].sort((a, b) => a.stop_order - b.stop_order)
@@ -225,7 +228,6 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
       firstStopName: stops[0]?.place_name ?? null,
       lastStopName: stops.length > 1 ? stops[stops.length - 1].place_name : null,
       rating: { average: num(s?.avg_overall), count: s?.rating_count ?? 0 },
-      goingCount: row.scheduled_at !== null && going ? (going.get(row.id) ?? 0) : undefined,
       places: stops.map((stop) => ({
         name: stop.place_name,
         latitude: stop.latitude,
@@ -240,6 +242,19 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
 // getTrail
 // ---------------------------------------------------------------------------
 
+/**
+ * The original a remix was copied from, if you can still see it (RLS). Only the
+ * credit line depends on it, so any failure just hides the credit.
+ */
+async function fetchRemixSource(id: string): Promise<TrailRemixSource | null> {
+  const { data, error } = await supabase
+    .from('sidequests')
+    .select(`id, title, creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS})`)
+    .eq('id', id)
+    .maybeSingle()
+  return error || !data ? null : { id: data.id, title: data.title, creator: data.creator }
+}
+
 /** One trail with everything the detail page needs, or null if it doesn't exist or isn't visible. */
 export async function getTrail(id: string): Promise<TrailDetail | null> {
   const { data: row, error } = await supabase
@@ -247,7 +262,7 @@ export async function getTrail(id: string): Promise<TrailDetail | null> {
     .select(
       `id, title, description, category, neighborhood, cover_image_url, estimated_cost,
        estimated_duration_minutes, scheduled_at, primary_line, is_curated, created_at,
-       status, community_id,
+       status, visibility, community_id, remixed_from,
        creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS}),
        sidequest_stops(id, stop_order, place_name, address, latitude, longitude, description,
                        planned_activity, travel_mode_to_stop, estimated_cost, notes),
@@ -309,7 +324,9 @@ export async function getTrail(id: string): Promise<TrailDetail | null> {
     isCurated: row.is_curated,
     createdAt: row.created_at,
     status: row.status as SidequestStatus,
+    visibility: row.visibility as TrailVisibility,
     communityId: row.community_id,
+    remixedFrom: row.remixed_from ? await fetchRemixSource(row.remixed_from) : null,
     creator: row.creator,
     stopCount: stops.length,
     crumbCount: crumbs.length,

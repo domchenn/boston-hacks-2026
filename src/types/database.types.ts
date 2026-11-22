@@ -123,6 +123,39 @@ export type Database = {
           },
         ]
       }
+      close_friends: {
+        Row: {
+          created_at: string
+          friend_id: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_id: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_id?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "close_friends_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "close_friends_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communities: {
         Row: {
           created_at: string
@@ -287,6 +320,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_admin: boolean
+          is_private: boolean
           university: string | null
           username: string | null
         }
@@ -298,6 +332,7 @@ export type Database = {
           display_name?: string | null
           id: string
           is_admin?: boolean
+          is_private?: boolean
           university?: string | null
           username?: string | null
         }
@@ -309,6 +344,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_admin?: boolean
+          is_private?: boolean
           university?: string | null
           username?: string | null
         }
@@ -329,6 +365,7 @@ export type Database = {
           id: string
           photo_url: string
           sidequest_id: string
+          stop_id: string | null
           user_id: string
         }
         Insert: {
@@ -337,6 +374,7 @@ export type Database = {
           id?: string
           photo_url: string
           sidequest_id: string
+          stop_id?: string | null
           user_id: string
         }
         Update: {
@@ -345,6 +383,7 @@ export type Database = {
           id?: string
           photo_url?: string
           sidequest_id?: string
+          stop_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -353,6 +392,13 @@ export type Database = {
             columns: ["sidequest_id"]
             isOneToOne: false
             referencedRelation: "sidequests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_photos_stop_id_fkey"
+            columns: ["stop_id"]
+            isOneToOne: false
+            referencedRelation: "sidequest_stops"
             referencedColumns: ["id"]
           },
           {
@@ -557,6 +603,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          visibility: string
         }
         Insert: {
           category?: string | null
@@ -576,6 +623,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
           category?: string | null
@@ -595,6 +643,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -717,6 +766,17 @@ export type Database = {
           username: string
         }[]
       }
+      friends_also_saved: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          friend_id: string
+          saved_at: string
+          sidequest_id: string
+          username: string
+        }[]
+      }
       save_trail: {
         Args: { p_trail: Json; p_trail_id?: string }
         Returns: string
@@ -735,6 +795,14 @@ export type Database = {
         Args: { p_trail_ids: string[] }
         Returns: {
           going_count: number
+          sidequest_id: string
+        }[]
+      }
+      trending_trails: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          people: number
+          score: number
           sidequest_id: string
         }[]
       }

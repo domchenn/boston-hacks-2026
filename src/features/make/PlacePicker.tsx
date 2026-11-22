@@ -1,10 +1,12 @@
 /**
  * "Add a place" search box for Make a trail. Filters the curated place library
  * as you type (name, neighborhood or address) and also offers to add what you
- * typed as a custom place. Keyboard: ↑/↓ to move, Enter to pick, Esc to close.
+ * typed as a custom place. An Add button next to the box picks the highlighted
+ * option, so Enter isn't the only way in. Keyboard: ↑/↓ to move, Enter to pick,
+ * Esc to close. `inputRef` lets the page focus the box ("+ Add another stop").
  */
 
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState, type Ref } from 'react'
 import { MapPin, Plus, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Place } from './api'
@@ -16,15 +18,24 @@ type PlacePickerProps = {
   onPickPlace: (place: Place) => void
   onAddCustom: (name: string) => void
   disabled?: boolean
+  /** The search input, so the page can focus it. */
+  inputRef?: Ref<HTMLInputElement>
 }
 
 type Option = { kind: 'place'; place: Place } | { kind: 'custom'; name: string }
 
-export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, disabled }: PlacePickerProps) {
+export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, disabled, inputRef }: PlacePickerProps) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const listId = useId()
+  // Closing on blur waits a moment (so a click on an option still lands). If the
+  // box gets focus back meanwhile (e.g. "+ Add another stop"), that close is cancelled.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = null
+  }
 
   const options = useMemo<Option[]>(() => {
     const q = query.trim().toLowerCase()
@@ -69,6 +80,7 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
         <Search aria-hidden className="size-4 shrink-0 text-muted-foreground" />
         <span className="sr-only">Add a place</span>
         <input
+          ref={inputRef}
           role="combobox"
           aria-expanded={showList}
           aria-controls={listId}
@@ -82,11 +94,33 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
             setOpen(true)
             setActive(0)
           }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 120)}
+          onFocus={() => {
+            cancelClose()
+            setOpen(true)
+          }}
+          onClick={() => setOpen(true)}
+          onBlur={() => {
+            cancelClose()
+            closeTimer.current = setTimeout(() => setOpen(false), 120)
+          }}
           onKeyDown={onKeyDown}
           className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
         />
+        {query.trim() && !disabled && options[active] ? (
+          <button
+            type="button"
+            className="btn btn--sm -mr-2.5 h-8 shrink-0 px-3"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => choose(options[active])}
+          >
+            <Plus aria-hidden />
+            Add
+            <span className="sr-only">
+              {' '}
+              {options[active].kind === 'place' ? options[active].place.name : `“${options[active].name}” as your own place`}
+            </span>
+          </button>
+        ) : null}
       </label>
 
       {showList ? (

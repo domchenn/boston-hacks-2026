@@ -1,7 +1,7 @@
 /**
  * Trail detail page (docs/mockups/Web-Detail + Mobile-Detail), loaded with getTrail(id):
  * eyebrow, title, cost / time / stops / crumbs / rating, description, Start trail /
- * Save / Join / Rate this trail (TrailActions), the stops with crumbs, Good to know,
+ * Save / Share / Rate this trail (TrailActions), the stops with crumbs, Good to know,
  * the creator, photos (TrailPhotos, hidden when there are none) and reviews. The route map (RouteMap) sits on the right on desktop and
  * above the stops on phones. Phones get a sticky action bar. Shows the Rate page's
  * "rating posted" notice from router state.
@@ -14,12 +14,11 @@ import { Link, useLocation, useParams } from 'react-router'
 import { RouteMap } from '@/components/RouteMap'
 import { ReportButton } from '@/features/reports/ReportButton'
 import { TransitAlerts } from '@/components/TransitAlerts'
-import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
+import { CATEGORY_LABELS, formatCost, formatMinutes } from '@/components/trailFormat'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
-import { cn } from '@/lib/utils'
 import { YourTrailBar } from '@/features/make/YourTrailBar'
+import { TrailRemixRow } from '@/features/make/TrailRemixRow'
 import { TrailActions } from './TrailActions'
-import { TrailAttendees } from './TrailAttendees'
 import { TrailCreatorCard, TrailGoodToKnow } from './TrailGoodToKnow'
 import { BackLink, TrailMessage } from './TrailPageMessage'
 import { TrailPhotos } from './TrailPhotos'
@@ -27,7 +26,6 @@ import { TrailReviews } from './TrailReviews'
 import { TrailStops } from './TrailStops'
 import { isTrailId, type TrailNotice } from './trailLinks'
 import { useTrailActions } from './useTrailActions'
-import { hasHappened } from '@/lib/api/attendees'
 
 type LoadResult = { key: string; trail?: TrailDetail | null; error?: string }
 
@@ -117,12 +115,10 @@ export function TrailDetailPage() {
     )
   }
 
-  const scheduled = trail.scheduledAt !== null
-  const happened = hasHappened(trail.scheduledAt)
   const eyebrow = [
     trail.category ? CATEGORY_LABELS[trail.category] : null,
-    scheduled ? formatSchedule(trail.scheduledAt!) : 'Anytime',
     trail.isCurated ? 'Curated' : null,
+    trail.visibility === 'friends' ? 'Friends only' : trail.visibility === 'close_friends' ? 'Close friends only' : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -142,13 +138,14 @@ export function TrailDetailPage() {
 
       <div className="mt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-10">
         <article className="min-w-0">
-          <p className={cn('text-sm font-semibold md:text-[0.875rem]', scheduled ? 'text-scheduled' : 'text-crumb-strong')}>
+          <p className="text-sm font-semibold text-crumb-strong md:text-[0.875rem]">
             {eyebrow}
           </p>
           <h1 className="mt-2 text-[1.75rem] leading-[1.05] font-extrabold tracking-[var(--tracking-title)] md:text-[3rem]">
             {trail.title}
           </h1>
           <YourTrailBar trailId={trail.id} creatorId={trail.creator?.id ?? null} status={trail.status} />
+          <TrailRemixRow trail={trail} />
 
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-base font-semibold text-ink-2 md:mt-3.5 md:text-lg">
             {trail.estimatedCost !== null ? <span>{formatCost(trail.estimatedCost)}</span> : null}
@@ -172,14 +169,10 @@ export function TrailDetailPage() {
             <p className="mt-4 max-w-[60ch] text-base leading-[1.55] text-ink-2 md:mt-4.5 md:text-lg">{trail.description}</p>
           ) : null}
 
-          {scheduled ? <TrailAttendees trailId={trail.id} happened={happened} refreshKey={actions.status} /> : null}
-
           <div className="mt-6 hidden md:block">
             <TrailActions
               trailId={trail.id}
               actions={actions}
-              scheduled={scheduled}
-              happened={happened}
               title={trail.title}
               layout="inline"
             />
@@ -214,8 +207,6 @@ export function TrailDetailPage() {
       <TrailActions
         trailId={trail.id}
         actions={actions}
-        scheduled={scheduled}
-        happened={happened}
         title={trail.title}
         layout="bar"
       />

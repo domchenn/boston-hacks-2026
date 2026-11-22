@@ -4,7 +4,7 @@
  * into the JSON that save_trail() expects. No React here, so it's easy to test.
  */
 
-import type { Category, TravelMode } from '@/types/db-values'
+import type { Category, TrailVisibility, TravelMode } from '@/types/db-values'
 
 export const MIN_STOPS = 2
 export const MAX_STOPS = 8
@@ -25,6 +25,12 @@ export const TRAVEL_OPTIONS: { value: TravelMode; label: string }[] = [
   { value: 'bike', label: 'Bike' },
 ]
 
+export const VISIBILITY_OPTIONS: { value: TrailVisibility; label: string; hint: string }[] = [
+  { value: 'public', label: 'Everyone', hint: 'Anyone on Breadcrumb can find it.' },
+  { value: 'friends', label: 'Friends', hint: 'Only people you follow who follow you back.' },
+  { value: 'close_friends', label: 'Close friends', hint: 'Only friends on your close friends list (on your profile).' },
+]
+
 export type StopDraft = {
   /** Local id for React keys and reordering (not a database id). */
   key: string
@@ -39,7 +45,7 @@ export type StopDraft = {
   estimatedCost: number | null
   /** How to get here from the previous stop (ignored for the first stop). */
   travelMode: TravelMode
-  /** The small task at this stop. */
+  /** The small task at this stop (optional; '' = none). */
   crumb: string
 }
 
@@ -47,13 +53,14 @@ export type TrailDraft = {
   title: string
   description: string
   category: Category | null
-  when: 'anytime' | 'scheduled'
-  /** Value of a datetime-local input, e.g. "2026-11-29T11:00", in the user's time zone. */
-  scheduledLocal: string
   /** Minutes; null = use the suggestion. */
   durationMinutes: number | null
   /** Who can see it: null = everyone, else only this community (task G6). */
   communityId: string | null
+  /** Who can see it: everyone, friends (mutual follows) or close friends. */
+  visibility: TrailVisibility
+  /** Remix (task G8): the trail this one is copied from. Only used when creating. */
+  remixedFrom: string | null
   stops: StopDraft[]
 }
 
@@ -61,10 +68,10 @@ export const emptyDraft = (): TrailDraft => ({
   title: '',
   description: '',
   category: null,
-  when: 'anytime',
-  scheduledLocal: '',
   durationMinutes: null,
   communityId: null,
+  visibility: 'public',
+  remixedFrom: null,
   stops: [],
 })
 
@@ -80,17 +87,14 @@ export function suggestedMinutes(stopCount: number): number | null {
   return Math.max(30, Math.round((stopCount * 45) / 30) * 30)
 }
 
-export type ChecklistItem = { label: string; done: boolean }
+export type ChecklistKey = 'basics' | 'stops'
+export type ChecklistItem = { key: ChecklistKey; label: string; done: boolean }
 
-/** The "Ready to publish" list. Publishing is allowed when every item is done. */
+/** The "Ready to publish" list. Publishing is allowed when every item is done. Crumbs are optional. */
 export function publishChecklist(draft: TrailDraft): ChecklistItem[] {
-  const scheduledOk =
-    draft.when === 'anytime' || (draft.scheduledLocal !== '' && new Date(draft.scheduledLocal).getTime() > Date.now())
   return [
-    { label: 'A name and a category', done: draft.title.trim() !== '' && draft.category !== null },
-    { label: `At least ${MIN_STOPS} stops`, done: draft.stops.length >= MIN_STOPS },
-    { label: 'A crumb at every stop', done: draft.stops.length > 0 && draft.stops.every((s) => s.crumb.trim() !== '') },
-    { label: 'A future date (dated trails only)', done: scheduledOk },
+    { key: 'basics', label: 'A name and a category', done: draft.title.trim() !== '' && draft.category !== null },
+    { key: 'stops', label: `At least ${MIN_STOPS} stops`, done: draft.stops.length >= MIN_STOPS },
   ]
 }
 
@@ -104,13 +108,15 @@ export function toSavePayload(draft: TrailDraft, status: 'draft' | 'published') 
     title: draft.title.trim(),
     description: draft.description.trim() || null,
     category: draft.category,
-    scheduled_at:
-      draft.when === 'scheduled' && draft.scheduledLocal ? new Date(draft.scheduledLocal).toISOString() : null,
+    // Trails are go-anytime: saving clears any date an old trail had.
+    scheduled_at: null,
     status,
     estimated_cost: cost,
     estimated_duration_minutes: minutes,
     neighborhood: draft.stops[0]?.neighborhood ?? null,
     community_id: draft.communityId,
+    visibility: draft.visibility,
+    remixed_from: draft.remixedFrom,
     stops: draft.stops.map((s, i) => ({
       experience_id: s.experienceId,
       place_name: s.placeName.trim(),

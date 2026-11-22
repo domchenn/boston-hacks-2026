@@ -8,7 +8,7 @@ import { useId, type CSSProperties } from 'react'
 import { Bike, Bus, CalendarDays, Clock, Footprints, TrainFront, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 import logoMark from '../../../docs/assets/svg/logo-mark.svg'
-import { LINE_INFO, formatMinutes, formatSchedule } from '@/components/trailFormat'
+import { LINE_INFO, formatMinutes } from '@/components/trailFormat'
 import type { TrailDetail } from '@/lib/api/trails'
 
 const plural = (n: number, word: string) => `${n === 1 ? 'one' : n} ${word}${n === 1 ? '' : 's'}`
@@ -39,9 +39,7 @@ export function TrailGoodToKnow({ trail }: { trail: TrailDetail }) {
   const around = gettingAround(trail)
   const line = trail.primaryLine ? LINE_INFO[trail.primaryLine] : null
   const items = [
-    trail.scheduledAt
-      ? { key: 'when', icon: CalendarDays, text: `Group outing ${formatSchedule(trail.scheduledAt)}` }
-      : { key: 'when', icon: CalendarDays, text: 'Go anytime, on your own or with friends' },
+    { key: 'when', icon: CalendarDays, text: 'Go whenever you like, on your own or with friends' },
     trail.estimatedMinutes !== null
       ? { key: 'time', icon: Clock, text: `About ${formatMinutes(trail.estimatedMinutes)} start to finish` }
       : null,

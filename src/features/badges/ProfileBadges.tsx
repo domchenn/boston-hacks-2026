@@ -3,7 +3,7 @@
  * 5 / 10 trails, a weekly streak, Lines explored (finished trails per T line in
  * the line's color from @/lib/transitColors) and Neighborhoods explored (with a
  * few to try next, linking to Explore filtered by that neighborhood, as in
- * docs/mockups/Mobile-Profile.dc.html). Data: useBadges. Hooked into ProfilePage.
+ * docs/mockups/Mobile-Profile.dc.html). Data: useBadges. Shown in the profile's Badges tab (ProfileTrails).
  */
 
 import { useId, type ComponentType, type ReactNode } from 'react'
@@ -64,8 +64,9 @@ export function ProfileBadges({ userId }: { userId: string }) {
   }
 
   return (
-    <section aria-labelledby={headingId} className="mt-6">
-      <h2 id={headingId} className="m-0 mb-3 text-base font-bold text-ink">
+    <section aria-labelledby={headingId} className="mt-2">
+      {/* Shown inside the profile's Badges tab, so the heading is for screen readers only. */}
+      <h2 id={headingId} className="sr-only">
         Badges
       </h2>
       {content}

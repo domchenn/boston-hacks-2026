@@ -2,7 +2,7 @@
 -- Database tests: save_trail(), the function behind the Make a trail page.
 --
 -- Checks that drafts can be incomplete, that publishing enforces the checklist
--- (name, category, 2–8 stops, a crumb at every stop), that a trail and all its
+-- (name, category, 2–8 stops; crumbs are optional), that a trail and all its
 -- stops and crumbs are saved together, that saving again replaces the stops,
 -- and that nobody can edit someone else's trail or call it logged out.
 -- Rolled back, so it leaves no data.
@@ -38,10 +38,11 @@ select throws_ok(
   $$select public.save_trail('{"title": "One stop", "category": "food_drink", "status": "published",
       "stops": [{"place_name": "A", "crumb": "x"}]}'::jsonb)$$,
   '23514', 'Add at least 2 stops before publishing', 'publishing needs 2+ stops');
-select throws_ok(
+-- Crumbs are optional since add_trail_visibility_and_close_friends.
+select lives_ok(
   $$select public.save_trail('{"title": "Missing crumb", "category": "food_drink", "status": "published",
       "stops": [{"place_name": "A", "crumb": "x"}, {"place_name": "B", "crumb": " "}]}'::jsonb)$$,
-  '23514', 'Add a crumb at every stop before publishing', 'publishing needs a crumb at every stop');
+  'a trail can be published without a crumb at every stop');
 
 -- ---------------------------------------------------------------- a full publish
 create temp table saved (id uuid) on commit drop;

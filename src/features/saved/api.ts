@@ -1,15 +1,14 @@
 /**
- * Data for the Saved page: the signed-in user's trails with status saved,
- * signed_up or in_progress, shaped for <TrailCard> (stop names, rating) and
- * tagged with that status. user_sidequests rows are private to their owner
+ * Data for the Saved page: the signed-in user's trails with status saved or
+ * in_progress (old signed_up rows from before Join was removed count as saved),
+ * shaped for <TrailCard> (stop names, rating) and tagged with that status. user_sidequests rows are private to their owner
  * (RLS). Used by SavedPage.tsx.
  */
-import { getGoingCounts } from '@/lib/api/attendees'
 import { supabase } from '@/lib/supabase'
 import type { TrailCardData } from '@/components/TrailCard'
 import type { Category, UserSidequestStatus } from '@/types/db-values'
 
-export type SavedStatus = Extract<UserSidequestStatus, 'saved' | 'signed_up' | 'in_progress'>
+export type SavedStatus = Extract<UserSidequestStatus, 'saved' | 'in_progress'>
 export type SavedTrail = TrailCardData & { status: SavedStatus; updatedAt: string }
 
 export type SavedResult = { ok: true; trails: SavedTrail[] } | { ok: false; message: string }
@@ -32,7 +31,7 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
       .select(
         `status, updated_at,
          sidequest:sidequests(id, title, category, neighborhood, estimated_cost,
-           estimated_duration_minutes, scheduled_at, sidequest_stops(place_name, stop_order))`,
+           estimated_duration_minutes, sidequest_stops(place_name, stop_order))`,
       )
       .eq('user_id', userId)
       .in('status', ['in_progress', 'signed_up', 'saved'])
@@ -57,11 +56,6 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
       }
     }
 
-    // "6 going" on scheduled cards; decoration only, so failures are ignored.
-    const going = await getGoingCounts(
-      rows.filter((row) => row.sidequest!.scheduled_at !== null).map((row) => row.sidequest!.id),
-    ).catch(() => null)
-
     const trails = rows.map<SavedTrail>((row) => {
       const trail = row.sidequest!
       const stops = [...trail.sidequest_stops].sort((a, b) => a.stop_order - b.stop_order)
@@ -72,13 +66,11 @@ export async function getSavedTrails(userId: string): Promise<SavedResult> {
         neighborhood: trail.neighborhood,
         estimatedCost: num(trail.estimated_cost),
         estimatedMinutes: trail.estimated_duration_minutes,
-        scheduledAt: trail.scheduled_at,
         stopCount: stops.length,
         firstStopName: stops[0]?.place_name ?? null,
         lastStopName: stops.length > 1 ? stops[stops.length - 1].place_name : null,
         rating: ratings.get(trail.id) ?? { average: null, count: 0 },
-        goingCount: trail.scheduled_at !== null && going ? (going.get(trail.id) ?? 0) : undefined,
-        status: row.status as SavedStatus,
+        status: row.status === 'in_progress' ? 'in_progress' : 'saved',
         updatedAt: row.updated_at,
       }
     })

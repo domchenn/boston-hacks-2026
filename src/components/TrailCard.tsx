@@ -1,5 +1,5 @@
 /**
- * Reusable trail card: eyebrow (category · Anytime or the date), title, the dotted
+ * Reusable trail card: eyebrow (category, or "Finished"), title, the dotted
  * trail with first/last stop names, then cost, time, stops and rating. The whole
  * card links to /trails/:id. Styled by .trail-card in docs/styles/components.css.
  * Used by Explore (feed grid), the Map tab and Saved / You. Takes any object with the
@@ -12,8 +12,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Star } from 'lucide-react'
 import { Link } from 'react-router'
 import { TrailLine } from '@/components/TrailLine'
-import { hasHappened } from '@/lib/api/attendees'
-import { CATEGORY_LABELS, formatCost, formatDistance, formatMinutes, formatSchedule } from '@/components/trailFormat'
+import { CATEGORY_LABELS, formatCost, formatDistance, formatMinutes } from '@/components/trailFormat'
 import { cn } from '@/lib/utils'
 import { lineColor } from '@/lib/transitColors'
 import type { Category, TransitLine, UserSidequestStatus } from '@/types/db-values'
@@ -26,14 +25,12 @@ export type TrailCardData = {
   neighborhood: string | null
   estimatedCost: number | null
   estimatedMinutes: number | null
-  /** Null = anytime trail; set = scheduled outing people can join. */
-  scheduledAt: string | null
+  /** Old dated trails still have this; the app no longer shows dates (trails are go-anytime). */
+  scheduledAt?: string | null
   stopCount: number
   firstStopName: string | null
   lastStopName: string | null
   rating: { average: number | null; count: number }
-  /** Scheduled trails: how many are going. Shown as "6 going" in place of the neighborhood. */
-  goingCount?: number
   /** Explore's Nearby tab: miles from the user to the first stop, shown as "0.4 mi away" (task G7). */
   distanceMiles?: number
   /** Main T line; colors the dots and rings in that line's color. Optional. */
@@ -58,16 +55,13 @@ function waveSeed(id: string) {
 
 export function TrailCard({ trail, progress, selected, className }: TrailCardProps) {
   const done = progress === 'completed'
-  const scheduled = !done && trail.scheduledAt !== null
-  const when = done ? 'Finished' : scheduled ? formatSchedule(trail.scheduledAt!) : 'Anytime'
-  const eyebrow = [trail.category ? CATEGORY_LABELS[trail.category] : null, when].filter(Boolean).join(' · ')
+  const eyebrow = [trail.category ? CATEGORY_LABELS[trail.category] : null, done ? 'Finished' : null]
+    .filter(Boolean)
+    .join(' · ')
   const labels = [trail.firstStopName, trail.lastStopName].filter((name): name is string => Boolean(name))
 
   let end: ReactNode
-  // A scheduled trail whose time has passed can't be joined (task G5).
-  const happened = scheduled && hasHappened(trail.scheduledAt)
-  if (progress === 'signed_up') end = <span className="status-link">{happened ? 'Went' : 'Going ✓'}</span>
-  else if (progress === 'in_progress') end = <span className="status-link">In progress</span>
+  if (progress === 'in_progress') end = <span className="status-link">In progress</span>
   else if (trail.rating.count > 0 && trail.rating.average !== null) {
     end = (
       <span className="rating">
@@ -79,16 +73,13 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         </span>
       </span>
     )
-  } else if (scheduled && !happened) end = <span className="status-link">Join</span>
-  else if (happened) end = <span className="text-muted font-medium">Already happened</span>
-  else end = <span className="text-muted font-medium">New</span>
+  } else end = <span className="text-muted font-medium">New</span>
 
   return (
     <Link
       to={`/trails/${trail.id}`}
       className={cn(
         'trail-card',
-        scheduled && 'trail-card--scheduled',
         done && 'trail-card--done',
         selected &&
           'border-ink shadow-[0_0_0_1px_var(--color-ink),0_10px_28px_color-mix(in_srgb,var(--color-ink)_8%,transparent)]',
@@ -99,8 +90,6 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         <span className="trail-card__eyebrow shrink-0">{eyebrow}</span>
         {trail.distanceMiles !== undefined ? (
           <span className="trail-card__meta min-w-0 truncate">{formatDistance(trail.distanceMiles)}</span>
-        ) : scheduled && trail.goingCount ? (
-          <span className="trail-card__meta min-w-0 truncate">{trail.goingCount} going</span>
         ) : trail.neighborhood ? (
           <span className="trail-card__meta min-w-0 truncate">{trail.neighborhood}</span>
         ) : null}

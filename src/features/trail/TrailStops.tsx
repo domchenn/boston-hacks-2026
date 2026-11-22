@@ -2,7 +2,8 @@
  * "The trail" on the Trail detail page: numbered stops joined by dotted lines, each
  * with its address, what to do there, its crumbs (See / Do) and how to get to the
  * next stop (walk, T, bus, bike) in that leg's color (@/lib/transitColors), plus
- * live transit nearby (StopTransit: T arrivals, buses, Bluebikes).
+ * the nearest T station (StopTransit, collapsed: live arrivals, buses and
+ * Bluebikes open on tap, so the plan stays readable).
  * Only shows travel modes that are stored; no
  * invented times or routes. Styled by .stops / .stop / .crumb-item in components.css.
  */
@@ -64,7 +65,7 @@ export function TrailStops({
                 <h3 className="stop__name">{stop.placeName}</h3>
                 {stop.address ? <p className="stop__place">{stop.address}</p> : null}
                 {stop.latitude !== null && stop.longitude !== null ? (
-                  <StopTransit latitude={stop.latitude} longitude={stop.longitude} />
+                  <StopTransit latitude={stop.latitude} longitude={stop.longitude} collapsible />
                 ) : null}
                 {stop.description ? <p className="mt-2 text-base leading-normal text-ink-2">{stop.description}</p> : null}
                 {showActivity ? <p className="mt-2 text-base leading-normal text-ink-2">{stop.plannedActivity}</p> : null}
