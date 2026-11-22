@@ -9,6 +9,7 @@
  * trails) is enforced by RLS, so these only ever return what the user may see.
  */
 
+import { getGoingCounts } from '@/lib/api/attendees'
 import { supabase } from '@/lib/supabase'
 import type { Tables } from '@/types/database.types'
 import type { Category, SidequestStatus, TransitLine, TravelMode, ChecklistItemType } from '@/types/db-values'
@@ -47,6 +48,8 @@ export type FeedTrail = {
   firstStopName: string | null
   lastStopName: string | null
   rating: TrailRating
+  /** Scheduled trails: how many people are going (trail_going_counts). Unset if unknown. */
+  goingCount?: number
 }
 
 export type FeedFilters = {
@@ -172,6 +175,10 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
   if (error) throw error
   const rows = data ?? []
   const stats = await fetchRatingStats(rows.map((r) => r.id))
+  // "6 going" on scheduled cards. Only decoration: the feed still loads if this fails.
+  const going = await getGoingCounts(rows.filter((r) => r.scheduled_at !== null).map((r) => r.id)).catch(
+    () => null,
+  )
 
   return rows.map((row) => {
     const stops = [...row.sidequest_stops].sort((a, b) => a.stop_order - b.stop_order)
@@ -195,6 +202,7 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
       firstStopName: stops[0]?.place_name ?? null,
       lastStopName: stops.length > 1 ? stops[stops.length - 1].place_name : null,
       rating: { average: num(s?.avg_overall), count: s?.rating_count ?? 0 },
+      goingCount: row.scheduled_at !== null && going ? (going.get(row.id) ?? 0) : undefined,
     }
   })
 }

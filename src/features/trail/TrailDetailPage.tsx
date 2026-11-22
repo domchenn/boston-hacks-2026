@@ -17,6 +17,7 @@ import { getTrail, type TrailDetail } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
 import { YourTrailBar } from '@/features/make/YourTrailBar'
 import { TrailActions } from './TrailActions'
+import { TrailAttendees } from './TrailAttendees'
 import { TrailCreatorCard, TrailGoodToKnow } from './TrailGoodToKnow'
 import { BackLink, TrailMessage } from './TrailPageMessage'
 import { TrailPhotos } from './TrailPhotos'
@@ -24,6 +25,7 @@ import { TrailReviews } from './TrailReviews'
 import { TrailStops } from './TrailStops'
 import { isTrailId, type TrailNotice } from './trailLinks'
 import { useTrailActions } from './useTrailActions'
+import { hasHappened } from '@/lib/api/attendees'
 
 type LoadResult = { key: string; trail?: TrailDetail | null; error?: string }
 
@@ -114,6 +116,7 @@ export function TrailDetailPage() {
   }
 
   const scheduled = trail.scheduledAt !== null
+  const happened = hasHappened(trail.scheduledAt)
   const eyebrow = [
     trail.category ? CATEGORY_LABELS[trail.category] : null,
     scheduled ? formatSchedule(trail.scheduledAt!) : 'Anytime',
@@ -167,8 +170,17 @@ export function TrailDetailPage() {
             <p className="mt-4 max-w-[60ch] text-base leading-[1.55] text-ink-2 md:mt-4.5 md:text-lg">{trail.description}</p>
           ) : null}
 
+          {scheduled ? <TrailAttendees trailId={trail.id} happened={happened} refreshKey={actions.status} /> : null}
+
           <div className="mt-6 hidden md:block">
-            <TrailActions trailId={trail.id} actions={actions} scheduled={scheduled} layout="inline" />
+            <TrailActions
+              trailId={trail.id}
+              actions={actions}
+              scheduled={scheduled}
+              happened={happened}
+              title={trail.title}
+              layout="inline"
+            />
           </div>
 
           <h2 className="mt-8 text-xl font-bold tracking-[var(--tracking-tight)] md:mt-10">The trail</h2>
@@ -193,7 +205,14 @@ export function TrailDetailPage() {
         </aside>
       </div>
 
-      <TrailActions trailId={trail.id} actions={actions} scheduled={scheduled} layout="bar" />
+      <TrailActions
+        trailId={trail.id}
+        actions={actions}
+        scheduled={scheduled}
+        happened={happened}
+        title={trail.title}
+        layout="bar"
+      />
     </div>
   )
 }

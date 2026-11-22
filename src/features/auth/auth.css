@@ -29,7 +29,7 @@
 
 /* ---------- Intro column (desktop only) ---------------------------------- */
 .auth__intro { display: none; }
-@media (min-width: 1024px) { .auth__intro { display: block; } }
+@media (min-width: 1024px) { .auth__intro { display: flex; flex-direction: column;  align-items: center;} }
 .auth__intro .page-title { margin-top: var(--space-8); }
 .auth__intro .stops { max-width: 34ch; margin-top: var(--space-8); }
 

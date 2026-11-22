@@ -12,6 +12,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Star } from 'lucide-react'
 import { Link } from 'react-router'
 import { TrailLine } from '@/components/TrailLine'
+import { hasHappened } from '@/lib/api/attendees'
 import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { cn } from '@/lib/utils'
 import type { Category, UserSidequestStatus } from '@/types/db-values'
@@ -30,6 +31,8 @@ export type TrailCardData = {
   firstStopName: string | null
   lastStopName: string | null
   rating: { average: number | null; count: number }
+  /** Scheduled trails: how many are going. Shown as "6 going" in place of the neighborhood. */
+  goingCount?: number
 }
 
 type TrailCardProps = {
@@ -56,7 +59,9 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
   const labels = [trail.firstStopName, trail.lastStopName].filter((name): name is string => Boolean(name))
 
   let end: ReactNode
-  if (progress === 'signed_up') end = <span className="status-link">Going</span>
+  // A scheduled trail whose time has passed can't be joined (task G5).
+  const happened = scheduled && hasHappened(trail.scheduledAt)
+  if (progress === 'signed_up') end = <span className="status-link">{happened ? 'Went' : 'Going ✓'}</span>
   else if (progress === 'in_progress') end = <span className="status-link">In progress</span>
   else if (trail.rating.count > 0 && trail.rating.average !== null) {
     end = (
@@ -69,7 +74,8 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         </span>
       </span>
     )
-  } else if (scheduled) end = <span className="status-link">Join</span>
+  } else if (scheduled && !happened) end = <span className="status-link">Join</span>
+  else if (happened) end = <span className="text-muted font-medium">Already happened</span>
   else end = <span className="text-muted font-medium">New</span>
 
   return (
@@ -86,7 +92,11 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
     >
       <div className="trail-card__head">
         <span className="trail-card__eyebrow shrink-0">{eyebrow}</span>
-        {trail.neighborhood ? <span className="trail-card__meta min-w-0 truncate">{trail.neighborhood}</span> : null}
+        {scheduled && trail.goingCount ? (
+          <span className="trail-card__meta min-w-0 truncate">{trail.goingCount} going</span>
+        ) : trail.neighborhood ? (
+          <span className="trail-card__meta min-w-0 truncate">{trail.neighborhood}</span>
+        ) : null}
       </div>
       <h2 className="trail-card__title">{trail.title}</h2>
 

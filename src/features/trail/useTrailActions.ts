@@ -8,13 +8,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { getMyStatus, joinTrail, saveTrail, startTrail, unsaveTrail } from '@/lib/api/progress'
+import { getMyStatus, joinTrail, leaveTrail, saveTrail, startTrail, unsaveTrail } from '@/lib/api/progress'
 import { getMyRating } from '@/lib/api/ratings'
 import { useSession } from '@/lib/useSession'
 import type { UserSidequestStatus } from '@/types/db-values'
 import { loginPath } from './trailLinks'
 
-type Action = 'start' | 'save' | 'join'
+type Action = 'start' | 'save' | 'join' | 'leave'
 
 /** Turns API errors into something a person can act on. */
 function friendlyError(error: unknown) {
@@ -105,6 +105,8 @@ export function useTrailActions(trailId: string) {
         ? run('save', () => unsaveTrail(trailId), null)
         : run('save', () => saveTrail(trailId), 'saved'),
     join: () => run('join', () => joinTrail(trailId), 'signed_up'),
+    // Back to saved, so it stays bookmarked (task G5).
+    leave: () => run('leave', () => leaveTrail(trailId), 'saved'),
   }
 }
 
