@@ -3,8 +3,9 @@
  * logo, Explore / Map / Saved nav (trail pages count as Explore), search box,
  * orange "Make a trail" button (not on /make itself) and the account menu (your
  * profile and log out, via useSession()). Phones get a compact
- * header (logo, search toggle, account) plus the bottom tab bar with the + button
- * (hidden on /trails/:id pages, which have their own sticky Start trail bar).
+ * header (logo, search toggle) plus the bottom tab bar: Explore · Map · + · Saved ·
+ * You (your picture; log out is in your profile's settings). The tab bar is hidden
+ * on /trails/:id pages, which have their own sticky Start trail bar.
  * Sign-in gate: signed-out visitors only get /login, /signup, /privacy, /terms and
  * a shared trail (/trails/:id, read-only with a "Sign up" banner); every other
  * page sends them to /login?next=…, and the header shows just the logo. On
@@ -174,23 +175,57 @@ function AccountMenu() {
   )
 }
 
-/** Phone-only bottom tab bar: Explore · Map · + · Saved (styled by .tabbar). Your profile is in the header's account menu. */
+/**
+ * Phone-only bottom tab bar: Explore · Map · + · Saved · You (styled by .tabbar,
+ * five even columns so + sits in the middle). "You" shows your profile picture
+ * and opens your profile, where the settings gear has Log out; on phones the
+ * header only keeps search.
+ */
 function TabBar() {
   const [explore, map, saved] = NAV
+  const { profile, session } = useSession()
+  const { pathname } = useLocation()
   const item = ({ to, label, icon: Icon, end }: (typeof NAV)[number]) => (
     <NavLink key={to} to={to} end={end} className="tabbar__item">
       <Icon aria-hidden />
       {label}
     </NavLink>
   )
+  const name = profile?.display_name || profile?.username || session?.user.email || 'You'
+  // Your own public profile (/u/<you>) counts as You too.
+  const onMyProfile = profile?.username ? pathname === `/u/${profile.username}` : false
   return (
-    <nav aria-label="App" className="tabbar fixed inset-x-0 bottom-0 z-20 grid-cols-4 md:hidden">
+    <nav aria-label="App" className="tabbar fixed inset-x-0 bottom-0 z-20 md:hidden">
       {item(explore)}
       {item(map)}
       <Link to="/make" className="tabbar__fab" aria-label="Make a trail">
         <Plus aria-hidden />
       </Link>
       {item(saved)}
+      <NavLink
+        to="/me"
+        className={({ isActive }) => cn('tabbar__item', (isActive || onMyProfile) && 'is-active')}
+        aria-current={onMyProfile ? 'page' : undefined}
+      >
+        {({ isActive }) => (
+          <>
+            <span
+              aria-hidden
+              className={cn(
+                'grid size-[22px] place-items-center overflow-hidden rounded-full bg-crumb-tint text-[11px] font-extrabold text-crumb-strong',
+                (isActive || onMyProfile) && 'ring-2 ring-ink ring-offset-1',
+              )}
+            >
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
+              ) : (
+                initials(name)
+              )}
+            </span>
+            You
+          </>
+        )}
+      </NavLink>
     </nav>
   )
 }
@@ -285,7 +320,10 @@ export function AppLayout() {
                 <span className="hidden lg:inline">Make a trail</span>
               </Link>
             )}
-            <AccountMenu />
+            {/* Phones: your profile lives in the bottom tab bar ("You"), so the header keeps just search. */}
+            <div className={cn(showNav && 'hidden md:block')}>
+              <AccountMenu />
+            </div>
           </div>
         </div>
 
