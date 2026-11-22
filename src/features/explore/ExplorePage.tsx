@@ -6,7 +6,7 @@
  * screens, a map of where the shown trails start (TrailsMap), its top level with
  * the tabs (the title spans both columns). Hovering a card
  * highlights its pin and vice versa; clicking a pin opens the trail.
- * Filters and the header search (?q=) live in the URL so a filtered feed can be
+ * The open tab (?tab=), filters and the header search (?q=) live in the URL so a filtered feed can be
  * shared (see ./filters). Data: loadTrails() and loadNeighborhoods() in ./api.
  * Route: / · Owner: Jason
  */
@@ -145,7 +145,10 @@ export function ExplorePage() {
   // Wait for the communities list before loading a ?community= link (no flash of "All").
   const communityPending = communitySlug !== '' && communities === null
   const activeCount = FILTER_KEYS.filter((k) => values[k] !== '').length + (communitySlug ? 1 : 0)
-  const [tab, setTab] = useState<Tab>('for-you')
+  // The open tab lives in ?tab= (like the filters), so a refresh or a shared link keeps it.
+  const tabParam = params.get('tab')
+  const tab: Tab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : 'for-you'
+  const setTab = (next: Tab) => setParams(withFilter(params, 'tab', next === 'for-you' ? '' : next), { replace: true })
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ key: string; trails?: MapTrail[]; error?: string } | null>(null)
   const [neighborhoods, setNeighborhoods] = useState<string[]>([])
