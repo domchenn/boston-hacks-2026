@@ -70,6 +70,8 @@ export type FeedFilters = {
   /** Only trails where at least one stop's place is open late. */
   lateNight?: boolean
   category?: Category
+  /** Only trails costing at least this many dollars. */
+  minCost?: number
   /** Only trails costing at most this many dollars. */
   maxCost?: number
   /** Only trails taking at most this many minutes. */
@@ -192,6 +194,7 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
 
   if (filters.neighborhood) query = query.eq('neighborhood', filters.neighborhood)
   if (filters.category) query = query.eq('category', filters.category)
+  if (filters.minCost !== undefined) query = query.gte('estimated_cost', filters.minCost)
   if (filters.maxCost !== undefined) query = query.lte('estimated_cost', filters.maxCost)
   if (filters.maxMinutes !== undefined) query = query.lte('estimated_duration_minutes', filters.maxMinutes)
   if (filters.communityId) query = query.eq('community_id', filters.communityId)
