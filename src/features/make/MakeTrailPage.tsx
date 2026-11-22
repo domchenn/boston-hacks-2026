@@ -549,7 +549,7 @@ export function MakeTrailForm({
                 )}
               >
                 <Plus aria-hidden className="size-4" />
-                {draft.stops.length === 1 ? 'Add a second stop' : 'Add another stop'}
+                Add another stop
               </button>
             ) : null}
           </Panel>
