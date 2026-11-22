@@ -16,15 +16,6 @@ export const CATEGORY_OPTIONS = [
   ...(Object.entries(CATEGORY_LABELS) as [Category, string][]).map(([value, label]) => ({ value, label })),
 ]
 
-/** Quick picks in the Cost filter. min/max are dollars per person; '' = no limit. */
-export const COST_PRESETS = [
-  { label: 'Free', min: '', max: '0' },
-  { label: 'Under $10', min: '', max: '10' },
-  { label: 'Under $25', min: '', max: '25' },
-  { label: '$10–$25', min: '10', max: '25' },
-  { label: '$25+', min: '25', max: '' },
-]
-
 /** "$10–$25", "Under $20", "$25+", "Free" or "Any cost", for the Cost pill. */
 export function costLabel(min: string, max: string) {
   if (min === '' && max === '') return 'Any cost'

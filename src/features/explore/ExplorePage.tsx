@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { Check, ChevronDown, Moon, TrainFront } from 'lucide-react'
+import { Check, Moon, TrainFront } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { SHOW_COMMUNITIES, useCommunities } from '@/features/communities/api'
 import { CommunitySwitcher } from '@/features/communities/CommunitySwitcher'
@@ -35,6 +35,7 @@ import {
   withoutFilters,
   type FilterKey,
 } from './filters'
+import { Dropdown } from '@/components/Dropdown'
 import { CostRangeFilter } from './CostRangeFilter'
 import { exploreGreeting } from './greeting'
 import { useSession } from '@/lib/useSession'
@@ -53,7 +54,7 @@ const pill =
 const pillOff = 'text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:shadow-[inset_0_0_0_1px_var(--color-ink-2)]'
 const pillOn = 'text-ink shadow-[inset_0_0_0_1.5px_var(--color-ink)]'
 
-/** A filter chip: a native <select> styled as an outlined pill. */
+/** A filter chip: our Dropdown styled as an outlined pill (no native <select>). */
 function FilterSelect({
   label,
   value,
@@ -66,21 +67,13 @@ function FilterSelect({
   onChange: (value: string) => void
 }) {
   return (
-    <label className="relative inline-flex">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={cn(pill, 'max-w-[13rem] appearance-none truncate pr-9 pl-3.5', value !== '' ? pillOn : pillOff)}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-ink-2" />
-    </label>
+    <Dropdown
+      label={label}
+      value={value}
+      options={options}
+      onChange={onChange}
+      buttonClassName={cn(pill, 'max-w-[13rem] pr-3 pl-3.5', value !== '' ? pillOn : pillOff)}
+    />
   )
 }
 
