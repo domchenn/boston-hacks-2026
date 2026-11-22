@@ -1,7 +1,8 @@
 /**
  * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main) with a
- * time-of-day greeting under it (./greeting): tabs For you / Trending (./TrendingPanel) /
- * Nearby (./NearbyPanel) / Friends (./FriendsPanel), filters (category, neighborhood,
+ * time-of-day greeting under it (./greeting): tabs For you (the first 9 trails, then
+ * "See all on the map") / Trending (./TrendingPanel) / Nearby (./NearbyPanel, with a
+ * distance slider in ?radius=) / Friends (./FriendsPanel), filters (category, neighborhood,
  * cost range, length, Late night, Near a T station), a grid of TrailCards and, on wide
  * screens, a map of where the shown trails start (TrailsMap), its top level with
  * the tabs (the title spans both columns). Hovering a card
@@ -11,7 +12,8 @@
  * Route: / · Owner: Jason
  */
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { MapIcon } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { SHOW_COMMUNITIES, useCommunities } from '@/features/communities/api'
 import { CommunitySwitcher } from '@/features/communities/CommunitySwitcher'
@@ -22,6 +24,7 @@ import { cn } from '@/lib/utils'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { loadTrails, matchesSearch, type MapTrail } from './api'
 import { NearbyPanel } from './NearbyPanel'
+import { parseRadius } from './nearby'
 import { TrendingPanel } from './TrendingPanel'
 import { rankTrails, useTrending } from './useTrending'
 import { activeFilterCount, readFilterValues, toExploreFilters, withFilter, withoutFilters, type FilterKey } from './filters'
@@ -30,6 +33,9 @@ import { exploreGreeting } from './greeting'
 import { useSession } from '@/lib/useSession'
 
 type Tab = 'for-you' | 'trending' | 'nearby' | 'friends'
+
+/** How many cards For you shows before pointing to the Map tab. */
+const FOR_YOU_LIMIT = 9
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'for-you', label: 'For you' },
@@ -106,13 +112,36 @@ export function ExplorePage() {
   }, [key, communityPending])
 
   const trails = (result?.trails ?? []).filter((t) => !q || matchesSearch(t, q))
+  // For you shows the first few; the Map tab has every trail (same filters).
+  const forYouTrails = trails.slice(0, FOR_YOU_LIMIT)
+  const moreOnMap = trails.length - forYouTrails.length
+  const mapLink = (() => {
+    const next = withFilter(withFilter(params, 'tab', ''), 'radius', '')
+    const query = next.toString()
+    return query ? `/map?${query}` : '/map'
+  })()
+  // Nearby: the distance slider (?radius=) and which trails it leaves, so the map matches.
+  const radius = parseRadius(params.get('radius'))
+  const setRadius = (miles: number | null) =>
+    setParams(withFilter(params, 'radius', miles === null ? '' : String(miles)), { replace: true })
+  const [nearbyIds, setNearbyIds] = useState<string[] | null>(null)
+  const onNearbyShown = useCallback((ids: string[] | null) => setNearbyIds(ids), [])
   // Trending (./useTrending): the ranking loads the first time the tab opens.
   const trending = useTrending(tab === 'trending')
   const trendingTrails = !loading && trending.entries ? rankTrails(trails, trending.entries) : null
   const ready = tab === 'for-you' && !loading && !result?.error
   // The map shows the same trails as the grid (nothing on the coming-soon tabs).
+  const nearbyShown = nearbyIds ? trails.filter((t) => nearbyIds.includes(t.id)) : trails
   const mapTrails =
-    tab === 'trending' ? (trendingTrails ?? []) : (tab === 'for-you' || tab === 'nearby') && !loading ? trails : []
+    tab === 'trending'
+      ? (trendingTrails ?? [])
+      : loading
+        ? []
+        : tab === 'for-you'
+          ? forYouTrails
+          : tab === 'nearby'
+            ? nearbyShown
+            : []
 
   const clearFilters = () => {
     const next = withoutFilters(params)
@@ -146,6 +175,9 @@ export function ExplorePage() {
         onRetry={() => setAttempt((n) => n + 1)}
         hoverId={hoverId}
         onHover={setHoverId}
+        radius={radius}
+        onRadiusChange={setRadius}
+        onShown={onNearbyShown}
       />
     )
   } else if (tab !== 'for-you') {
@@ -197,7 +229,7 @@ export function ExplorePage() {
       </FeedMessage>
     )
   } else {
-    body = trails.map((trail) => (
+    const cards = forYouTrails.map((trail) => (
       <div
         key={trail.id}
         onMouseEnter={() => setHoverId(trail.id)}
@@ -208,6 +240,20 @@ export function ExplorePage() {
         <TrailCard trail={trail} selected={hoverId === trail.id} className="h-full" />
       </div>
     ))
+    body = (
+      <>
+        {cards}
+        {moreOnMap > 0 ? (
+          <Link
+            to={mapLink}
+            className="col-span-full flex items-center justify-center gap-2 rounded-card border border-dashed border-line-strong bg-white px-4 py-4 text-base font-semibold text-crumb-strong hover:border-crumb hover:text-crumb-deep"
+          >
+            <MapIcon aria-hidden className="size-4" />
+            See all {trails.length} trails on the map
+          </Link>
+        ) : null}
+      </>
+    )
   }
   if (tab === 'friends') body = <FriendsPanel /> // task J7
 

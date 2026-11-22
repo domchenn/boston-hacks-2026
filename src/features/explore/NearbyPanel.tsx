@@ -3,14 +3,17 @@
  * search), sorted by distance from you to each trail's first stop, with
  * "0.4 mi away" on the cards. Location is asked for only when this tab is opened,
  * kept in memory only, and never stored or sent. If it's denied or unavailable,
- * a short note explains why and the trails show in the usual order.
+ * a short note explains why and the trails show in the usual order. Once located,
+ * a slider (RadiusSlider) limits the list to trails within a distance; the page
+ * hears which trails are shown (onShown) so its map matches.
  * Renders straight into Explore's card grid (cards plus full-width notes).
  */
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { LoaderCircle, LocateFixed, LocateOff } from 'lucide-react'
 import { TrailCard } from '@/components/TrailCard'
 import type { MapTrail } from './api'
-import { sortByDistance, type NearbyTrail } from './nearby'
+import { radiusLabel, sortByDistance, withinRadius, type NearbyTrail } from './nearby'
+import { RadiusSlider } from './RadiusSlider'
 import { useNearbyLocation, type NearbyLocation } from './useNearbyLocation'
 
 type NearbyPanelProps = {
@@ -21,6 +24,11 @@ type NearbyPanelProps = {
   onRetry: () => void
   hoverId: string | null
   onHover: (id: string | null) => void
+  /** Miles from you, or null for any distance (Explore keeps it in ?radius=). */
+  radius: number | null
+  onRadiusChange: (miles: number | null) => void
+  /** The trails shown right now, so Explore's map can match; null = not decided yet (show the feed). */
+  onShown: (ids: string[] | null) => void
 }
 
 const OFF_COPY: Record<'denied' | 'unavailable' | 'unsupported', { title: string; text: string }> = {
@@ -38,9 +46,20 @@ const OFF_COPY: Record<'denied' | 'unavailable' | 'unsupported', { title: string
   },
 }
 
-export function NearbyPanel({ trails, error, onRetry, hoverId, onHover }: NearbyPanelProps) {
+export function NearbyPanel({ trails, error, onRetry, hoverId, onHover, radius, onRadiusChange, onShown }: NearbyPanelProps) {
   // Mounting this panel = opening the Nearby tab, which is when location is asked for.
   const location = useNearbyLocation(true)
+  const located = location.status === 'on'
+  const sorted: NearbyTrail[] | null =
+    trails === null ? null : location.status === 'on' ? sortByDistance(trails, location.position) : trails
+  // The radius only applies once we know where you are.
+  const shown = sorted === null ? null : located ? withinRadius(sorted, radius) : sorted
+  const shownKey = shown ? shown.map((t) => t.id).join(',') : null
+
+  useEffect(() => {
+    onShown(shownKey === null ? null : shownKey ? shownKey.split(',') : [])
+  }, [shownKey, onShown])
+  useEffect(() => () => onShown(null), [onShown])
 
   if (error) {
     return (
@@ -53,7 +72,7 @@ export function NearbyPanel({ trails, error, onRetry, hoverId, onHover }: Nearby
     )
   }
 
-  if (location.status === 'asking' || trails === null) {
+  if (location.status === 'asking' || trails === null || shown === null) {
     return (
       <>
         <StatusLine location={location} />
@@ -70,16 +89,25 @@ export function NearbyPanel({ trails, error, onRetry, hoverId, onHover }: Nearby
     )
   }
 
-  const sorted: NearbyTrail[] = location.status === 'on' ? sortByDistance(trails, location.position) : trails
-
   return (
     <>
       {location.status === 'on' ? (
-        <StatusLine location={location} />
+        <>
+          <StatusLine location={location} />
+          <RadiusSlider value={radius} onChange={onRadiusChange} />
+        </>
       ) : (
         <OffNote status={location.status} onRetry={location.retry} />
       )}
-      {sorted.map((trail) => (
+      {shown.length === 0 ? (
+        <Note title={`No trails ${radiusLabel(radius).toLowerCase()}`}>
+          <p className="m-0">Drag the slider further to see trails a bit farther away.</p>
+          <button type="button" className="btn btn--sm btn--secondary mt-4" onClick={() => onRadiusChange(null)}>
+            Show any distance
+          </button>
+        </Note>
+      ) : null}
+      {shown.map((trail) => (
         <div
           key={trail.id}
           onMouseEnter={() => onHover(trail.id)}
