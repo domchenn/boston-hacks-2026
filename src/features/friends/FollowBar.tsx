@@ -9,7 +9,7 @@
  *   Followers / Following popup (FollowListDialog). Hooked into ProfilePage (/u/:username, /me).
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Check, LoaderCircle, UserPlus, Users } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 import { loginPath } from '@/features/trail/trailLinks'
@@ -112,9 +112,11 @@ type FollowBarProps = {
   name: string
   /** Called after following / unfollowing (a private profile may now show trails). */
   onRelationshipChange?: () => void
+  /** More stats shown after the counts, e.g. "· 1 finished · 2 made". */
+  extra?: ReactNode
 }
 
-export function FollowBar({ profileId, viewerId, isOwn, name, onRelationshipChange }: FollowBarProps) {
+export function FollowBar({ profileId, viewerId, isOwn, name, onRelationshipChange, extra }: FollowBarProps) {
   const [counts, setCounts] = useState<{ id: string; followers: number; following: number } | null>(null)
   const [countsVersion, setCountsVersion] = useState(0)
   const [listKind, setListKind] = useState<FollowListKind | null>(null)
@@ -164,6 +166,7 @@ export function FollowBar({ profileId, viewerId, isOwn, name, onRelationshipChan
             <button type="button" className={countButton} onClick={() => setListKind('following')} aria-haspopup="dialog">
               <strong className="font-bold text-ink">{current.following}</strong> following
             </button>
+            {extra}
           </>
         ) : (
           <span className="invisible">0 followers · 0 following</span>

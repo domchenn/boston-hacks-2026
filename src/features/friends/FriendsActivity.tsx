@@ -28,6 +28,61 @@ export function PersonAvatar({ person, className = 'size-8' }: { person: TrailCr
   )
 }
 
+/**
+ * One person's recent activity, for the Activity tab on their profile. Built on
+ * friends_activity(), so it only has people you follow (progress is private).
+ */
+export function PersonActivity({ viewerId, personId, name }: { viewerId: string; personId: string; name: string }) {
+  const { loading, activity, error, reload } = useFriendsActivity(viewerId, 100)
+  const items = activity?.items.filter((item) => item.person.id === personId) ?? []
+
+  if (loading) {
+    return (
+      <ul aria-busy="true" aria-label="Loading" className="m-0 grid list-none gap-3 p-0">
+        {[0, 1, 2].map((i) => (
+          <li key={i} className="h-8 animate-pulse rounded-pill bg-sand" />
+        ))}
+      </ul>
+    )
+  }
+  if (error) {
+    return (
+      <p role="alert" className="text-sm text-ink-2">
+        {error}{' '}
+        <button type="button" onClick={reload} className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:underline">
+          Try again
+        </button>
+      </p>
+    )
+  }
+  if (items.length === 0) {
+    return (
+      <p className="rounded-card bg-paper px-4 py-6 text-center text-sm text-ink-2">
+        No recent activity to show. You see what {name} makes, finishes and joins when you follow them.
+      </p>
+    )
+  }
+  return (
+    <ul className="m-0 grid list-none gap-3 rounded-card border border-line bg-white p-4">
+      {items.map((item) => {
+        const trail = activity!.trails.get(item.trailId)!
+        return (
+          <li key={`${item.kind}-${item.trailId}`} className="text-sm text-ink-2">
+            {ACTIVITY_VERBS[item.kind].charAt(0).toUpperCase() + ACTIVITY_VERBS[item.kind].slice(1)}{' '}
+            <Link to={`/trails/${trail.id}`} className="font-semibold text-crumb-strong hover:text-crumb-deep">
+              {trail.title}
+            </Link>
+            <span className="text-muted-foreground">
+              {' · '}
+              <time dateTime={item.at}>{timeAgo(item.at)}</time>
+            </span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 export function FriendsActivity({ viewerId }: { viewerId: string }) {
   const headingId = useId()
   const { loading, activity, following, error, reload } = useFriendsActivity(viewerId, SHOWN)
