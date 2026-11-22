@@ -13,6 +13,7 @@ import { RouteMap } from '@/components/RouteMap'
 import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
+import { YourTrailBar } from '@/features/make/YourTrailBar'
 import { TrailActions } from './TrailActions'
 import { TrailCreatorCard, TrailGoodToKnow } from './TrailGoodToKnow'
 import { TrailReviews } from './TrailReviews'
@@ -139,6 +140,7 @@ export function TrailDetailPage() {
           <h1 className="mt-2 text-[1.75rem] leading-[1.05] font-extrabold tracking-[var(--tracking-title)] md:text-[3rem]">
             {trail.title}
           </h1>
+          <YourTrailBar trailId={trail.id} creatorId={trail.creator?.id ?? null} status={trail.status} />
 
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-base font-semibold text-ink-2 md:mt-3.5 md:text-lg">
             {trail.estimatedCost !== null ? <span>{formatCost(trail.estimatedCost)}</span> : null}

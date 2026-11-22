@@ -93,12 +93,34 @@ export function MakeTrailPage() {
   return <MakeTrailForm />
 }
 
-function MakeTrailForm() {
+export type MakeTrailFormProps = {
+  /** Start from an existing trail (Edit trail, task G4). Default: an empty draft. */
+  initialDraft?: TrailDraft
+  /** Set when editing: saves update this trail instead of creating one. */
+  trailId?: string | null
+  /** Editing a trail that's already live: one "Save changes" button (saving a draft would unpublish it). */
+  published?: boolean
+  heading?: string
+  subheading?: string
+  /** Extra panels at the bottom of the sidebar (e.g. Unpublish / Delete on Edit trail). */
+  aside?: ReactNode
+}
+
+export function MakeTrailForm({
+  initialDraft,
+  trailId: initialTrailId = null,
+  published = false,
+  heading = 'Make a trail',
+  subheading = `Pick 2 to ${MAX_STOPS} stops, add a crumb at each, and publish.`,
+  aside,
+}: MakeTrailFormProps = {}) {
   const navigate = useNavigate()
-  const [draft, setDraft] = useState<TrailDraft>(emptyDraft)
+  const [draft, setDraft] = useState<TrailDraft>(() => initialDraft ?? emptyDraft())
   const [places, setPlaces] = useState<Place[]>([])
   const [placesError, setPlacesError] = useState(false)
-  const [trailId, setTrailId] = useState<string | null>(null)
+  const [trailId, setTrailId] = useState<string | null>(initialTrailId)
+  // /trails/:id/edit has no phone tab bar, so the action bar sits at the very bottom there.
+  const editing = initialTrailId !== null
   const [saving, setSaving] = useState<'draft' | 'published' | null>(null)
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
 
@@ -173,19 +195,26 @@ function MakeTrailForm() {
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[2rem] leading-[var(--leading-tight)] font-extrabold tracking-[var(--tracking-title)] text-ink md:text-[2.5rem]">
-            Make a trail
+            {heading}
           </h1>
-          <p className="mt-1.5 text-md text-ink-2">Pick 2 to {MAX_STOPS} stops, add a crumb at each, and publish.</p>
+          <p className="mt-1.5 text-md text-ink-2">{subheading}</p>
         </div>
-        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar-height)+env(safe-area-inset-bottom,0px))] z-20 flex gap-2 border-t border-line bg-white/95 p-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0">
-          <button
-            type="button"
-            className="btn btn--sm btn--secondary flex-1 md:flex-none"
-            onClick={() => save('draft')}
-            aria-disabled={saving !== null}
-          >
-            {saving === 'draft' ? 'Saving…' : 'Save draft'}
-          </button>
+        <div
+          className={cn(
+            'fixed inset-x-0 z-20 flex gap-2 border-t border-line bg-white/95 p-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0',
+            editing ? 'bottom-0' : 'bottom-[calc(var(--tabbar-height)+env(safe-area-inset-bottom,0px))]',
+          )}
+        >
+          {published ? null : (
+            <button
+              type="button"
+              className="btn btn--sm btn--secondary flex-1 md:flex-none"
+              onClick={() => save('draft')}
+              aria-disabled={saving !== null}
+            >
+              {saving === 'draft' ? 'Saving…' : 'Save draft'}
+            </button>
+          )}
           <button
             type="button"
             className="btn btn--sm flex-1 md:flex-none"
@@ -193,7 +222,13 @@ function MakeTrailForm() {
             aria-disabled={!publishable || saving !== null}
             title={publishable ? undefined : 'Finish the "Ready to publish" list first'}
           >
-            {saving === 'published' ? 'Publishing…' : 'Publish trail'}
+            {saving === 'published'
+              ? published
+                ? 'Saving…'
+                : 'Publishing…'
+              : published
+                ? 'Save changes'
+                : 'Publish trail'}
           </button>
         </div>
       </div>
@@ -469,6 +504,8 @@ function MakeTrailForm() {
               ))}
             </ul>
           </Panel>
+
+          {aside}
         </aside>
       </div>
     </div>

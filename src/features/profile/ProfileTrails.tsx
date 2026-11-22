@@ -8,7 +8,7 @@
  */
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { CircleAlert } from 'lucide-react'
+import { CircleAlert, Pencil } from 'lucide-react'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { getMadeTrails, getMyTrails, type ProfileTrail, type ProgressTab, type Result } from './api'
 
@@ -146,8 +146,19 @@ function TrailList({ userId, tab, isOwn, name }: { userId: string; tab: TabId; i
   return (
     <ul className="profile-list">
       {state.trails.map((trail) => (
-        <li key={trail.id}>
+        <li key={trail.id} className="grid content-start gap-1">
           <ProfileTrailCard trail={trail} tab={tab} />
+          {/* Your own trails (drafts included) can be edited from here (task G4). */}
+          {tab === 'made' && isOwn ? (
+            <Link
+              to={`/trails/${trail.id}/edit`}
+              className="btn btn--ghost btn--sm justify-self-end"
+              aria-label={`Edit ${trail.title}`}
+            >
+              <Pencil aria-hidden />
+              Edit
+            </Link>
+          ) : null}
         </li>
       ))}
     </ul>
