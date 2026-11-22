@@ -1,6 +1,6 @@
 /**
  * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main): tabs For you /
- * Nearby / Friends (only For you works for now), filters (category, neighborhood,
+ * Nearby (./NearbyPanel) / Friends (./FriendsPanel), filters (category, neighborhood,
  * cost, length, Late night, Near a T station), a grid of TrailCards and, on wide
  * screens, a map of where the shown trails start (TrailsMap). Hovering a card
  * highlights its pin and vice versa; clicking a pin opens the trail.
@@ -14,6 +14,7 @@ import { Check, ChevronDown, Moon, TrainFront } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { SHOW_COMMUNITIES, useCommunities } from '@/features/communities/api'
 import { CommunitySwitcher } from '@/features/communities/CommunitySwitcher'
+import { FriendsPanel } from './FriendsPanel'
 import { TrailCard } from '@/components/TrailCard'
 import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
 import { cn } from '@/lib/utils'
@@ -274,6 +275,7 @@ export function ExplorePage() {
       </div>
     ))
   }
+  if (tab === 'friends') body = <FriendsPanel /> // task J7
 
   // "3 trails for “pizza” · Clear search" when a search or filter is on (also read out by screen readers).
   const showCount = ready && trails.length > 0 && (q !== '' || activeCount > 0)

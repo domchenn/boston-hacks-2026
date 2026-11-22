@@ -1,7 +1,8 @@
 /**
  * "You" page. /me is the signed-in user (sent to /login or /onboarding first if
  * needed); /u/:username is anyone. Shows avatar, name, university, bio, stats
- * with the questgiver rating, then the trail tabs (ProfileTrails.tsx). Layout
+ * with the questgiver rating, followers / following + Follow (FollowBar), the trail
+ * tabs (ProfileTrails.tsx) and, on your own page, Friends' activity. Layout
  * follows docs/mockups/Mobile-Profile.dc.html.
  * Route: /me and /u/:username · Owner: Gio
  */
@@ -9,6 +10,8 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import { CircleAlert, Settings, Star } from 'lucide-react'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
+import { FollowBar } from '@/features/friends/FollowBar'
+import { FriendsActivity } from '@/features/friends/FriendsActivity'
 import { useSession } from '@/lib/useSession'
 import {
   countMade,
@@ -152,6 +155,7 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
       </header>
 
       {profile.bio && <p className="profile-bio">{profile.bio}</p>}
+      <FollowBar profileId={profile.id} viewerId={viewerId} isOwn={isOwn} name={name} />
 
       <dl className="profile-stats" style={{ '--cols': isOwn ? 3 : 2 } as CSSProperties}>
         {isOwn && (
@@ -186,6 +190,7 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
       {isOwn && SHOW_COMMUNITIES ? <CommunitySetting onChanged={() => setAttempt((n) => n + 1)} /> : null}
 
       <ProfileTrails userId={profile.id} isOwn={isOwn} name={name} />
+      {isOwn && viewerId ? <FriendsActivity viewerId={viewerId} /> : null}
     </div>
   )
 }
