@@ -7,7 +7,8 @@
  *   joining a trail is private progress) returns the made / finished / joined
  *   trails of the people you follow, newest first. loadFriendsActivity adds each
  *   trail's card details (only trails you can see come back, by RLS).
- * - suggestPeople: trail makers you don't follow yet, for the empty Friends tab.
+ * - Follow lists (the followers / following popup on profiles): getFollowList,
+ *   getFollowingIds. Suggestions and search live in ./findPeopleApi.
  * - Friends and privacy: friends are people who follow each other
  *   (getRelationship, getFriends); a private account's trails are only visible
  *   to friends (setPrivateAccount); close friends lists for close-friends-only
@@ -145,26 +146,30 @@ export async function countFollowing(viewerId: string) {
   return (await getFollowCounts(viewerId)).following
 }
 
-/** Up to `limit` people who've made published trails, minus you and the people you already follow. */
-export async function suggestPeople(viewerId: string, limit = 5): Promise<TrailCreator[]> {
-  const [{ data, error }, follows] = await Promise.all([
-    supabase
-      .from('sidequests')
-      .select('creator:profiles!sidequests_creator_id_fkey(id, username, display_name, avatar_url)')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(100),
-    supabase.from('follows').select('following_id').eq('follower_id', viewerId),
-  ])
+export type FollowListKind = 'followers' | 'following'
+
+/** Who follows `userId` ('followers') or whom they follow ('following'), newest first. Follows are public. */
+export async function getFollowList(userId: string, kind: FollowListKind): Promise<TrailCreator[]> {
+  const query =
+    kind === 'followers'
+      ? supabase
+          .from('follows')
+          .select('created_at, person:profiles!follows_follower_id_fkey(id, username, display_name, avatar_url)')
+          .eq('following_id', userId)
+      : supabase
+          .from('follows')
+          .select('created_at, person:profiles!follows_following_id_fkey(id, username, display_name, avatar_url)')
+          .eq('follower_id', userId)
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(500)
   if (error) throw friendlyError(error)
-  const skip = new Set([viewerId, ...(follows.data ?? []).map((f) => f.following_id)])
-  const people = new Map<string, TrailCreator>()
-  for (const row of data ?? []) {
-    const person = row.creator
-    // A profile link needs a username.
-    if (person?.username && !skip.has(person.id) && !people.has(person.id)) people.set(person.id, person)
-  }
-  return [...people.values()].slice(0, limit)
+  return (data ?? []).map((r) => r.person).filter((p): p is TrailCreator => p !== null)
+}
+
+/** Ids of everyone `viewerId` follows (for Follow / Following buttons in lists). */
+export async function getFollowingIds(viewerId: string): Promise<Set<string>> {
+  const { data, error } = await supabase.from('follows').select('following_id').eq('follower_id', viewerId)
+  if (error) throw friendlyError(error)
+  return new Set((data ?? []).map((r) => r.following_id))
 }
 
 // ---------------------------------------------------------------------------

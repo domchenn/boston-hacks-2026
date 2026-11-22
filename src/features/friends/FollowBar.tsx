@@ -5,7 +5,8 @@
  *   log in first. Also used by the Explore Friends tab's "People to follow".
  * - FollowBar: "12 followers · 8 following" under a profile's header, plus the
  *   button on other people's profiles, a "Friends" label when you follow each
- *   other (or "Follows you" + "Follow back"). Hooked into ProfilePage (/u/:username, /me).
+ *   other (or "Follows you" + "Follow back"). Tapping a count opens the
+ *   Followers / Following popup (FollowListDialog). Hooked into ProfilePage (/u/:username, /me).
  */
 
 import { useEffect, useState } from 'react'
@@ -13,7 +14,8 @@ import { Check, LoaderCircle, UserPlus, Users } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 import { loginPath } from '@/features/trail/trailLinks'
 import { cn } from '@/lib/utils'
-import { follow, getFollowCounts, getRelationship, isFollowing, unfollow, type Relationship } from './api'
+import { follow, getFollowCounts, getRelationship, isFollowing, unfollow, type FollowListKind, type Relationship } from './api'
+import { FollowListDialog } from './FollowListDialog'
 
 type FollowButtonProps = {
   viewerId: string | null
@@ -100,6 +102,9 @@ export function FollowButton({ viewerId, userId, name, initial, followsYou, onCh
   )
 }
 
+const countButton =
+  'cursor-pointer rounded-[var(--radius-sm)] border-0 bg-transparent p-0 text-inherit hover:underline focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none'
+
 type FollowBarProps = {
   profileId: string
   viewerId: string | null
@@ -111,6 +116,8 @@ type FollowBarProps = {
 
 export function FollowBar({ profileId, viewerId, isOwn, name, onRelationshipChange }: FollowBarProps) {
   const [counts, setCounts] = useState<{ id: string; followers: number; following: number } | null>(null)
+  const [countsVersion, setCountsVersion] = useState(0)
+  const [listKind, setListKind] = useState<FollowListKind | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -122,7 +129,7 @@ export function FollowBar({ profileId, viewerId, isOwn, name, onRelationshipChan
     return () => {
       cancelled = true
     }
-  }, [profileId])
+  }, [profileId, countsVersion])
 
   const current = counts?.id === profileId ? counts : null
 
@@ -149,10 +156,14 @@ export function FollowBar({ profileId, viewerId, isOwn, name, onRelationshipChan
       <p className="m-0 text-sm text-muted-foreground" aria-live="polite">
         {current ? (
           <>
-            <strong className="font-bold text-ink">{current.followers}</strong>
-            {current.followers === 1 ? ' follower' : ' followers'}
+            <button type="button" className={countButton} onClick={() => setListKind('followers')} aria-haspopup="dialog">
+              <strong className="font-bold text-ink">{current.followers}</strong>
+              {current.followers === 1 ? ' follower' : ' followers'}
+            </button>
             <span aria-hidden> · </span>
-            <strong className="font-bold text-ink">{current.following}</strong> following
+            <button type="button" className={countButton} onClick={() => setListKind('following')} aria-haspopup="dialog">
+              <strong className="font-bold text-ink">{current.following}</strong> following
+            </button>
           </>
         ) : (
           <span className="invisible">0 followers · 0 following</span>
@@ -182,6 +193,16 @@ export function FollowBar({ profileId, viewerId, isOwn, name, onRelationshipChan
           />
         </span>
       )}
+      <FollowListDialog
+        userId={profileId}
+        name={name}
+        viewerId={viewerId}
+        kind={listKind}
+        onKindChange={setListKind}
+        onClose={() => setListKind(null)}
+        // On your own profile, following someone from the list changes your "following" count.
+        onFollowChange={isOwn ? () => setCountsVersion((n) => n + 1) : undefined}
+      />
     </div>
   )
 }
