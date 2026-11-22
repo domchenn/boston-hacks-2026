@@ -311,6 +311,143 @@ export type Database = {
           },
         ]
       }
+      outing_checks: {
+        Row: {
+          checked_at: string
+          checked_by: string | null
+          checklist_item_id: string
+          outing_id: string
+        }
+        Insert: {
+          checked_at?: string
+          checked_by?: string | null
+          checklist_item_id: string
+          outing_id: string
+        }
+        Update: {
+          checked_at?: string
+          checked_by?: string | null
+          checklist_item_id?: string
+          outing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outing_checks_checked_by_fkey"
+            columns: ["checked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outing_checks_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outing_checks_outing_id_fkey"
+            columns: ["outing_id"]
+            isOneToOne: false
+            referencedRelation: "outings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outing_members: {
+        Row: {
+          created_at: string
+          invited_by: string | null
+          outing_id: string
+          responded_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          invited_by?: string | null
+          outing_id: string
+          responded_at?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          invited_by?: string | null
+          outing_id?: string
+          responded_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outing_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outing_members_outing_id_fkey"
+            columns: ["outing_id"]
+            isOneToOne: false
+            referencedRelation: "outings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outing_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outings: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          host_id: string | null
+          id: string
+          sidequest_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          host_id?: string | null
+          id?: string
+          sidequest_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          host_id?: string | null
+          id?: string
+          sidequest_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outings_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outings_sidequest_id_fkey"
+            columns: ["sidequest_id"]
+            isOneToOne: false
+            referencedRelation: "sidequests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -363,6 +500,7 @@ export type Database = {
           caption: string | null
           created_at: string
           id: string
+          outing_id: string | null
           photo_url: string
           sidequest_id: string
           stop_id: string | null
@@ -372,6 +510,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           id?: string
+          outing_id?: string | null
           photo_url: string
           sidequest_id: string
           stop_id?: string | null
@@ -381,12 +520,20 @@ export type Database = {
           caption?: string | null
           created_at?: string
           id?: string
+          outing_id?: string | null
           photo_url?: string
           sidequest_id?: string
           stop_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "quest_photos_outing_id_fkey"
+            columns: ["outing_id"]
+            isOneToOne: false
+            referencedRelation: "outings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quest_photos_sidequest_id_fkey"
             columns: ["sidequest_id"]
@@ -754,6 +901,7 @@ export type Database = {
       }
     }
     Functions: {
+      finish_outing: { Args: { p_outing_id: string }; Returns: undefined }
       friends_activity: {
         Args: { p_limit?: number }
         Returns: {
@@ -777,10 +925,20 @@ export type Database = {
           username: string
         }[]
       }
+      invite_to_outing: {
+        Args: { p_outing_id: string; p_user_ids: string[] }
+        Returns: number
+      }
+      leave_outing: { Args: { p_outing_id: string }; Returns: undefined }
+      respond_to_outing: {
+        Args: { p_accept: boolean; p_outing_id: string }
+        Returns: undefined
+      }
       save_trail: {
         Args: { p_trail: Json; p_trail_id?: string }
         Returns: string
       }
+      start_outing: { Args: { p_sidequest_id: string }; Returns: string }
       trail_attendees: {
         Args: { p_limit?: number; p_trail_id: string }
         Returns: {
