@@ -2,14 +2,14 @@
  * "The trail" on the Trail detail page: numbered stops joined by dotted lines, each
  * with its address, what to do there, its crumbs (See / Do) and how to get to the
  * next stop (walk, T, bus, bike) in that leg's color (@/lib/transitColors), plus
- * the nearest T stations (NearbyStations).
+ * live transit nearby (StopTransit: T arrivals, buses, Bluebikes).
  * Only shows travel modes that are stored; no
  * invented times or routes. Styled by .stops / .stop / .crumb-item in components.css.
  */
 
 import type { CSSProperties } from 'react'
 import { Bike, Bus, Footprints, TrainFront } from 'lucide-react'
-import { NearbyStations } from '@/components/NearbyStations'
+import { StopTransit } from '@/components/StopTransit'
 import type { TrailCrumb, TrailStop } from '@/lib/api/trails'
 import { legColor } from '@/lib/transitColors'
 import type { TransitLine, TravelMode } from '@/types/db-values'
@@ -64,7 +64,7 @@ export function TrailStops({
                 <h3 className="stop__name">{stop.placeName}</h3>
                 {stop.address ? <p className="stop__place">{stop.address}</p> : null}
                 {stop.latitude !== null && stop.longitude !== null ? (
-                  <NearbyStations latitude={stop.latitude} longitude={stop.longitude} />
+                  <StopTransit latitude={stop.latitude} longitude={stop.longitude} />
                 ) : null}
                 {stop.description ? <p className="mt-2 text-base leading-normal text-ink-2">{stop.description}</p> : null}
                 {showActivity ? <p className="mt-2 text-base leading-normal text-ink-2">{stop.plannedActivity}</p> : null}

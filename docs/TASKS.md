@@ -56,7 +56,8 @@ Every route already exists in `src/App.tsx` and points at a placeholder page. **
 | `save_trail(p_trail, p_trail_id)` database function | `src/features/make/api.ts` → `saveTrail()` | ✅ done (D2) |
 | `<RouteMap stops mode="preview" \| "live" userLocation? selectedStopId? onSelectStop? />` | `@/components/RouteMap` | ✅ done (D3); needs `VITE_GOOGLE_MAPS_API_KEY`, falls back to a stop list without it |
 | `getDirectionsLink(to, mode, from?)`, `getTrailDirectionsLink(places)`, `loadGoogleMaps()` | `@/lib/maps` | ✅ done (D3) |
-| `<NearbyStations latitude longitude limit? />`, `loadStations()`, `nearestStations()` | `@/components/NearbyStations`, `@/lib/mbta` | ✅ done (D4) |
+| `<StopTransit latitude longitude refreshMs? />` (T stations + next trains, nearest bus stop + next buses, Bluebikes dock), `<TransitAlerts stops />` | `@/components/StopTransit`, `@/components/TransitAlerts` | ✅ done (D7; replaced D4's NearbyStations) |
+| `loadStations()`, `nearestStations()`, `getArrivals()`, `getNearbyBusStops()`, `getAlerts()` · `getNearbyDocks()` | `@/lib/mbta` · `@/lib/bluebikes` | ✅ done (D4, D7) |
 | `getMyRating`, `rateTrail`, `deleteMyRating` | `@/lib/api/ratings` | ✅ done (J3) |
 | `uploadCrumbPhoto`, `addTrailPhoto`, `getTrailPhotos`, `deletePhoto` | `@/lib/api/photos` | ✅ done (D5). Camera button only on ticked crumbs. |
 
