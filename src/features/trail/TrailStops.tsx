@@ -1,15 +1,18 @@
 /**
  * "The trail" on the Trail detail page: numbered stops joined by dotted lines, each
  * with its address, what to do there, its crumbs (See / Do) and how to get to the
- * next stop (walk, T, bus, bike), plus the nearest T stations (NearbyStations).
+ * next stop (walk, T, bus, bike) in that leg's color (@/lib/transitColors), plus
+ * the nearest T stations (NearbyStations).
  * Only shows travel modes that are stored; no
  * invented times or routes. Styled by .stops / .stop / .crumb-item in components.css.
  */
 
+import type { CSSProperties } from 'react'
 import { Bike, Bus, Footprints, TrainFront } from 'lucide-react'
 import { NearbyStations } from '@/components/NearbyStations'
 import type { TrailCrumb, TrailStop } from '@/lib/api/trails'
-import type { TravelMode } from '@/types/db-values'
+import { legColor } from '@/lib/transitColors'
+import type { TransitLine, TravelMode } from '@/types/db-values'
 
 const LEG: Record<TravelMode, { verb: string; icon: typeof Footprints }> = {
   walk: { verb: 'Walk to', icon: Footprints },
@@ -28,7 +31,16 @@ function CrumbItem({ crumb }: { crumb: TrailCrumb }) {
   )
 }
 
-export function TrailStops({ stops, betweenStopCrumbs }: { stops: TrailStop[]; betweenStopCrumbs: TrailCrumb[] }) {
+export function TrailStops({
+  stops,
+  betweenStopCrumbs,
+  primaryLine = null,
+}: {
+  stops: TrailStop[]
+  betweenStopCrumbs: TrailCrumb[]
+  /** The trail's main T line, used to color T legs. */
+  primaryLine?: TransitLine | null
+}) {
   if (stops.length === 0) {
     return <p className="mt-4 text-base text-ink-2">This trail doesn't have any stops yet.</p>
   }
@@ -41,7 +53,12 @@ export function TrailStops({ stops, betweenStopCrumbs }: { stops: TrailStop[]; b
           const leg = next?.travelModeToStop ? LEG[next.travelModeToStop] : null
           const showActivity = stop.plannedActivity && stop.plannedActivity !== stop.description
           return (
-            <li key={stop.id} className="stop">
+            <li
+              key={stop.id}
+              className="stop"
+              // Ring + dots down to the next stop in the color of that leg (last stop: the leg that arrives).
+              style={{ '--leg-color': legColor((next ?? stop).travelModeToStop, primaryLine) } as CSSProperties}
+            >
               <span className="num-ring">{i + 1}</span>
               <div className="min-w-0">
                 <h3 className="stop__name">{stop.placeName}</h3>

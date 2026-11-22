@@ -1,7 +1,8 @@
 /**
  * Map of a trail: numbered stop markers (.num-ring) and the real walking /
  * transit / biking route between stops from the Google Directions service, drawn
- * as the style guide's dotted orange line. In "live" mode it also shows the
+ * as the style guide's dotted line in each leg's color: walking orange, T rides in
+ * their line's color, bus yellow, Bluebikes blue (@/lib/transitColors). In "live" mode it also shows the
  * user's position (passed in by the page, never stored) and keeps it in view.
  *
  * Falls back to a list of stops with "Open in Google Maps" links when there's
@@ -21,7 +22,8 @@ import {
   loadGoogleMaps,
   type LatLng,
 } from '@/lib/maps'
-import type { TravelMode } from '@/types/db-values'
+import { WALK_COLOR, googleStepColor, legColor } from '@/lib/transitColors'
+import type { TransitLine, TravelMode } from '@/types/db-values'
 
 export type RouteMapStop = {
   id: string
@@ -41,13 +43,16 @@ export type RouteMapProps = {
   /** Highlight one stop, e.g. the next stop on an active trail. */
   selectedStopId?: string | null
   onSelectStop?: (stopId: string) => void
+  /** The trail's main T line: colors stop circles reached by T (legs from Google use their real line colors). */
+  primaryLine?: TransitLine | null
   className?: string
 }
 
-const TRAIL_COLOR = '#E8552D' // --color-crumb: trail dots and rings only
 
 /** Directions results reused across renders and pages (keyed by from|to|mode). */
-const legCache = new Map<string, google.maps.LatLng[] | null>()
+/** One drawn piece of a leg: a path and its color (walk orange, T line color, bus yellow, bike blue). */
+type Segment = { path: google.maps.LatLng[]; color: string }
+const legCache = new Map<string, Segment[] | null>()
 
 const toLatLng = (s: RouteMapStop): LatLng | null =>
   s.latitude !== null && s.longitude !== null ? { lat: s.latitude, lng: s.longitude } : null
@@ -81,8 +86,8 @@ function createHtmlMarker(maps: typeof google.maps, position: LatLng, element: H
   return new Marker()
 }
 
-/** Dotted polyline per the style guide: invisible stroke + repeated circles. */
-function dottedLine(maps: typeof google.maps, map: google.maps.Map, path: google.maps.LatLng[]) {
+/** Dotted polyline per the style guide (invisible stroke + repeated circles), in the given color. */
+function dottedLine(maps: typeof google.maps, map: google.maps.Map, path: google.maps.LatLng[], color: string) {
   return new maps.Polyline({
     map,
     path,
@@ -90,7 +95,7 @@ function dottedLine(maps: typeof google.maps, map: google.maps.Map, path: google
     clickable: false,
     icons: [
       {
-        icon: { path: maps.SymbolPath.CIRCLE, scale: 1.8, fillColor: TRAIL_COLOR, fillOpacity: 1, strokeOpacity: 0 },
+        icon: { path: maps.SymbolPath.CIRCLE, scale: 1.8, fillColor: color, fillOpacity: 1, strokeOpacity: 0 },
         offset: '0',
         repeat: '9px',
       },
@@ -98,7 +103,7 @@ function dottedLine(maps: typeof google.maps, map: google.maps.Map, path: google
   })
 }
 
-/** The route for one leg from the Directions service, or null if there isn't one. */
+/** The route for one leg from the Directions service, split into colored segments, or null if there isn't one. */
 async function routeForLeg(maps: typeof google.maps, from: LatLng, to: LatLng, mode: TravelMode | null) {
   const key = `${from.lat},${from.lng}|${to.lat},${to.lng}|${googleTravelMode(mode)}`
   if (legCache.has(key)) return legCache.get(key) ?? null
@@ -107,16 +112,29 @@ async function routeForLeg(maps: typeof google.maps, from: LatLng, to: LatLng, m
   ]
   try {
     const result = await new maps.DirectionsService().route({ origin: from, destination: to, travelMode })
-    const path = result.routes[0]?.overview_path ?? null
-    legCache.set(key, path)
-    return path
+    const steps = result.routes[0]?.legs.flatMap((leg) => leg.steps) ?? []
+    // One segment per step, so a T ride is drawn in its line's color and the walks around it in orange.
+    const segments: Segment[] = steps
+      .filter((step) => step.path?.length)
+      .map((step) => ({ path: step.path, color: googleStepColor(step) }))
+    const value = segments.length ? segments : null
+    legCache.set(key, value)
+    return value
   } catch {
     legCache.set(key, null) // no route, quota, or Directions API not enabled
     return null
   }
 }
 
-export function RouteMap({ stops, mode = 'preview', userLocation, selectedStopId, onSelectStop, className }: RouteMapProps) {
+export function RouteMap({
+  stops,
+  mode = 'preview',
+  userLocation,
+  selectedStopId,
+  onSelectStop,
+  primaryLine = null,
+  className,
+}: RouteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
   const mapsRef = useRef<typeof google.maps | null>(null)
@@ -133,7 +151,8 @@ export function RouteMap({ stops, mode = 'preview', userLocation, selectedStopId
 
   const placed = useMemo(() => stops.filter((s) => toLatLng(s) !== null), [stops])
   // Re-draw only when what's on the map actually changes.
-  const stopsKey = placed.map((s) => `${s.id}:${s.latitude},${s.longitude}:${s.travelModeToStop}`).join('|')
+  const stopsKey =
+    placed.map((s) => `${s.id}:${s.latitude},${s.longitude}:${s.travelModeToStop}`).join('|') + `|${primaryLine ?? ''}`
   const trailLink = getTrailDirectionsLink(
     stops.map((s) => toLatLng(s) ?? s.placeName).filter((p): p is LatLng | string => Boolean(p)),
   )
@@ -185,6 +204,8 @@ export function RouteMap({ stops, mode = 'preview', userLocation, selectedStopId
       el.setAttribute('aria-label', `Stop ${number}: ${stop.placeName}`)
       el.style.cursor = 'pointer'
       el.style.padding = '0'
+      // Circle in the color of the leg that arrives here (first stop: walking orange).
+      el.style.borderColor = stop.travelModeToStop ? legColor(stop.travelModeToStop, primaryLine) : WALK_COLOR
       el.addEventListener('click', () => onSelectRef.current?.(stop.id))
       const marker = createHtmlMarker(maps, position, el)
       marker.setMap(map)
@@ -202,8 +223,8 @@ export function RouteMap({ stops, mode = 'preview', userLocation, selectedStopId
     const legs = placed.slice(1).map((stop, i) => ({ from: toLatLng(placed[i])!, to: toLatLng(stop)!, mode: stop.travelModeToStop }))
     Promise.all(legs.map((leg) => routeForLeg(maps, leg.from, leg.to, leg.mode))).then((paths) => {
       if (cancelled) return
-      paths.forEach((path) => {
-        if (path) lines.push(dottedLine(maps, map, path))
+      paths.forEach((segments) => {
+        segments?.forEach((segment) => lines.push(dottedLine(maps, map, segment.path, segment.color)))
       })
       setMissingLegs(paths.filter((p) => p === null).length)
     })

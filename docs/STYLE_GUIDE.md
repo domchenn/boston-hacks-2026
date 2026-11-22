@@ -60,6 +60,21 @@ Tints (`--color-crumb-tint`, `--color-blue-tint`, `--color-green-tint`) are soft
 
 MBTA line colors (`--line-red`, `--line-orange`, `--line-green`, `--line-blue`, `--line-silver`) appear **only** as a 9 px dot beside a transit step (`.line-dot`), like "● Green Line, Arlington → Copley". Cards are never colored by line or category.
 
+
+### Transit colors on trails
+
+Trail dots and stop circles take the color of how you travel (source: `src/lib/transitColors.ts`):
+
+| Leg | Color |
+|---|---|
+| Walking | crumb orange `#E8552D` (the default trail color) |
+| T | the line's MBTA color: Red `#DA291C`, Orange `#ED8B00`, Blue `#003DA5`, Green `#00843D`, Silver `#7C878E`, Commuter Rail `#80276C` |
+| Bus | MBTA bus yellow, darkened for contrast `#E5A800` (not orange, so it isn't mistaken for the Orange Line) |
+| Bike (Bluebikes) | Bluebikes blue `#1E88E5` (lighter than the Blue Line) |
+
+- **Cards:** the whole dotted line uses the trail's main T line (`primary_line`); trails without one stay crumb orange.
+- **Stop lists:** set `--leg-color` on a `.stop`; its ring and the dots down to the next stop use that leg's color. Finished stops still turn green.
+- **Maps:** each part of a route is drawn in its own color (walk, the actual T line from Google, bus, bike), and each stop circle in the color of the leg that arrives there.
 ## 2. Typography
 
 **Inter** (Google Fonts, variable weight 400–800). Sizes are CSS px on a 390 px-wide phone.

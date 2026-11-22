@@ -5,10 +5,12 @@
  * green and the current one orange (style guide: "During a run, reuse the stop
  * list"). Each crumb is a toggle button with aria-pressed.
  */
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Check, LoaderCircle } from 'lucide-react'
 import type { TrailCrumb, TrailStop } from '@/lib/api/trails'
+import { legColor } from '@/lib/transitColors'
 import { cn } from '@/lib/utils'
+import type { TransitLine } from '@/types/db-values'
 
 type CrumbProps = {
   crumbs: TrailCrumb[]
@@ -117,11 +119,14 @@ export function TrailChecklist({
   ticked,
   pending,
   onToggle,
+  primaryLine = null,
 }: Omit<CrumbProps, 'crumbs'> & {
   stops: TrailStop[]
   betweenStopCrumbs: TrailCrumb[]
   currentIndex: number
   onSelectStop: (index: number) => void
+  /** The trail's main T line, used to color T legs. */
+  primaryLine?: TransitLine | null
 }) {
   return (
     <div className="mt-4 rounded-card border border-line bg-white px-5 py-5">
@@ -130,7 +135,11 @@ export function TrailChecklist({
           const allDone = stop.crumbs.length > 0 && stop.crumbs.every((c) => ticked.has(c.id))
           const current = i === currentIndex
           return (
-            <li key={stop.id} className={cn('stop', allDone && 'is-done')}>
+            <li
+              key={stop.id}
+              className={cn('stop', allDone && 'is-done')}
+              style={{ '--leg-color': legColor((stops[i + 1] ?? stop).travelModeToStop, primaryLine) } as CSSProperties}
+            >
               <span
                 className={cn('num-ring', allDone ? 'num-ring--done' : current && 'num-ring--current')}
                 aria-hidden

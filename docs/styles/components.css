@@ -340,7 +340,7 @@ a.trail-card:hover { box-shadow: var(--shadow-card), 0 10px 28px rgba(27, 25, 22
   bottom: 4px;
   left: calc(var(--stop-num-size) / 2 - 2px);
   width: 4px;
-  background: radial-gradient(circle, var(--color-trail) 1.5px, transparent 1.9px) center top / 4px var(--trail-gap) repeat-y;
+  background: radial-gradient(circle, var(--leg-color, var(--color-trail)) 1.5px, transparent 1.9px) center top / 4px var(--trail-gap) repeat-y;
 }
 .stop:last-child { padding-bottom: 0; }
 .stop:last-child::before { display: none; }
@@ -352,6 +352,10 @@ a.trail-card:hover { box-shadow: var(--shadow-card), 0 10px 28px rgba(27, 25, 22
 .crumb-item b { font-weight: var(--weight-semibold); }
 .crumb-item.is-done { color: var(--color-text-muted); }
 .crumb-item.is-done::before { background: var(--color-done); }
+/* Per-leg color (set --leg-color on a .stop): its ring and the dots down to the
+   next stop take the color of how you travel that leg (T line, bus, bike, walk). */
+.stop .num-ring:not(.num-ring--current):not(.num-ring--done) { border-color: var(--leg-color, var(--color-trail)); }
+.stop__leg svg { color: var(--leg-color, currentColor); }
 .stop__leg { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: var(--text-sm); color: var(--color-text-muted); }
 .stop__leg svg { flex: none; width: 15px; height: 15px; stroke-width: 2; }
 .line-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--line, var(--line-green)); }
