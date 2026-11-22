@@ -3,7 +3,8 @@
  * joined, newest first, each card topped with who did what ("@ben finished · 2 d").
  * Logged out: a nudge to log in. Signed in: a "Find friends" button (FindPeople:
  * opens search + suggestions) is always on top, so you can keep following people;
- * then invites to join a friend's outing (OutingInvites); then "You both saved"
+ * then invites to join a friend's outing (OutingInvites) and Original Crew tags
+ * (CrewRequests); then "You both saved"
  * (trails you and a friend both saved); then the
  * activity, or a nudge when there's none. Renders the items of Explore's feed
  * grid. Data: @/features/friends (friends_activity, follows).
@@ -14,6 +15,7 @@ import { Link } from 'react-router'
 import { TrailCard } from '@/components/TrailCard'
 import type { ActivityItem } from '@/features/friends/api'
 import { ACTIVITY_VERBS, handle, timeAgo } from '@/features/friends/activityFormat'
+import { CrewRequests } from '@/features/friends/CrewRequests'
 import { FindPeople } from '@/features/friends/FindPeople'
 import { OutingInvites } from '@/features/friends/OutingInvites'
 import { BothSavedSection } from '@/features/friends/AlsoSavedBy'
@@ -95,6 +97,7 @@ export function FriendsPanel() {
     <>
       <FindPeople viewerId={viewerId} onFollowChange={reload} />
       <OutingInvites viewerId={viewerId} />
+      <CrewRequests viewerId={viewerId} />
       <BothSavedSection alsoSaved={alsoSaved} />
     </>
   )

@@ -30,3 +30,6 @@ export function timeAgo(iso: string, now = Date.now()) {
 export function handle(person: TrailCreator) {
   return person.username ? `@${person.username}` : person.display_name || 'Someone'
 }
+
+/** Display name, else @username, else "Someone". */
+export const personName = (p: TrailCreator) => p.display_name || (p.username ? `@${p.username}` : 'Someone')

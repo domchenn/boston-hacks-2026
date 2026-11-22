@@ -11,6 +11,7 @@
  * refresh doesn't lose it; a note offers "Start over". Cleared on publish.
  * Logged-out users are sent to /login?next=/make.
  * Basics also has "Who can see it": everyone / friends / close friends.
+ * "Original crew" (CrewField) tags friends who were there; saved with setTrailCrew.
  * Route: /make · Owner: Dom
  */
 
@@ -20,10 +21,12 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { Dropdown } from '@/components/Dropdown'
 import { RouteMap } from '@/components/RouteMap'
 import { TrailCard } from '@/components/TrailCard'
+import { setTrailCrew } from '@/lib/api/crew'
 import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
 import type { TravelMode } from '@/types/db-values'
 import { loadPlaces, saveTrail, type Place } from './api'
+import { CrewField } from './CrewField'
 import {
   CATEGORY_OPTIONS,
   MAX_STOPS,
@@ -149,6 +152,8 @@ export function MakeTrailForm({
   autosaveFor,
 }: MakeTrailFormProps = {}) {
   const navigate = useNavigate()
+  const { session } = useSession()
+  const viewerId = session?.user.id ?? null
   // A trail-in-progress kept on this device from before a refresh (plain /make only).
   const [restored] = useState(() => (autosaveFor && !initialDraft ? readLocalDraft(autosaveFor) : null))
   const [showRestored, setShowRestored] = useState(restored !== null)
@@ -257,6 +262,20 @@ export function MakeTrailForm({
       return
     }
     setTrailId(result.id)
+    // The Original Crew is saved next to the trail; a hiccup here doesn't undo the save.
+    let crewFailed = false
+    if (draft.crew.length > 0 || trailId) {
+      try {
+        await setTrailCrew(result.id, draft.crew.map((c) => c.person.id))
+        update({ crew: draft.crew.map((c) => ({ ...c, status: c.status ?? 'pending' })) })
+      } catch {
+        crewFailed = true
+      }
+    }
+    if (crewFailed) {
+      setMessage({ tone: 'error', text: 'Your trail is saved, but tagging the crew didn’t go through. Try saving again.' })
+      return
+    }
     if (status === 'published') {
       if (autosaveFor) clearLocalDraft()
       navigate(`/trails/${result.id}`)
@@ -559,6 +578,13 @@ export function MakeTrailForm({
               </button>
             ) : null}
           </Panel>
+
+          {/* ----------------------------------------------------------- Crew */}
+          {viewerId ? (
+            <Panel id="trail-crew" title="Original crew" aside="Optional">
+              <CrewField value={draft.crew} onChange={(crew) => update({ crew })} viewerId={viewerId} />
+            </Panel>
+          ) : null}
         </div>
 
         {/* ------------------------------------------------------- Sidebar */}

@@ -1,8 +1,10 @@
 /**
- * The tabs on a profile. Your own page: Finished (private progress) / Made /
+ * The tabs on a profile. Your own page: Finished (private progress) / Trails /
  * Badges (ProfileBadges); saved trails have their own Saved page. Someone else's: Trails
  * (their published trails) / Activity (PersonActivity: what they made, finished
  * or joined, if you follow them).
+ * Trails lists the trails they made, then the ones they're on the Original Crew
+ * of (tagged by a friend and accepted).
  * The open tab lives in ?tab= so it survives refresh and can be linked. Each tab
  * has loading, error and empty states (empty-trail.svg, per the style guide).
  * Cards use the style guide's .trail-card; swap in the shared TrailCard (task J1)
@@ -14,18 +16,18 @@ import { CircleAlert, Pencil } from 'lucide-react'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { ProfileBadges } from '@/features/badges/ProfileBadges'
 import { PersonActivity } from '@/features/friends/FriendsActivity'
-import { getMadeTrails, getMyTrails, type ProfileTrail, type ProgressTab, type Result } from './api'
+import { getCrewTrails, getMadeTrails, getMyTrails, type ProfileTrail, type ProgressTab, type Result } from './api'
 
 type TrailTabId = 'finished' | 'made'
 type TabId = TrailTabId | 'badges' | 'activity'
 
 const TABS: Record<TrailTabId, { label: string; status: ProgressTab | null }> = {
   finished: { label: 'Finished', status: 'completed' },
-  made: { label: 'Made', status: null },
+  made: { label: 'Trails', status: null },
 }
 const LABELS: Record<TabId, string> = {
   finished: 'Finished',
-  made: 'Made',
+  made: 'Trails',
   badges: 'Badges',
   activity: 'Activity',
 }
@@ -95,7 +97,7 @@ export function ProfileTrails({
             onClick={() => select(t)}
             onKeyDown={onTabKeyDown}
           >
-            {!isOwn && t === 'made' ? 'Trails' : LABELS[t]}
+            {LABELS[t]}
           </button>
         ))}
       </div>
@@ -114,6 +116,14 @@ export function ProfileTrails({
   )
 }
 
+/** Trails they made, then the ones they're Original Crew on. Crew trails are a nice-to-have. */
+async function madeAndCrew(userId: string): Promise<Result<ProfileTrail[]>> {
+  const [made, crew] = await Promise.all([getMadeTrails(userId), getCrewTrails(userId)])
+  if (!made.ok) return made
+  const own = new Set(made.data.map((t) => t.id))
+  return { ok: true, data: [...made.data, ...(crew.ok ? crew.data.filter((t) => !own.has(t.id)) : [])] }
+}
+
 type ListState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; trails: ProfileTrail[] }
 
 function TrailList({ userId, tab, isOwn, name }: { userId: string; tab: TrailTabId; isOwn: boolean; name: string }) {
@@ -123,7 +133,7 @@ function TrailList({ userId, tab, isOwn, name }: { userId: string; tab: TrailTab
   useEffect(() => {
     let cancelled = false
     const status = TABS[tab].status
-    const request: Promise<Result<ProfileTrail[]>> = status ? getMyTrails(userId, status) : getMadeTrails(userId)
+    const request: Promise<Result<ProfileTrail[]>> = status ? getMyTrails(userId, status) : madeAndCrew(userId)
     request.then((result) => {
       if (cancelled) return
       setState(result.ok ? { status: 'ready', trails: result.data } : { status: 'error', message: result.message })
@@ -167,7 +177,7 @@ function TrailList({ userId, tab, isOwn, name }: { userId: string; tab: TrailTab
         <li key={trail.id} className="grid content-start gap-1">
           <ProfileTrailCard trail={trail} tab={tab} />
           {/* Your own trails (drafts included) can be edited from here (task G4). */}
-          {tab === 'made' && isOwn ? (
+          {tab === 'made' && isOwn && !trail.crew ? (
             <Link
               to={`/trails/${trail.id}/edit`}
               className="btn btn--ghost btn--sm justify-self-end"
@@ -218,6 +228,7 @@ function eyebrowFor(trail: ProfileTrail, tab: TrailTabId): { text: string; varia
     return { text: trail.completedAt ? `Finished · ${dayFormat.format(new Date(trail.completedAt))}` : 'Finished', variant: 'done' }
   }
   if (trail.trailStatus === 'draft') return { text: 'Draft', variant: 'draft' }
+  if (trail.crew) return { text: 'Original crew', variant: 'done' }
   const category = trail.category ? CATEGORY_LABELS[trail.category] ?? null : null
   return { text: category ?? 'Trail', variant: 'anytime' }
 }

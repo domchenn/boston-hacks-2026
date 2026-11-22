@@ -4,6 +4,8 @@
  * into the JSON that save_trail() expects. No React here, so it's easy to test.
  */
 
+import type { CrewStatus } from '@/lib/api/crew'
+import type { TrailCreator } from '@/lib/api/trails'
 import type { Category, TrailVisibility, TravelMode } from '@/types/db-values'
 
 export const MIN_STOPS = 2
@@ -62,7 +64,12 @@ export type TrailDraft = {
   /** Remix (task G8): the trail this one is copied from. Only used when creating. */
   remixedFrom: string | null
   stops: StopDraft[]
+  /** Original Crew: friends tagged as being there (saved separately with setTrailCrew). */
+  crew: CrewPick[]
 }
+
+/** A tagged friend; status is null until the trail is saved with them on it. */
+export type CrewPick = { person: TrailCreator; status: CrewStatus | null }
 
 export const emptyDraft = (): TrailDraft => ({
   title: '',
@@ -73,6 +80,7 @@ export const emptyDraft = (): TrailDraft => ({
   visibility: 'public',
   remixedFrom: null,
   stops: [],
+  crew: [],
 })
 
 /** Sum of the stops' known costs, or null if none are known. */

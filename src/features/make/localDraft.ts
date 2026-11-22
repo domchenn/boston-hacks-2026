@@ -25,7 +25,8 @@ export function readLocalDraft(userId: string): { trailId: string | null; draft:
     if (!raw) return null
     const stored = JSON.parse(raw) as Stored
     if (stored?.userId !== userId || typeof stored.draft?.title !== 'string' || !Array.isArray(stored.draft.stops)) return null
-    return { trailId: stored.trailId ?? null, draft: stored.draft }
+    // Drafts kept before the crew field existed have no crew list.
+    return { trailId: stored.trailId ?? null, draft: { ...stored.draft, crew: stored.draft.crew ?? [] } }
   } catch {
     return null
   }

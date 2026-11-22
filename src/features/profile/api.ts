@@ -34,6 +34,8 @@ export type ProfileTrail = {
   completedAt: string | null
   /** Your overall rating (mean of the four scores), on Finished trails you rated. */
   myRating: number | null
+  /** On the Original Crew of someone else's trail (not its creator). */
+  crew?: boolean
 }
 
 export type ProgressTab = Extract<UserSidequestStatus, 'completed' | 'saved' | 'signed_up'>
@@ -187,6 +189,26 @@ export async function getMadeTrails(userId: string): Promise<Result<ProfileTrail
       .order('created_at', { ascending: false })
     if (error) return failure(error)
     return { ok: true, data: data.map((row) => toTrail(row)) }
+  } catch {
+    return failure(null)
+  }
+}
+
+/**
+ * Trails someone is on the Original Crew of (they accepted the tag), newest
+ * first. Only published trails the viewer can see (RLS on trail_crew).
+ */
+export async function getCrewTrails(userId: string): Promise<Result<ProfileTrail[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('trail_crew')
+      .select(`created_at, trail:sidequests!inner(${TRAIL_COLUMNS})`)
+      .eq('user_id', userId)
+      .eq('status', 'accepted')
+      .eq('trail.status', 'published')
+      .order('created_at', { ascending: false })
+    if (error) return failure(error)
+    return { ok: true, data: data.map((row) => toTrail(row.trail, { crew: true })) }
   } catch {
     return failure(null)
   }

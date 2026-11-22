@@ -9,6 +9,7 @@
  * Delete are plain updates/deletes on the trail row (RLS: creators only), so they
  * never touch stops or crumbs. No React here. Used by EditTrailPage.tsx.
  */
+import { getTrailCrew, type CrewMember } from '@/lib/api/crew'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
 import { supabase } from '@/lib/supabase'
 import { MAX_STOPS, type StopDraft, type TrailDraft } from './draft'
@@ -24,6 +25,8 @@ export type EditableTrail = {
   trail: TrailDetail
   /** stop id → its place-library link and that place's neighborhood (getTrail doesn't return these). */
   library: Map<string, { experienceId: string | null; neighborhood: string | null }>
+  /** The Original Crew you've tagged (any answer), for Edit. */
+  crew?: CrewMember[]
 }
 
 export type LoadResult =
@@ -38,9 +41,9 @@ export async function loadEditableTrail(trailId: string, userId: string): Promis
     if (!trail) return { status: 'not_found' }
     if (trail.creator?.id !== userId) return { status: 'not_yours', trail }
 
-    const library = await loadStopLibrary(trailId)
+    const [library, crew] = await Promise.all([loadStopLibrary(trailId), getTrailCrew(trailId).catch(() => [])])
     if (!library.ok) return { status: 'error', message: library.message }
-    return { status: 'ok', data: { trail, library: library.data } }
+    return { status: 'ok', data: { trail, library: library.data, crew } }
   } catch (error) {
     return { status: 'error', message: messageFor(error as { code?: string }) }
   }
@@ -69,7 +72,7 @@ export async function loadStopLibrary(
 
 
 /** The Make a trail form's draft for an existing trail. */
-export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
+export function draftFromTrail({ trail, library, crew = [] }: EditableTrail): TrailDraft {
   const stops = trail.stops.map<StopDraft>((stop, i) => {
     const lib = library.get(stop.id)
     return {
@@ -96,6 +99,7 @@ export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
     // Edits never change a remix credit (save_trail ignores it), so leave it out.
     remixedFrom: null,
     stops,
+    crew: crew.map((c) => ({ person: c.person, status: c.status })),
   }
 }
 
