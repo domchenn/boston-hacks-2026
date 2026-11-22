@@ -1,10 +1,13 @@
 /**
  * App shell shared by every page (docs/mockups/Web-Explore + Main). Desktop header:
- * logo, Explore / Map / Saved / You nav (trail pages count as Explore), search box,
- * orange "Make a trail" button (not on /make itself) and the account menu (log in /
- * log out via useSession()). Phones get a compact
+ * logo, Explore / Map / Saved nav (trail pages count as Explore), search box,
+ * orange "Make a trail" button (not on /make itself) and the account menu (your
+ * profile and log out, via useSession()). Phones get a compact
  * header (logo, search toggle, account) plus the bottom tab bar with the + button
- * (hidden on /trails/:id pages, which have their own sticky Start trail bar). On
+ * (hidden on /trails/:id pages, which have their own sticky Start trail bar).
+ * Sign-in gate: signed-out visitors only get /login, /signup, /privacy, /terms and
+ * a shared trail (/trails/:id, read-only with a "Sign up" banner); every other
+ * page sends them to /login?next=…, and the header shows just the logo. On
  * /map the shell is exactly one screen tall and <main> has no padding, so the map
  * fills everything between the header and the tab bar.
  * Search sends you to Explore with ?q=… (keeping any Explore filters); the current route's page renders in <Outlet />.
@@ -12,7 +15,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Bookmark, Compass, LogIn, LogOut, MapIcon, Plus, Search, User, X } from 'lucide-react'
-import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, NavLink, Outlet, useLocation, useMatch, useNavigate, useSearchParams } from 'react-router'
 import { BrandLogo } from '@/components/BrandLogo'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/lib/useSession'
@@ -21,8 +24,13 @@ const NAV = [
   { to: '/', label: 'Explore', icon: Compass, end: true },
   { to: '/map', label: 'Map', icon: MapIcon, end: false },
   { to: '/saved', label: 'Saved', icon: Bookmark, end: false },
-  { to: '/me', label: 'You', icon: User, end: false },
 ] as const
+
+/** Pages a signed-out visitor may open. Everything else needs an account. */
+const SIGNED_OUT_PATHS = new Set(['/login', '/signup', '/privacy', '/terms'])
+/** A shared trail link (not /go, /rate or /edit): readable without an account. */
+const isSharedTrailPath = (pathname: string) => /^\/trails\/[^/]+\/?$/.test(pathname)
+const isSignedOutPath = (pathname: string) => SIGNED_OUT_PATHS.has(pathname) || isSharedTrailPath(pathname)
 
 /** Search trails by name, place or neighborhood; submits to Explore as /?q=… (keeping Explore's filters). */
 function SearchBox({ id, autoFocus, onDone }: { id: string; autoFocus?: boolean; onDone?: () => void }) {
@@ -166,9 +174,9 @@ function AccountMenu() {
   )
 }
 
-/** Phone-only bottom tab bar: Explore · Map · + · Saved · You (styled by .tabbar). */
+/** Phone-only bottom tab bar: Explore · Map · + · Saved (styled by .tabbar). Your profile is in the header's account menu. */
 function TabBar() {
-  const [explore, map, saved, you] = NAV
+  const [explore, map, saved] = NAV
   const item = ({ to, label, icon: Icon, end }: (typeof NAV)[number]) => (
     <NavLink key={to} to={to} end={end} className="tabbar__item">
       <Icon aria-hidden />
@@ -176,25 +184,55 @@ function TabBar() {
     </NavLink>
   )
   return (
-    <nav aria-label="App" className="tabbar fixed inset-x-0 bottom-0 z-20 md:hidden">
+    <nav aria-label="App" className="tabbar fixed inset-x-0 bottom-0 z-20 grid-cols-4 md:hidden">
       {item(explore)}
       {item(map)}
       <Link to="/make" className="tabbar__fab" aria-label="Make a trail">
         <Plus aria-hidden />
       </Link>
       {item(saved)}
-      {item(you)}
     </nav>
   )
 }
 
+/** Shown above a shared trail to signed-out visitors: what they can do once they have an account. */
+function SignedOutTrailBanner() {
+  const { pathname } = useLocation()
+  const next = encodeURIComponent(pathname)
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-crumb-tint px-4 py-3">
+      <p className="m-0 text-sm text-ink">
+        <b>Someone shared a trail with you.</b> Sign up to start it, save it and find more trails around Boston.
+      </p>
+      <div className="flex gap-2">
+        <Link to={`/signup?next=${next}`} className="btn btn--sm">
+          Sign up
+        </Link>
+        <Link to={`/login?next=${next}`} className="btn btn--sm btn--secondary">
+          Log in
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export function AppLayout() {
+  const { session, loading } = useSession()
+  const { pathname, search } = useLocation()
+  const signedOut = !loading && !session
   const [searchOpen, setSearchOpen] = useState(false)
   // Trail pages have their own sticky Start trail bar on phones (Mobile-Detail mockup), so no tab bar there.
   const onTrailPage = useMatch('/trails/:id/*') !== null
   // The Map tab is a full-screen map, so no page padding or width limit there.
   const onMapPage = useMatch('/map') !== null
   const onMakePage = useMatch('/make') !== null
+  // Hide the app's navigation until we know who's here, and for signed-out visitors.
+  const showNav = !loading && !signedOut
+
+  if (signedOut && !isSignedOutPath(pathname)) {
+    const next = pathname + search
+    return <Navigate to={next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`} replace />
+  }
 
   return (
     <div className={cn('flex flex-col bg-paper', onMapPage ? 'h-dvh overflow-hidden' : 'min-h-dvh')}>
@@ -202,7 +240,7 @@ export function AppLayout() {
         <div className="mx-auto flex w-full max-w-[1360px] items-center gap-3 px-4 py-3 md:gap-6 md:px-6">
           <BrandLogo />
 
-          <nav aria-label="Main" className="hidden gap-1 md:flex">
+          <nav aria-label="Main" className={cn('hidden gap-1', showNav && 'md:flex')}>
             {NAV.map(({ to, label, end }) => (
               <NavLink
                 key={to}
@@ -221,23 +259,27 @@ export function AppLayout() {
             ))}
           </nav>
 
-          <div className="ml-auto hidden max-w-[460px] flex-1 lg:block">
-            <SearchBox id="header-search" />
-          </div>
+          {showNav ? (
+            <div className="ml-auto hidden max-w-[460px] flex-1 lg:block">
+              <SearchBox id="header-search" />
+            </div>
+          ) : null}
 
-          <div className="ml-auto flex items-center gap-3 lg:ml-0">
-            <button
-              type="button"
-              className={cn('icon-btn lg:hidden', searchOpen && 'is-on')}
-              aria-label={searchOpen ? 'Close search' : 'Search'}
-              aria-expanded={searchOpen}
-              aria-controls="mobile-search"
-              onClick={() => setSearchOpen((v) => !v)}
-            >
-              {searchOpen ? <X aria-hidden /> : <Search aria-hidden />}
-            </button>
+          <div className={cn('ml-auto flex items-center gap-3', showNav && 'lg:ml-0')}>
+            {showNav ? (
+              <button
+                type="button"
+                className={cn('icon-btn lg:hidden', searchOpen && 'is-on')}
+                aria-label={searchOpen ? 'Close search' : 'Search'}
+                aria-expanded={searchOpen}
+                aria-controls="mobile-search"
+                onClick={() => setSearchOpen((v) => !v)}
+              >
+                {searchOpen ? <X aria-hidden /> : <Search aria-hidden />}
+              </button>
+            ) : null}
             {/* Icon-only between md and lg so the header fits on tablets. Not shown on Make a trail itself. */}
-            {onMakePage ? null : (
+            {onMakePage || !showNav ? null : (
               <Link to="/make" aria-label="Make a trail" className="btn btn--sm hidden px-2.5 md:inline-flex lg:px-4">
                 <Plus aria-hidden />
                 <span className="hidden lg:inline">Make a trail</span>
@@ -247,7 +289,7 @@ export function AppLayout() {
           </div>
         </div>
 
-        {searchOpen ? (
+        {searchOpen && showNav ? (
           <div id="mobile-search" className="mx-auto w-full max-w-[1360px] px-4 pb-3 md:px-6 lg:hidden">
             <SearchBox id="mobile-search-input" autoFocus onDone={() => setSearchOpen(false)} />
           </div>
@@ -262,6 +304,7 @@ export function AppLayout() {
           !onMapPage && (onTrailPage ? 'pb-6' : 'pb-28'),
         )}
       >
+        {signedOut && onTrailPage ? <SignedOutTrailBanner /> : null}
         <Outlet />
         {onMapPage ? null : (
           <footer className="mt-12 flex gap-4 border-t border-line pt-4 text-sm text-muted-foreground">
@@ -275,7 +318,7 @@ export function AppLayout() {
         )}
       </main>
 
-      {onTrailPage ? null : <TabBar />}
+      {onTrailPage || !showNav ? null : <TabBar />}
     </div>
   )
 }
