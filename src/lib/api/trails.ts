@@ -1,7 +1,8 @@
 /**
  * Trail data for the Explore feed and the Trail detail page.
  *
- *   getFeed(filters) → FeedTrail[]   published trails for Explore
+ *   getFeed(filters) → FeedTrail[]   published trails for Explore (category,
+ *                                     neighborhood, cost, length, late-night filters)
  *   getTrail(id)     → TrailDetail   one trail with stops, crumbs and reviews
  *
  * Words: a "trail" is a row in `sidequests`, its stops are `sidequest_stops`
@@ -50,9 +51,24 @@ export type FeedTrail = {
   rating: TrailRating
   /** Scheduled trails: how many people are going (trail_going_counts). Unset if unknown. */
   goingCount?: number
+  /** Every stop in order, for search and the map / "Near a T station" filter. Set by getFeed only. */
+  places?: FeedPlace[]
+}
+
+/** A stop as the feed sees it: its name, where it is, and whether its place is open late. */
+export type FeedPlace = {
+  name: string
+  latitude: number | null
+  longitude: number | null
+  /** The linked place (experiences.open_late) is open late. False for places typed in by hand. */
+  openLate: boolean
 }
 
 export type FeedFilters = {
+  /** Only trails in this neighborhood (exact match on sidequests.neighborhood). */
+  neighborhood?: string
+  /** Only trails where at least one stop's place is open late. */
+  lateNight?: boolean
   category?: Category
   /** Only trails costing at most this many dollars. */
   maxCost?: number
@@ -161,19 +177,23 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
       `id, title, description, category, neighborhood, cover_image_url, estimated_cost,
        estimated_duration_minutes, scheduled_at, primary_line, is_curated, created_at,
        creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS}),
-       sidequest_stops(place_name, stop_order),
+       sidequest_stops(place_name, stop_order, latitude, longitude, experience:experiences(open_late)),
        checklist_items(count)`,
     )
     .eq('status', 'published')
     .order('created_at', { ascending: false })
 
+  if (filters.neighborhood) query = query.eq('neighborhood', filters.neighborhood)
   if (filters.category) query = query.eq('category', filters.category)
   if (filters.maxCost !== undefined) query = query.lte('estimated_cost', filters.maxCost)
   if (filters.maxMinutes !== undefined) query = query.lte('estimated_duration_minutes', filters.maxMinutes)
 
   const { data, error } = await query
   if (error) throw error
-  const rows = data ?? []
+  // Late night is checked here rather than in SQL so the stops list above stays complete.
+  const rows = (data ?? []).filter(
+    (row) => !filters.lateNight || row.sidequest_stops.some((stop) => stop.experience?.open_late === true),
+  )
   const stats = await fetchRatingStats(rows.map((r) => r.id))
   // "6 going" on scheduled cards. Only decoration: the feed still loads if this fails.
   const going = await getGoingCounts(rows.filter((r) => r.scheduled_at !== null).map((r) => r.id)).catch(
@@ -203,6 +223,12 @@ export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
       lastStopName: stops.length > 1 ? stops[stops.length - 1].place_name : null,
       rating: { average: num(s?.avg_overall), count: s?.rating_count ?? 0 },
       goingCount: row.scheduled_at !== null && going ? (going.get(row.id) ?? 0) : undefined,
+      places: stops.map((stop) => ({
+        name: stop.place_name,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        openLate: stop.experience?.open_late === true,
+      })),
     }
   })
 }

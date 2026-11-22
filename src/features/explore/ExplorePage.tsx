@@ -1,19 +1,33 @@
 /**
  * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main): tabs For you /
- * Nearby / Friends (only For you works for now), cost and length filters, a grid of
- * TrailCards and, on wide screens, a map of where the shown trails start (TrailsMap).
- * Hovering a card highlights its pin and vice versa; clicking a pin opens the trail.
- * Reads ?q= from the header search. Data: loadTrails() in ./api (getFeed + starts).
+ * Nearby / Friends (only For you works for now), filters (category, neighborhood,
+ * cost, length, Late night, Near a T station), a grid of TrailCards and, on wide
+ * screens, a map of where the shown trails start (TrailsMap). Hovering a card
+ * highlights its pin and vice versa; clicking a pin opens the trail.
+ * Filters and the header search (?q=) live in the URL so a filtered feed can be
+ * shared (see ./filters). Data: loadTrails() and loadNeighborhoods() in ./api.
  * Route: / · Owner: Jason
  */
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Moon, TrainFront } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { TrailCard } from '@/components/TrailCard'
 import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
+import { cn } from '@/lib/utils'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
-import { loadTrails, matchesSearch, type MapTrail } from './api'
+import { loadNeighborhoods, loadTrails, matchesSearch, NEAR_T_MILES, type MapTrail } from './api'
+import {
+  CATEGORY_OPTIONS,
+  COST_OPTIONS,
+  FILTER_KEYS,
+  LENGTH_OPTIONS,
+  readFilterValues,
+  toExploreFilters,
+  withFilter,
+  withoutFilters,
+  type FilterKey,
+} from './filters'
 
 type Tab = 'for-you' | 'nearby' | 'friends'
 
@@ -23,20 +37,10 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'friends', label: 'Friends' },
 ]
 
-const COST_OPTIONS = [
-  { value: '', label: 'Any cost' },
-  { value: '0', label: 'Free' },
-  { value: '10', label: 'Under $10' },
-  { value: '20', label: 'Under $20' },
-  { value: '35', label: 'Under $35' },
-]
-
-const LENGTH_OPTIONS = [
-  { value: '', label: 'Any length' },
-  { value: '60', label: 'Up to 1 hr' },
-  { value: '120', label: 'Up to 2 hr' },
-  { value: '180', label: 'Up to 3 hr' },
-]
+const pill =
+  'h-11 cursor-pointer rounded-pill bg-white text-sm font-semibold outline-none transition-shadow focus-visible:shadow-[var(--focus-ring)] md:h-[38px]'
+const pillOff = 'text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:shadow-[inset_0_0_0_1px_var(--color-ink-2)]'
+const pillOn = 'text-ink shadow-[inset_0_0_0_1.5px_var(--color-ink)]'
 
 /** A filter chip: a native <select> styled as an outlined pill. */
 function FilterSelect({
@@ -50,19 +54,13 @@ function FilterSelect({
   options: { value: string; label: string }[]
   onChange: (value: string) => void
 }) {
-  const active = value !== ''
   return (
     <label className="relative inline-flex">
       <span className="sr-only">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={
-          'h-11 cursor-pointer appearance-none rounded-pill md:h-[38px] bg-white pr-9 pl-3.5 text-sm font-semibold outline-none focus-visible:shadow-[var(--focus-ring)] ' +
-          (active
-            ? 'text-ink shadow-[inset_0_0_0_1.5px_var(--color-ink)]'
-            : 'text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line-strong)]')
-        }
+        className={cn(pill, 'max-w-[13rem] appearance-none truncate pr-9 pl-3.5', value !== '' ? pillOn : pillOff)}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -72,6 +70,34 @@ function FilterSelect({
       </select>
       <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-ink-2" />
     </label>
+  )
+}
+
+/** An on/off quick filter (Late night, Near a T station), same pill look as the selects. */
+function FilterToggle({
+  label,
+  icon,
+  on,
+  title,
+  onChange,
+}: {
+  label: string
+  icon: ReactNode
+  on: boolean
+  title?: string
+  onChange: (on: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      title={title}
+      onClick={() => onChange(!on)}
+      className={cn(pill, 'inline-flex items-center gap-1.5 px-3.5 [&_svg]:size-4', on ? pillOn : pillOff)}
+    >
+      {on ? <Check aria-hidden /> : icon}
+      {label}
+    </button>
   )
 }
 
@@ -98,27 +124,27 @@ function FeedMessage({ title, picture = true, children }: { title: string; pictu
 }
 
 export function ExplorePage() {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const q = (params.get('q') ?? '').trim()
+  const values = readFilterValues(params)
+  const activeCount = FILTER_KEYS.filter((k) => values[k] !== '').length
   const [tab, setTab] = useState<Tab>('for-you')
-  const [cost, setCost] = useState('')
-  const [length, setLength] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ key: string; trails?: MapTrail[]; error?: string } | null>(null)
+  const [neighborhoods, setNeighborhoods] = useState<string[]>([])
   // The trail being pointed at, by its card or its map pin; both get highlighted.
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [mapAvailable, setMapAvailable] = useState(true)
   const navigate = useNavigate()
 
-  const key = `${cost}|${length}|${attempt}`
+  // Everything that changes what loadTrails() returns. The search (q) is applied below instead.
+  const key = JSON.stringify([values, attempt])
   const loading = result?.key !== key
 
   useEffect(() => {
     let cancelled = false
-    loadTrails({
-      maxCost: cost === '' ? undefined : Number(cost),
-      maxMinutes: length === '' ? undefined : Number(length),
-    }).then(
+    const [filterValues] = JSON.parse(key) as [Record<FilterKey, string>, number]
+    loadTrails(toExploreFilters(filterValues)).then(
       (trails) => !cancelled && setResult({ key, trails }),
       (error: unknown) =>
         !cancelled && setResult({ key, error: error instanceof Error ? error.message : 'Something went wrong.' }),
@@ -126,17 +152,39 @@ export function ExplorePage() {
     return () => {
       cancelled = true
     }
-  }, [key, cost, length])
+  }, [key])
+
+  useEffect(() => {
+    let cancelled = false
+    // Only fills the neighborhood menu; if it fails the menu just has "Any neighborhood".
+    loadNeighborhoods().then(
+      (names) => !cancelled && setNeighborhoods(names),
+      () => undefined,
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const trails = (result?.trails ?? []).filter((t) => !q || matchesSearch(t, q))
-  const filtered = cost !== '' || length !== ''
+  const ready = tab === 'for-you' && !loading && !result?.error
   // The map shows the same trails as the grid (nothing on the coming-soon tabs).
   const mapTrails = tab === 'for-you' && !loading ? trails : []
 
-  function clearFilters() {
-    setCost('')
-    setLength('')
-  }
+  // A shared link may name a neighborhood with no trails right now; keep it selectable.
+  const neighborhoodNames =
+    values.neighborhood && !neighborhoods.includes(values.neighborhood)
+      ? [values.neighborhood, ...neighborhoods]
+      : neighborhoods
+  const neighborhoodOptions = [
+    { value: '', label: 'Any neighborhood' },
+    ...neighborhoodNames.map((n) => ({ value: n, label: n })),
+  ]
+
+  // Filter clicks replace the URL entry, so Back leaves Explore instead of undoing each click.
+  const setFilter = (k: FilterKey, value: string) => setParams(withFilter(params, k, value), { replace: true })
+  const clearFilters = () => setParams(withoutFilters(params), { replace: true })
+  const clearSearch = () => setParams(withFilter(params, 'q', ''))
 
   let body: ReactNode
   if (tab !== 'for-you') {
@@ -158,7 +206,7 @@ export function ExplorePage() {
         </button>
       </FeedMessage>
     )
-  } else if (trails.length === 0 && !q && !filtered) {
+  } else if (trails.length === 0 && !q && activeCount === 0) {
     body = (
       <FeedMessage title="No trails yet">
         <p>Be the first to put one on the map.</p>
@@ -170,14 +218,18 @@ export function ExplorePage() {
   } else if (trails.length === 0) {
     body = (
       <FeedMessage title="No trails match">
-        <p>{q ? `Nothing found for “${q}”.` : 'Try a higher cost or a longer length.'}</p>
+        <p>
+          {q ? `Nothing found for “${q}”` : 'Nothing matches these filters'}
+          {q && activeCount > 0 ? ' with these filters.' : '.'}
+          {activeCount > 0 ? ' Try turning one off.' : ''}
+        </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {q ? (
-            <Link to="/" className="btn btn--sm btn--secondary">
+            <button type="button" className="btn btn--sm btn--secondary" onClick={clearSearch}>
               Clear search
-            </Link>
+            </button>
           ) : null}
-          {filtered ? (
+          {activeCount > 0 ? (
             <button type="button" className="btn btn--sm btn--secondary" onClick={clearFilters}>
               Clear filters
             </button>
@@ -199,6 +251,9 @@ export function ExplorePage() {
     ))
   }
 
+  // "3 trails for “pizza” · Clear search" when a search or filter is on (also read out by screen readers).
+  const showCount = ready && trails.length > 0 && (q !== '' || activeCount > 0)
+
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-8">
       <section aria-labelledby="feed-title" className="min-w-0">
@@ -210,46 +265,118 @@ export function ExplorePage() {
         </h1>
         <p className="mt-1.5 text-md text-ink-2 md:mt-2 md:text-lg">You've lived here. Have you explored it?</p>
 
-        <div className="mt-4 mb-4 flex flex-wrap items-center justify-between gap-3 md:mt-5">
-          <div role="tablist" aria-label="Feed" className="flex flex-wrap gap-2">
-            {TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                id={`tab-${id}`}
-                type="button"
-                role="tab"
-                aria-selected={tab === id}
-                aria-controls="feed-panel"
-                className="tab"
-                onClick={() => setTab(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {tab === 'for-you' ? (
-            <div className="flex flex-wrap gap-2">
-              <FilterSelect label="Cost" value={cost} options={COST_OPTIONS} onChange={setCost} />
-              <FilterSelect label="Length" value={length} options={LENGTH_OPTIONS} onChange={setLength} />
-            </div>
-          ) : null}
+        <div role="tablist" aria-label="Feed" className="mt-4 flex flex-wrap gap-2 md:mt-5">
+          {TABS.map(({ id, label }) => (
+            <button
+              key={id}
+              id={`tab-${id}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              aria-controls="feed-panel"
+              className="tab"
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {q && tab === 'for-you' && !loading && trails.length > 0 ? (
-          <p className="mb-3 text-sm text-muted-foreground">
-            {trails.length} {trails.length === 1 ? 'trail' : 'trails'} for “{q}” ·{' '}
-            <Link to="/" className="font-semibold text-crumb-strong hover:text-crumb-deep">
-              Clear search
-            </Link>
-          </p>
+        {tab === 'for-you' ? (
+          // Phones: one row you can swipe sideways, so the trails stay near the top. Wider: wraps.
+          <div
+            role="group"
+            aria-label="Filters"
+            className="-mx-4 mt-2 flex items-center gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0"
+          >
+            <FilterSelect
+              label="Category"
+              value={values.category}
+              options={CATEGORY_OPTIONS}
+              onChange={(v) => setFilter('category', v)}
+            />
+            <FilterSelect
+              label="Neighborhood"
+              value={values.neighborhood}
+              options={neighborhoodOptions}
+              onChange={(v) => setFilter('neighborhood', v)}
+            />
+            <FilterSelect label="Cost" value={values.cost} options={COST_OPTIONS} onChange={(v) => setFilter('cost', v)} />
+            <FilterSelect
+              label="Length"
+              value={values.length}
+              options={LENGTH_OPTIONS}
+              onChange={(v) => setFilter('length', v)}
+            />
+            <FilterToggle
+              label="Late night"
+              icon={<Moon aria-hidden />}
+              on={values.late === '1'}
+              title="At least one stop is open late"
+              onChange={(on) => setFilter('late', on ? '1' : '')}
+            />
+            <FilterToggle
+              label="Near a T station"
+              icon={<TrainFront aria-hidden />}
+              on={values.near_t === '1'}
+              title={`Every stop is within ${NEAR_T_MILES} mi of a T station (straight line)`}
+              onChange={(on) => setFilter('near_t', on ? '1' : '')}
+            />
+            {activeCount > 0 ? (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex h-11 cursor-pointer items-center rounded-pill border-0 bg-transparent px-2 text-sm font-semibold text-crumb-strong hover:text-crumb-deep hover:underline md:h-[38px]"
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
         ) : null}
+
+        <p role="status" className={cn('mt-4 text-sm text-muted-foreground', showCount ? 'mb-3' : 'sr-only')}>
+          {ready ? (
+            <>
+              {trails.length} {trails.length === 1 ? 'trail' : 'trails'}
+              {q ? ` for “${q}”` : ''}
+              {showCount && q ? (
+                <>
+                  {' · '}
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:text-crumb-deep hover:underline"
+                  >
+                    Clear search
+                  </button>
+                </>
+              ) : null}
+              {/* Phones: the filter row scrolls, so an active filter may be out of sight. */}
+              {showCount && activeCount > 0 ? (
+                <span className="md:hidden">
+                  {' · '}
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-crumb-strong hover:text-crumb-deep hover:underline"
+                  >
+                    Clear {activeCount} {activeCount === 1 ? 'filter' : 'filters'}
+                  </button>
+                </span>
+              ) : null}
+            </>
+          ) : null}
+        </p>
 
         <div
           id="feed-panel"
           role="tabpanel"
           aria-labelledby={`tab-${tab}`}
           aria-busy={tab === 'for-you' && loading}
-          className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-3 md:gap-4"
+          className={cn(
+            'grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-3 md:gap-4',
+            !showCount && 'mt-4',
+          )}
         >
           {body}
         </div>
