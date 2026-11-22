@@ -2,7 +2,7 @@
  * Trail detail page (docs/mockups/Web-Detail + Mobile-Detail), loaded with getTrail(id):
  * eyebrow, title, cost / time / stops / crumbs / rating, description, Start trail /
  * Save / Join / Rate this trail (TrailActions), the stops with crumbs, Good to know,
- * the creator and reviews. The route map (RouteMap) sits on the right on desktop and
+ * the creator, photos (TrailPhotos, hidden when there are none) and reviews. The route map (RouteMap) sits on the right on desktop and
  * above the stops on phones. Phones get a sticky action bar. Shows the Rate page's
  * "rating posted" notice from router state.
  * Route: /trails/:id · Owner: Jason
@@ -19,6 +19,7 @@ import { YourTrailBar } from '@/features/make/YourTrailBar'
 import { TrailActions } from './TrailActions'
 import { TrailCreatorCard, TrailGoodToKnow } from './TrailGoodToKnow'
 import { BackLink, TrailMessage } from './TrailPageMessage'
+import { TrailPhotos } from './TrailPhotos'
 import { TrailReviews } from './TrailReviews'
 import { TrailStops } from './TrailStops'
 import { isTrailId, type TrailNotice } from './trailLinks'
@@ -26,16 +27,27 @@ import { useTrailActions } from './useTrailActions'
 
 type LoadResult = { key: string; trail?: TrailDetail | null; error?: string }
 
+/** Grey blocks in the page's own layout (two columns with the map on desktop), so nothing jumps on load. */
 function TrailSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading trail">
       <BackLink />
-      <div className="mt-4 max-w-2xl animate-pulse space-y-4">
-        <div className="h-4 w-40 rounded-pill bg-sand" />
-        <div className="h-10 w-3/4 rounded-pill bg-sand" />
-        <div className="h-4 w-56 rounded-pill bg-sand" />
-        <div className="h-20 w-full rounded-card bg-sand" />
-        <div className="h-64 w-full rounded-card bg-sand" />
+      <div className="mt-2 animate-pulse lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-10">
+        <div className="grid content-start gap-4">
+          <div className="h-4 w-40 rounded-pill bg-sand" />
+          <div className="h-10 w-3/4 rounded-pill bg-sand md:h-12" />
+          <div className="h-4 w-56 rounded-pill bg-sand" />
+          <div className="h-20 w-full max-w-[60ch] rounded-card bg-sand" />
+          <div className="hidden gap-3 md:flex">
+            <div className="h-12 w-36 rounded-pill bg-sand" />
+            <div className="h-12 w-28 rounded-pill bg-sand" />
+          </div>
+          <div className="mt-4 h-64 w-full rounded-card bg-sand md:mt-6" />
+        </div>
+        <div className="hidden flex-col gap-4 lg:flex">
+          <div className="aspect-[400/420] w-full rounded-card bg-sand" />
+          <div className="h-48 w-full rounded-card bg-sand" />
+        </div>
       </div>
     </div>
   )
@@ -167,6 +179,8 @@ export function TrailDetailPage() {
             <TrailGoodToKnow trail={trail} />
             <TrailCreatorCard trail={trail} />
           </div>
+
+          <TrailPhotos trailId={trail.id} trailTitle={trail.title} />
 
           <h2 className="mt-8 text-xl font-bold tracking-[var(--tracking-tight)] md:mt-10">Reviews</h2>
           <TrailReviews rating={trail.rating} reviews={trail.reviews} />

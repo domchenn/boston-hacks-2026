@@ -12,7 +12,6 @@ import { Link } from 'react-router'
 import { TrailCard } from '@/components/TrailCard'
 import { TrailsMap, TrailsMapLegend } from '@/components/TrailsMap'
 import { loadTrails, type MapTrail } from '@/features/explore/api'
-import { cn } from '@/lib/utils'
 
 const PHONE_QUERY = '(max-width: 767px)'
 
@@ -127,18 +126,13 @@ export function MapPage() {
       <li
         key={trail.id}
         data-trail-id={trail.id}
-        className={cn(
-          'w-[86%] max-w-[340px] shrink-0 snap-center rounded-card transition-shadow md:w-auto md:max-w-none',
-          highlighted === trail.id
-            ? 'shadow-[0_0_0_2px_var(--color-crumb),var(--shadow-float)] md:shadow-[0_0_0_2px_var(--color-crumb)]'
-            : 'shadow-[var(--shadow-float)] md:shadow-none',
-        )}
+        className="w-[86%] max-w-[340px] shrink-0 snap-center rounded-card shadow-[var(--shadow-float)] md:w-auto md:max-w-none md:shadow-none"
         onMouseEnter={() => setHoverId(trail.id)}
         onMouseLeave={() => setHoverId(null)}
         onFocus={() => setHoverId(trail.id)}
         onBlur={() => setHoverId(null)}
       >
-        <TrailCard trail={trail} className="h-full" />
+        <TrailCard trail={trail} selected={highlighted === trail.id} className="h-full" />
       </li>
     ))
   }

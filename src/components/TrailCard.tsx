@@ -2,8 +2,10 @@
  * Reusable trail card: eyebrow (category · Anytime or the date), title, the dotted
  * trail with first/last stop names, then cost, time, stops and rating. The whole
  * card links to /trails/:id. Styled by .trail-card in docs/styles/components.css.
- * Used by Explore (feed grid) and Saved / You. Takes any object with the fields of
- * TrailCardData, so a FeedTrail from @/lib/api/trails can be passed as-is.
+ * Used by Explore (feed grid), the Map tab and Saved / You. Takes any object with the
+ * fields of TrailCardData, so a FeedTrail from @/lib/api/trails can be passed as-is.
+ * `selected` gives the ink edge and lift the Web-Explore mockup uses for the card
+ * whose pin is highlighted on the map.
  */
 
 import type { CSSProperties, ReactNode } from 'react'
@@ -34,6 +36,8 @@ type TrailCardProps = {
   trail: TrailCardData
   /** The viewer's own progress on this trail, if any (Saved / You pages). */
   progress?: UserSidequestStatus | null
+  /** Highlighted with its pin on the map (hovered, focused or picked). */
+  selected?: boolean
   className?: string
 }
 
@@ -44,7 +48,7 @@ function waveSeed(id: string) {
   return h % 7
 }
 
-export function TrailCard({ trail, progress, className }: TrailCardProps) {
+export function TrailCard({ trail, progress, selected, className }: TrailCardProps) {
   const done = progress === 'completed'
   const scheduled = !done && trail.scheduledAt !== null
   const when = done ? 'Finished' : scheduled ? formatSchedule(trail.scheduledAt!) : 'Anytime'
@@ -71,7 +75,14 @@ export function TrailCard({ trail, progress, className }: TrailCardProps) {
   return (
     <Link
       to={`/trails/${trail.id}`}
-      className={cn('trail-card', scheduled && 'trail-card--scheduled', done && 'trail-card--done', className)}
+      className={cn(
+        'trail-card',
+        scheduled && 'trail-card--scheduled',
+        done && 'trail-card--done',
+        selected &&
+          'border-ink shadow-[0_0_0_1px_var(--color-ink),0_10px_28px_color-mix(in_srgb,var(--color-ink)_8%,transparent)]',
+        className,
+      )}
     >
       <div className="trail-card__head">
         <span className="trail-card__eyebrow shrink-0">{eyebrow}</span>
