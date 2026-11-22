@@ -38,17 +38,32 @@ export async function loadEditableTrail(trailId: string, userId: string): Promis
     if (!trail) return { status: 'not_found' }
     if (trail.creator?.id !== userId) return { status: 'not_yours', trail }
 
+    const library = await loadStopLibrary(trailId)
+    if (!library.ok) return { status: 'error', message: library.message }
+    return { status: 'ok', data: { trail, library: library.data } }
+  } catch (error) {
+    return { status: 'error', message: messageFor(error as { code?: string }) }
+  }
+}
+
+/** Each stop's place-library link and that place's neighborhood (getTrail doesn't return them). Used by Edit and Remix. */
+export async function loadStopLibrary(
+  trailId: string,
+): Promise<{ ok: true; data: EditableTrail['library'] } | { ok: false; message: string }> {
+  try {
     const { data, error } = await supabase
       .from('sidequest_stops')
       .select('id, experience_id, experiences(neighborhood)')
       .eq('sidequest_id', trailId)
-    if (error) return { status: 'error', message: messageFor(error) }
-    const library = new Map(
-      data.map((row) => [row.id, { experienceId: row.experience_id, neighborhood: row.experiences?.neighborhood ?? null }]),
-    )
-    return { status: 'ok', data: { trail, library } }
+    if (error) return { ok: false, message: messageFor(error) }
+    return {
+      ok: true,
+      data: new Map(
+        data.map((row) => [row.id, { experienceId: row.experience_id, neighborhood: row.experiences?.neighborhood ?? null }]),
+      ),
+    }
   } catch (error) {
-    return { status: 'error', message: messageFor(error as { code?: string }) }
+    return { ok: false, message: messageFor(error as { code?: string }) }
   }
 }
 
@@ -85,6 +100,8 @@ export function draftFromTrail({ trail, library }: EditableTrail): TrailDraft {
     scheduledLocal: trail.scheduledAt ? toLocalInput(trail.scheduledAt) : '',
     durationMinutes: trail.estimatedMinutes,
     communityId: trail.communityId,
+    // Edits never change a remix credit (save_trail ignores it), so leave it out.
+    remixedFrom: null,
     stops,
   }
 }

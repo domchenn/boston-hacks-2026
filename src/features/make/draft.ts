@@ -54,6 +54,8 @@ export type TrailDraft = {
   durationMinutes: number | null
   /** Who can see it: null = everyone, else only this community (task G6). */
   communityId: string | null
+  /** Remix (task G8): the trail this one is copied from. Only used when creating. */
+  remixedFrom: string | null
   stops: StopDraft[]
 }
 
@@ -65,6 +67,7 @@ export const emptyDraft = (): TrailDraft => ({
   scheduledLocal: '',
   durationMinutes: null,
   communityId: null,
+  remixedFrom: null,
   stops: [],
 })
 
@@ -111,6 +114,7 @@ export function toSavePayload(draft: TrailDraft, status: 'draft' | 'published') 
     estimated_duration_minutes: minutes,
     neighborhood: draft.stops[0]?.neighborhood ?? null,
     community_id: draft.communityId,
+    remixed_from: draft.remixedFrom,
     stops: draft.stops.map((s, i) => ({
       experience_id: s.experienceId,
       place_name: s.placeName.trim(),

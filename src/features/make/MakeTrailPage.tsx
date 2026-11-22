@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Check, Circle, X } from 'lucide-react'
-import { Navigate, useNavigate } from 'react-router'
+import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { RouteMap } from '@/components/RouteMap'
 import { TrailCard } from '@/components/TrailCard'
 import { useSession } from '@/lib/useSession'
@@ -32,6 +32,7 @@ import {
 import { SHOW_COMMUNITIES } from '@/features/communities/api'
 import { VisibilityField } from '@/features/communities/VisibilityField'
 import { PlacePicker } from './PlacePicker'
+import { RemixTrail } from './RemixTrail'
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180, 240, 300]
 
@@ -90,8 +91,14 @@ const labelClass = 'mb-1.5 block text-sm font-semibold text-ink-2'
 
 export function MakeTrailPage() {
   const { session, loading } = useSession()
+  // /make?remix=<id>: start from someone else's trail (task G8, ./RemixTrail).
+  const remixId = useSearchParams()[0].get('remix')
   if (loading) return null
-  if (!session) return <Navigate to="/login?next=/make" replace />
+  if (!session) {
+    const next = remixId ? `/make?remix=${encodeURIComponent(remixId)}` : '/make'
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />
+  }
+  if (remixId) return <RemixTrail key={remixId} trailId={remixId} userId={session.user.id} />
   return <MakeTrailForm />
 }
 
