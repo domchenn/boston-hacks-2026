@@ -1,12 +1,13 @@
 /**
  * Saved page: the signed-in user's trails, grouped In progress / Saved, each as a
- * <TrailCard> (old sign-ups for dated trails show as Saved). Saved trails can be
+ * <TrailCard> (old sign-ups for dated trails show as Saved). Each card has a
+ * Start trail / Continue button straight to Active trail, and saved trails can be
  * removed here (unsaveTrail). Logged-out visitors are sent to /login?next=/saved.
  * Route: /saved · Owner: Gio
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
-import { BookmarkX, LoaderCircle } from 'lucide-react'
+import { BookmarkX, LoaderCircle, Play } from 'lucide-react'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { TrailCard } from '@/components/TrailCard'
 import { ProgressError, progressErrorMessage, unsaveTrail } from '@/lib/api/progress'
@@ -113,7 +114,13 @@ function SavedList({ userId }: { userId: string }) {
                   <li key={trail.id} className="grid content-start gap-1">
                     <TrailCard trail={trail} progress={trail.status} />
                     {status === 'saved' ? <AlsoSavedBy friends={alsoSaved?.get(trail.id)} className="px-1" /> : null}
-                    {status === 'saved' ? <RemoveButton trail={trail} onRemoved={() => removeTrail(trail.id)} /> : null}
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                      <Link to={`/trails/${trail.id}/go`} className="btn btn--sm">
+                        <Play aria-hidden className="fill-current" />
+                        {status === 'in_progress' ? 'Continue' : 'Start trail'}
+                      </Link>
+                      {status === 'saved' ? <RemoveButton trail={trail} onRemoved={() => removeTrail(trail.id)} /> : null}
+                    </div>
                   </li>
                 ))}
               </ul>
