@@ -1,21 +1,21 @@
 /**
  * Explore "Friends" tab (task J7): trails the people you follow made, finished or
  * joined, newest first, each card topped with who did what ("@ben finished · 2 d").
- * Logged out: a nudge to log in. Following no one (or nothing new): a nudge plus
- * "People to follow" (trail makers) with Follow buttons. Renders the items of
- * Explore's feed grid. Data: @/features/friends (friends_activity, follows).
+ * Logged out: a nudge to log in. Signed in: a "Find friends" button (FindPeople:
+ * opens search + suggestions) is always on top, so you can keep following people; then the
+ * activity, or a nudge when there's none. Renders the items of Explore's feed
+ * grid. Data: @/features/friends (friends_activity, follows).
  */
 
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { TrailCard } from '@/components/TrailCard'
-import { suggestPeople, type ActivityItem } from '@/features/friends/api'
+import type { ActivityItem } from '@/features/friends/api'
 import { ACTIVITY_VERBS, handle, timeAgo } from '@/features/friends/activityFormat'
-import { FollowButton } from '@/features/friends/FollowBar'
+import { FindPeople } from '@/features/friends/FindPeople'
 import { PersonAvatar } from '@/features/friends/FriendsActivity'
 import { useFriendsActivity } from '@/features/friends/useFriendsActivity'
 import { loginPath } from '@/features/trail/trailLinks'
-import type { TrailCreator } from '@/lib/api/trails'
 import { useSession } from '@/lib/useSession'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 
@@ -38,46 +38,6 @@ function PanelMessage({ title, children }: { title: string; children?: ReactNode
       <img src={emptyTrail} alt="" aria-hidden width={240} height={160} className="mx-auto mb-4 h-auto max-w-full" />
       <p className="text-lg font-bold text-ink">{title}</p>
       {children ? <div className="mt-2 text-base text-ink-2">{children}</div> : null}
-    </div>
-  )
-}
-
-/** A few trail makers you don't follow yet, each with a Follow button. */
-function PeopleToFollow({ viewerId, onFollowed }: { viewerId: string; onFollowed: () => void }) {
-  const [people, setPeople] = useState<{ viewer: string; list: TrailCreator[] } | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    suggestPeople(viewerId).then(
-      (list) => !cancelled && setPeople({ viewer: viewerId, list }),
-      () => !cancelled && setPeople({ viewer: viewerId, list: [] }),
-    )
-    return () => {
-      cancelled = true
-    }
-  }, [viewerId])
-
-  const list = people?.viewer === viewerId ? people.list : null
-  if (!list || list.length === 0) return null
-
-  return (
-    <div className="mx-auto mt-6 max-w-md text-left">
-      <h3 className="mb-2 text-sm font-bold tracking-wide text-muted-foreground uppercase">People to follow</h3>
-      <ul className="m-0 grid list-none gap-2 p-0">
-        {list.map((person) => {
-          const name = person.display_name || person.username || 'Someone'
-          return (
-            <li key={person.id} className="flex items-center gap-3 rounded-card border border-line bg-paper px-3 py-2">
-              <PersonAvatar person={person} className="size-10" />
-              <Link to={`/u/${person.username}`} className="min-w-0 flex-1 truncate hover:underline">
-                <span className="block truncate font-semibold text-ink">{name}</span>
-                <span className="block truncate text-sm text-muted-foreground">@{person.username}</span>
-              </Link>
-              <FollowButton viewerId={viewerId} userId={person.id} name={name} initial={false} onChange={onFollowed} />
-            </li>
-          )
-        })}
-      </ul>
     </div>
   )
 }
@@ -124,23 +84,36 @@ export function FriendsPanel() {
       </PanelMessage>
     )
   }
-  if (loading) return <Skeleton />
+  const findPeople = <FindPeople viewerId={viewerId} onFollowChange={reload} />
+  if (loading) {
+    return (
+      <>
+        {findPeople}
+        <Skeleton />
+      </>
+    )
+  }
   if (error) {
     return (
-      <PanelMessage title="Couldn't load your friends' trails">
-        <p>{error}</p>
-        <button type="button" className="btn btn--sm btn--secondary mt-4" onClick={reload}>
-          Try again
-        </button>
-      </PanelMessage>
+      <>
+        {findPeople}
+        <PanelMessage title="Couldn't load your friends' trails">
+          <p>{error}</p>
+          <button type="button" className="btn btn--sm btn--secondary mt-4" onClick={reload}>
+            Try again
+          </button>
+        </PanelMessage>
+      </>
     )
   }
   if (!activity || activity.items.length === 0) {
     return (
-      <PanelMessage title={following === 0 ? 'Follow people to see their trails' : 'Nothing new from your friends yet'}>
-        <p>When the people you follow make, finish or join a trail, it shows up here.</p>
-        <PeopleToFollow viewerId={viewerId} onFollowed={reload} />
-      </PanelMessage>
+      <>
+        {findPeople}
+        <PanelMessage title={following === 0 ? 'Follow people to see their trails' : 'Nothing new from your friends yet'}>
+          <p>When the people you follow make, finish or join a trail, it shows up here. Tap <b>Find friends</b> to follow people.</p>
+        </PanelMessage>
+      </>
     )
   }
 
@@ -150,6 +123,7 @@ export function FriendsPanel() {
 
   return (
     <>
+      {findPeople}
       {[...byTrail].map(([trailId, items]) => (
         <div key={trailId} className="grid content-start gap-2">
           <ActivityLine items={items} />
