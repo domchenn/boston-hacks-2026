@@ -166,9 +166,9 @@ Branch: `feat/edit-trail`
 
 ---
 
-## Round 5 (start now, in parallel)
+## Round 5 ✅ done
 
-### D5 · Dom · Photos (backend + upload)
+### D5 · Dom · Photos (backend + upload) ✅ (#25)
 Branch: `feat/photos`
 - Migration: a Supabase Storage bucket `trail-photos` (public read, 5 MB limit, images only) with policies: logged-in users upload only into a folder named after their own user id, and delete only their own files.
 - Fill in `src/lib/api/photos.ts` (keep the names):
@@ -180,13 +180,13 @@ Branch: `feat/photos`
 - In Gio's Active trail page: a camera button on each crumb (`uploadCrumbPhoto`) and an **Add photos** button (`addTrailPhoto`). Small additions; mention them in the PR.
 - pgTAP tests for the storage policies and `quest_photos` rules.
 
-### J5 · Jason · Photos on trails + desktop polish
+### J5 · Jason · Photos on trails + desktop polish ✅ (#26)
 Branch: `feat/trail-photos-and-polish`
 - Trail detail: a **Photos** section (grid, tap to enlarge, uploader + date) using `getTrailPhotos()`. Hide it when there are none. Until D5 is merged, build it against the stub's types.
 - Rate / Finished screen: show the photos you added on this trail, with an **Add photos** button (`addTrailPhoto`).
 - Desktop polish pass at 1280 px and 1440 px on Explore, Trail detail, Make a trail, You and Saved: spacing, headings, hover states, loading skeletons, empty states. Match `docs/mockups/Web-*.dc.html`.
 
-### G5 · Gio · Join flow (scheduled trails)
+### G5 · Gio · Join flow (scheduled trails) ✅ (#27, #28)
 Branch: `feat/join-flow`
 - Show how many people are going on scheduled trails ("6 going") on the card and Trail detail, and a small avatar row of who's going on Trail detail. Progress rows are private, so add a `db/…` migration (Dom reviews) with a SECURITY DEFINER function such as `trail_attendees(p_trail_id)` that returns only the count and public profile fields of users with status `signed_up`.
 - **Invite friends** button on Trail detail: native share sheet (`navigator.share`) with the trail link, falling back to copy-to-clipboard.
@@ -195,9 +195,9 @@ Branch: `feat/join-flow`
 
 ---
 
-## Round 6 (after your Round 5 PR is merged)
+## Round 6 (finishing: J6 in review)
 
-### D6 · Dom · Demo prep
+### D6 · Dom · Demo prep (demo data ✅ #29; demo script moved to "Before the demo")
 Branch: `feat/demo-prep`
 - A migration seeding 2–3 demo accounts (no passwords) with finished trails, ratings and reviews on the curated trails, so cards show real ★ ratings and the You page has history. ✅ (#29). No shared judges' login: people sign up with Google or email like real users.
 - Check every curated trail in the live app: coordinates on the map, T nearby, crumbs, photos. Fix anything off with a new migration.
@@ -209,7 +209,7 @@ Branch: `feat/explore-filters`
 - Search across title, description, neighborhood and stop names.
 - Extend `getFeed()` in `@/lib/api/trails` with any new filter parameters it needs (small additive change; mention it in the PR).
 
-### G6 · Gio · Communities (BU / BC)
+### G6 · Gio · Communities (BU / BC) ✅ (#30, #31)
 Branch: `feat/communities`
 - Settings on the You page: join one community (BU or BC) or none, saved to `profiles.community_id`.
 - Explore: a community switcher (All / BU / BC). Community-only trails are already hidden from non-members by the database.
@@ -217,11 +217,61 @@ Branch: `feat/communities`
 
 ---
 
-## Later (P1)
+## Round 7 (start now, in parallel)
 
-- Nearby / Friends tabs on Explore (location sorting, follows).
-- Bluebikes and bus routes in directions.
-- Remix a trail (copy someone else's trail into Make a trail).
+**Explore is shared this round.** Jason's J6 (filters) must be merged before J7 and G7 touch `ExplorePage.tsx`. Build each tab's content in its own file (`src/features/explore/FriendsPanel.tsx` for J7, `src/features/explore/NearbyPanel.tsx` for G7) and only add a one-line hookup in `ExplorePage.tsx`, so the two PRs don't conflict.
+
+### D7 · Dom · Live transit (MBTA + Bluebikes)
+Branch: `feat/live-transit`
+- **Next arrivals:** for the T station(s) near each stop, show the next trains from MBTA V3 `/predictions` (e.g. "Green Line → Heath St · 4 min, 11 min"), refreshed every 30 s while visible. On Trail detail under each stop and on Active trail for the current stop. Only show times the API returns; nothing invented.
+- **Buses:** nearby bus stops (`route_type=3`) with route numbers and next bus times, next to the T stations.
+- **Service alerts:** if a line used by the trail has an active alert (`/alerts`), show a short warning on Trail detail and Active trail.
+- **Bluebikes:** docks near each stop with bikes and open docks available now, from the public GBFS feed (`station_information` + `station_status`). If the browser can't call it directly (CORS), add a tiny Vercel function at `api/bluebikes.ts` that proxies it with caching.
+- Extend `src/lib/mbta.ts`, add `src/lib/bluebikes.ts`, and build the UI as shared components (e.g. `NextArrivals`, `NearbyBikes`) so Jason and Gio's pages can drop them in. Respect rate limits: cache, poll only while the page is visible, and use `VITE_MBTA_API_KEY` if set.
+
+### J7 · Jason · Friends
+Branch: `feat/friends`
+- Follow / Unfollow on public profiles (`/u/:username`), with follower / following counts (`follows` table already exists, RLS: you can only follow as yourself).
+- Explore **Friends** tab: trails made, finished or joined by people you follow, newest first. Empty state with a nudge to follow people.
+- A small "Friends' activity" list on the You page ("@maya_k finished Sunday Café Hop · 2 d"). Only use data that is already public (finished trails need a small SECURITY DEFINER function in a `db/…` migration, since progress is private; Dom reviews).
+
+### G7 · Gio · Nearby + installable app
+Branch: `feat/nearby-and-pwa`
+- Explore **Nearby** tab: ask for location only when the tab is tapped, then sort trails by distance from you to their first stop ("0.4 mi away" on cards). Location stays in the browser and is never stored. Friendly fallback if denied.
+- Make the app installable: web app manifest (name, icons from the logo, theme colors), Add to Home Screen support on iPhone and Android, and a simple offline page. Keep it light (no heavy service-worker caching of data).
+
+---
+
+## Round 8 (after your Round 7 PR is merged)
+
+### D8 · Dom · Safety + link previews
+Branch: `feat/safety-and-previews`
+- **Report** a trail, review or photo (reason + optional note) → a `reports` table (users insert their own; only admins read). A simple `/admin/reports` page for team accounts (an `is_admin` flag on profiles) to hide content.
+- **Before-launch cleanup:** a migration (committed, not pushed until launch) that removes the demo accounts and their ratings, reviews and sign-ups.
+- **Privacy and Terms** pages (plain, honest: what we store, that location is never stored).
+- **Link previews:** sharing `/trails/:id` shows the trail's title, description and image in iMessage / Discord / Slack, via a Vercel function that serves Open Graph tags for crawlers.
+
+### J8 · Jason · Badges
+Branch: `feat/badges`
+- On the You page: **Lines explored** (finished trails per T line, shown with line colors from `@/lib/transitColors`), **first trail**, **5 / 10 trails**, **neighborhoods explored**, and a weekly streak.
+- Computed from the user's finished trails (no new tables needed unless you want stored badges; ask Dom).
+
+### G8 · Gio · Remix a trail
+Branch: `feat/remix`
+- **Remix** button on Trail detail: opens Make a trail pre-filled with that trail's stops and crumbs; publish as your own with "Remixed from @user" on the trail.
+- Needs a `remixed_from` column on `sidequests` and support in `save_trail()` (a `db/…` migration; Dom reviews).
+
+---
+
+## Before the demo
+
+- **D6 (part 2) · Dom:** `docs/DEMO.md` with the PRD §13 script (what to say, which trail, what to tap) and a full run-through on a phone against the Vercel URL. Do this once the features above are in.
+
+## Later
+
+- Bluebikes and bus legs inside Google directions (beyond nearby docks / stops).
+- Notifications (scheduled trail reminders).
+- Machine-verified completion and leaderboards (PRD P2).
 
 ## Rules
 
