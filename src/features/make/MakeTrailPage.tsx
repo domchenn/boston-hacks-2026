@@ -1,8 +1,8 @@
 /**
  * Make a trail (docs/mockups/Web-Create + Mobile-Create): basics (name,
- * description, category), 2–8 stops picked from the place library, found with
- * Google search, dropped as a pin at coordinates, or added by hand (those can be
- * renamed), an optional crumb at each stop and how to get there, a live
+ * description, category), 2–8 stops found with Google search, dropped as a pin
+ * at coordinates, or added by hand (those can be renamed; stops from the old
+ * curated library, on older trails, keep their fixed name), an optional crumb at each stop and how to get there, a live
  * preview card with a route map, and the "Ready to publish" checklist. Save draft / Publish trail
  * call save_trail() through ./api, which saves everything in one transaction.
  * Publish is always tappable: if something is missing it says what, marks the
@@ -15,7 +15,7 @@
  * Route: /make · Owner: Dom
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Check, Circle, Plus, X } from 'lucide-react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { Dropdown } from '@/components/Dropdown'
@@ -24,7 +24,7 @@ import { TrailCard } from '@/components/TrailCard'
 import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
 import type { TravelMode } from '@/types/db-values'
-import { loadPlaces, saveTrail, type Place } from './api'
+import { saveTrail } from './api'
 import type { FoundPlace } from './googlePlaces'
 import {
   CATEGORY_OPTIONS,
@@ -49,21 +49,6 @@ import { clearLocalDraft, readLocalDraft, writeLocalDraft } from './localDraft'
 const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180, 240, 300]
 
 const newKey = () => Math.random().toString(36).slice(2)
-
-function stopFromPlace(place: Place): StopDraft {
-  return {
-    key: newKey(),
-    experienceId: place.id,
-    placeName: place.name,
-    address: place.address ?? '',
-    latitude: place.latitude,
-    longitude: place.longitude,
-    neighborhood: place.neighborhood,
-    estimatedCost: place.estimated_cost === null ? null : Number(place.estimated_cost),
-    travelMode: 'walk',
-    crumb: '',
-  }
-}
 
 function customStop(name: string): StopDraft {
   return {
@@ -173,8 +158,6 @@ export function MakeTrailForm({
   const [restored] = useState(() => (autosaveFor && !initialDraft ? readLocalDraft(autosaveFor) : null))
   const [showRestored, setShowRestored] = useState(restored !== null)
   const [draft, setDraft] = useState<TrailDraft>(() => restored?.draft ?? initialDraft ?? emptyDraft())
-  const [places, setPlaces] = useState<Place[]>([])
-  const [placesError, setPlacesError] = useState(false)
   const [trailId, setTrailId] = useState<string | null>(restored?.trailId ?? initialTrailId)
 
   // Keep the form on this device as you type.
@@ -196,12 +179,6 @@ export function MakeTrailForm({
   // Set after a Publish tap with something missing: marks the fields that still need work.
   const [showMissing, setShowMissing] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    loadPlaces()
-      .then(setPlaces)
-      .catch(() => setPlacesError(true))
-  }, [])
 
   const update = (patch: Partial<TrailDraft>) => {
     setDraft((d) => ({ ...d, ...patch }))
@@ -258,10 +235,6 @@ export function MakeTrailForm({
   const missing = (key: ChecklistKey) => showMissing && !checklist.find((item) => item.key === key)?.done
   const cost = suggestedCost(draft.stops)
   const minutes = draft.durationMinutes ?? suggestedMinutes(draft.stops.length)
-  const usedPlaceIds = useMemo(
-    () => new Set(draft.stops.map((s) => s.experienceId).filter((id): id is string => id !== null)),
-    [draft.stops],
-  )
 
   async function save(status: 'draft' | 'published') {
     if (saving) return
@@ -458,17 +431,11 @@ export function MakeTrailForm({
           <Panel id="trail-stops" title="Stops" aside={`${draft.stops.length} of ${MAX_STOPS} · use the arrows to reorder`}>
             <PlacePicker
               inputRef={searchRef}
-              places={places}
-              usedPlaceIds={usedPlaceIds}
               disabled={draft.stops.length >= MAX_STOPS}
-              onPickPlace={(place) => addStop(stopFromPlace(place))}
               onAddCustom={(name) => addStop(customStop(name))}
               onAddFound={(place) => addStop(foundStop(place))}
               onAddPin={(lat, lng) => addStop(pinStop(lat, lng))}
             />
-            {placesError ? (
-              <p className="mt-2 text-sm text-crumb-deep">Couldn't load the place library. You can still add your own places.</p>
-            ) : null}
 
             {draft.stops.length === 0 ? (
               <p

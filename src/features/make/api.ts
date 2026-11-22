@@ -1,28 +1,11 @@
 /**
- * Data calls for the Make a trail page: load the curated place library
- * (experiences) for the place picker, and save a trail through the
- * save_trail() database function, which writes the trail, its stops and crumbs
- * in one transaction.
+ * Data calls for the Make a trail page: save a trail through the save_trail()
+ * database function, which writes the trail, its stops and crumbs in one
+ * transaction. (Places come from Google search: ./googlePlaces.)
  */
 
 import { supabase } from '@/lib/supabase'
-import type { Tables } from '@/types/database.types'
 import { toSavePayload, type TrailDraft } from './draft'
-
-export type Place = Pick<
-  Tables<'experiences'>,
-  'id' | 'name' | 'address' | 'neighborhood' | 'latitude' | 'longitude' | 'estimated_cost' | 'nearest_station' | 'category'
->
-
-/** Every place in the curated library, by name. */
-export async function loadPlaces(): Promise<Place[]> {
-  const { data, error } = await supabase
-    .from('experiences')
-    .select('id, name, address, neighborhood, latitude, longitude, estimated_cost, nearest_station, category')
-    .order('name')
-  if (error) throw error
-  return data ?? []
-}
 
 export type SaveResult = { ok: true; id: string } | { ok: false; message: string }
 
