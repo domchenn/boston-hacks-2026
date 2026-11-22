@@ -1,6 +1,6 @@
 /**
  * Active trail (Start trail mode): live map, crumbs to tick off, Finished / Save for later / Abort.
- * Route: /trails/:id/go · Owner: Jason (later)
+ * Route: /trails/:id/go · Owner: Gio
  * PLACEHOLDER: replace this component's contents. Keep the export name so
  * App.tsx doesn't need to change.
  */

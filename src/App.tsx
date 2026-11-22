@@ -11,11 +11,13 @@ import { AuthPage } from '@/features/auth/AuthPage'
 import { SessionProvider } from '@/lib/SessionProvider'
 import { OnboardingPage } from '@/features/auth/OnboardingPage'
 import { ExplorePage } from '@/features/explore/ExplorePage'
+import { EditTrailPage } from '@/features/make/EditTrailPage'
 import { MakeTrailPage } from '@/features/make/MakeTrailPage'
 import { MapPage } from '@/features/map/MapPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { SavedPage } from '@/features/saved/SavedPage'
 import { ActiveTrailPage } from '@/features/trail/ActiveTrailPage'
+import { RateTrailPage } from '@/features/trail/RateTrailPage'
 import { TrailDetailPage } from '@/features/trail/TrailDetailPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -32,7 +34,9 @@ const router = createBrowserRouter([
       // nobody needs to edit this file to start a feature. Owners: docs/TASKS.md.
       { index: true, element: <ExplorePage /> }, // Jason
       { path: 'trails/:id', element: <TrailDetailPage /> }, // Jason
-      { path: 'trails/:id/go', element: <ActiveTrailPage /> }, // Jason (later)
+      { path: 'trails/:id/go', element: <ActiveTrailPage /> }, // Gio
+      { path: 'trails/:id/rate', element: <RateTrailPage /> }, // Jason
+      { path: 'trails/:id/edit', element: <EditTrailPage /> }, // Gio
       { path: 'make', element: <MakeTrailPage /> }, // Dom
       { path: 'saved', element: <SavedPage /> }, // Gio
       { path: 'me', element: <ProfilePage /> }, // Gio
