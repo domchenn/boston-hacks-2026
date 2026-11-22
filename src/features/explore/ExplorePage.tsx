@@ -249,7 +249,7 @@ export function ExplorePage() {
             className="col-span-full flex items-center justify-center gap-2 rounded-card border border-dashed border-line-strong bg-white px-4 py-4 text-base font-semibold text-crumb-strong hover:border-crumb hover:text-crumb-deep"
           >
             <MapIcon aria-hidden className="size-4" />
-            See all {trails.length} trails on the map
+            See all trails on the map
           </Link>
         ) : null}
       </>
