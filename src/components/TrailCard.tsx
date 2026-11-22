@@ -10,6 +10,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Star } from 'lucide-react'
 import { Link } from 'react-router'
 import { TrailLine } from '@/components/TrailLine'
+import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { cn } from '@/lib/utils'
 import type { Category, UserSidequestStatus } from '@/types/db-values'
 
@@ -34,45 +35,6 @@ type TrailCardProps = {
   /** The viewer's own progress on this trail, if any (Saved / You pages). */
   progress?: UserSidequestStatus | null
   className?: string
-}
-
-/** Short labels so the eyebrow fits on one line, as in the mockups ("Food · Sat 2:00 PM"). */
-const CATEGORY_LABELS: Record<Category, string> = {
-  food_drink: 'Food',
-  outdoors: 'Outdoors',
-  arts_culture: 'Arts',
-  shopping: 'Shopping',
-  attractions: 'Sights',
-  affordable: 'Budget',
-}
-
-/** "Sun Nov 29, 11 AM" (or "Sat Nov 28, 2:30 PM") in Boston time. */
-const scheduleFormat = new Intl.DateTimeFormat('en-US', {
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  timeZone: 'America/New_York',
-})
-
-function formatSchedule(iso: string) {
-  const parts = scheduleFormat.formatToParts(new Date(iso))
-  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? ''
-  const minute = get('minute') === '00' ? '' : `:${get('minute')}`
-  return `${get('weekday')} ${get('month')} ${get('day')}, ${get('hour')}${minute} ${get('dayPeriod')}`
-}
-
-/** 0 → "Free", 24.5 → "~$25". */
-function formatCost(cost: number) {
-  return cost <= 0 ? 'Free' : `~$${Math.round(cost)}`
-}
-
-/** 45 → "45 min", 90 → "1.5 hr", 120 → "2 hr" (rounded to the half hour). */
-function formatMinutes(minutes: number) {
-  if (minutes < 60) return `${minutes} min`
-  const hours = Math.round(minutes / 30) / 2
-  return `${hours} hr`
 }
 
 /** Small stable number from the id, so each card's wave is different but never changes. */
