@@ -6,12 +6,15 @@
  * who follow you first, then trail makers, then recent members). Each person has
  * a Follow / Follow back button and links to their profile. People you just
  * followed stay in the list (showing Following) until the next visit.
+ * The panel slides open / closed (grid-rows + fade; instant with reduced motion)
+ * and is only created the first time it opens, so suggestions load on demand.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Search, UserPlus, X } from 'lucide-react'
 import type { TrailCreator } from '@/lib/api/trails'
+import { cn } from '@/lib/utils'
 import { searchPeople, suggestPeopleToFollow } from './findPeopleApi'
 import { FollowButton } from './FollowBar'
 import { PersonAvatar } from './FriendsActivity'
@@ -24,6 +27,8 @@ type Props = {
 
 export function FindPeople({ viewerId, onFollowChange }: Props) {
   const [open, setOpen] = useState(false)
+  // Created on first open, then kept so closing can animate.
+  const [created, setCreated] = useState(false)
   return (
     <div className="col-span-full">
       <div className="flex items-center justify-between gap-3">
@@ -33,19 +38,39 @@ export function FindPeople({ viewerId, onFollowChange }: Props) {
           className="btn btn--sm shrink-0"
           aria-expanded={open}
           aria-controls="find-people-panel"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            setOpen((v) => !v)
+            setCreated(true)
+          }}
         >
-          {open ? <X aria-hidden /> : <UserPlus aria-hidden />}
+          <span className={cn('grid transition-transform duration-300 motion-reduce:transition-none', open && 'rotate-90')}>
+            {open ? <X aria-hidden /> : <UserPlus aria-hidden />}
+          </span>
           {open ? 'Close' : 'Find friends'}
         </button>
       </div>
-      {open ? <FindPeoplePanel viewerId={viewerId} onFollowChange={onFollowChange} /> : null}
+      <div
+        className={cn(
+          'grid transition-[grid-template-rows,opacity,transform] duration-300 ease-out motion-reduce:transition-none',
+          open ? 'grid-rows-[1fr] opacity-100' : 'pointer-events-none -translate-y-1 grid-rows-[0fr] opacity-0',
+        )}
+        inert={!open}
+      >
+        <div className="min-h-0 overflow-hidden">
+          {created ? <FindPeoplePanel viewerId={viewerId} open={open} onFollowChange={onFollowChange} /> : null}
+        </div>
+      </div>
     </div>
   )
 }
 
-/** The opened panel: search + suggestions. Loads suggestions when it opens. */
-function FindPeoplePanel({ viewerId, onFollowChange }: Props) {
+/** The opened panel: search + suggestions. Loads suggestions when it's first created. */
+function FindPeoplePanel({ viewerId, open, onFollowChange }: Props & { open: boolean }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Put the cursor in the search box each time the panel opens.
+  useEffect(() => {
+    if (open) inputRef.current?.focus({ preventScroll: true })
+  }, [open])
   const [query, setQuery] = useState('')
   const [suggested, setSuggested] = useState<TrailCreator[] | null>(null)
   const [results, setResults] = useState<{ q: string; list: TrailCreator[] } | null>(null)
@@ -99,8 +124,8 @@ function FindPeoplePanel({ viewerId, onFollowChange }: Props) {
         <Search aria-hidden className="size-4 shrink-0 text-muted-foreground" />
         <span className="sr-only">Search people by name or username</span>
         <input
+          ref={inputRef}
           type="search"
-          autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or @username"
@@ -120,7 +145,10 @@ function FindPeoplePanel({ viewerId, onFollowChange }: Props) {
           {searching ? `No one matches “${q}”.` : 'You’re following everyone we know about. Search for someone above.'}
         </p>
       ) : (
-        <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 lg:grid-cols-3">
+        <ul
+          key={searching ? `q:${results?.q}` : 'suggested'}
+          className="m-0 grid list-none gap-2 p-0 animate-in fade-in slide-in-from-top-1 duration-300 motion-reduce:animate-none sm:grid-cols-2 lg:grid-cols-3"
+        >
           {list.map((person) => {
             const name = person.display_name || person.username || 'Someone'
             return (
