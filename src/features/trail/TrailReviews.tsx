@@ -8,13 +8,7 @@
 import { Link } from 'react-router'
 import { formatShortDate } from '@/components/trailFormat'
 import type { TrailRatingBreakdown, TrailReview } from '@/lib/api/trails'
-
-const BARS: { key: 'enjoyment' | 'memorability' | 'price' | 'time'; label: string }[] = [
-  { key: 'enjoyment', label: 'Fun' },
-  { key: 'memorability', label: 'Memorable' },
-  { key: 'price', label: 'Worth the money' },
-  { key: 'time', label: 'Worth the time' },
-]
+import { RATING_QUESTIONS } from './ratingQuestions'
 
 function initials(name: string) {
   const words = name.split(/[\s._-]+/).filter(Boolean)
@@ -80,7 +74,7 @@ export function TrailReviews({ rating, reviews }: { rating: TrailRatingBreakdown
           </p>
         </div>
         <dl className="m-0 grid min-w-0 flex-[1_1_260px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-2.5 text-sm">
-          {BARS.map(({ key, label }) => {
+          {RATING_QUESTIONS.map(({ key, label }) => {
             const value = rating[key]
             return (
               <div key={key} className="contents">

@@ -1,14 +1,18 @@
 /**
  * The viewer's status on one trail (getMyStatus) and the Start / Save / Join actions
- * from @/lib/api/progress. Logged-out viewers are sent to /login?next=/trails/:id.
+ * from @/lib/api/progress. Once the trail is finished it also checks getMyRating so
+ * the page can offer "Rate this trail" (not rated yet) or "Edit your rating".
+ * Logged-out viewers are sent to /login?next=/trails/:id.
  * Used by TrailActions on the Trail detail page; one instance per page.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { getMyStatus, joinTrail, saveTrail, startTrail, unsaveTrail } from '@/lib/api/progress'
+import { getMyRating } from '@/lib/api/ratings'
 import { useSession } from '@/lib/useSession'
 import type { UserSidequestStatus } from '@/types/db-values'
+import { loginPath } from './trailLinks'
 
 type Action = 'start' | 'save' | 'join'
 
@@ -25,6 +29,7 @@ export function useTrailActions(trailId: string) {
   const { session, loading: sessionLoading } = useSession()
   const navigate = useNavigate()
   const [status, setStatus] = useState<{ trailId: string; value: UserSidequestStatus | null } | null>(null)
+  const [rated, setRated] = useState<{ trailId: string; value: boolean } | null>(null)
   const [busy, setBusy] = useState<Action | null>(null)
   const [error, setError] = useState<string | null>(null)
   const userId = session?.user.id ?? null
@@ -43,12 +48,31 @@ export function useTrailActions(trailId: string) {
   }, [trailId, userId, sessionLoading])
 
   const current = userId && status?.trailId === trailId ? status.value : null
-  const statusLoading = sessionLoading || (userId !== null && status?.trailId !== trailId)
+  const finished = current === 'completed'
+
+  // Only finished trails can be rated, so only then ask whether this viewer already did.
+  useEffect(() => {
+    if (!finished) return
+    let cancelled = false
+    getMyRating(trailId).then(
+      (rating) => !cancelled && setRated({ trailId, value: rating !== null }),
+      // Can't tell: offer "Rate this trail"; the Rate page loads any existing rating anyway.
+      () => !cancelled && setRated({ trailId, value: false }),
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [trailId, finished])
+
+  /** null = not finished (nothing to rate) or still checking. */
+  const hasRated = finished && rated?.trailId === trailId ? rated.value : null
+  const statusLoading =
+    sessionLoading || (userId !== null && status?.trailId !== trailId) || (finished && hasRated === null)
 
   const run = useCallback(
     async (action: Action, call: () => Promise<void>, next: UserSidequestStatus | null) => {
       if (!userId) {
-        navigate(`/login?next=${encodeURIComponent(`/trails/${trailId}`)}`)
+        navigate(loginPath(`/trails/${trailId}`))
         return false
       }
       setBusy(action)
@@ -70,6 +94,7 @@ export function useTrailActions(trailId: string) {
   return {
     status: current,
     statusLoading,
+    hasRated,
     busy,
     error,
     start: async () => {
