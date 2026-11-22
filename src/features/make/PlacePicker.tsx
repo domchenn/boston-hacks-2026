@@ -1,15 +1,17 @@
 /**
- * "Add a place" search box for Make a trail. Filters the curated place library
- * as you type (name, neighborhood or address) and also offers to add what you
- * typed as a custom place. An Add button next to the box picks the highlighted
+ * "Add a place" search box for Make a trail. As you type it shows matching places
+ * from the curated library, then Google results (./googlePlaces: any real place,
+ * with its address and location), and offers to add what you typed as your own
+ * place. Typing coordinates ("42.3554, -71.0765") offers a dropped pin there. An Add button next to the box picks the highlighted
  * option, so Enter isn't the only way in. Keyboard: ↑/↓ to move, Enter to pick,
  * Esc to close. `inputRef` lets the page focus the box ("+ Add another stop").
  */
 
-import { useId, useMemo, useRef, useState, type Ref } from 'react'
-import { MapPin, Plus, Search } from 'lucide-react'
+import { useEffect, useId, useMemo, useRef, useState, type Ref } from 'react'
+import { Crosshair, Globe, LoaderCircle, MapPin, Plus, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Place } from './api'
+import { parseCoordinates, placeDetails, searchPlaces, type FoundPlace, type PlaceSuggestion } from './googlePlaces'
 
 type PlacePickerProps = {
   places: Place[]
@@ -17,18 +19,55 @@ type PlacePickerProps = {
   usedPlaceIds: Set<string>
   onPickPlace: (place: Place) => void
   onAddCustom: (name: string) => void
+  /** A place found through Google search, with its address and location. */
+  onAddFound: (place: FoundPlace) => void
+  /** A dropped pin at typed coordinates. */
+  onAddPin: (latitude: number, longitude: number) => void
   disabled?: boolean
   /** The search input, so the page can focus it. */
   inputRef?: Ref<HTMLInputElement>
 }
 
-type Option = { kind: 'place'; place: Place } | { kind: 'custom'; name: string }
+type Option =
+  | { kind: 'place'; place: Place }
+  | { kind: 'google'; suggestion: PlaceSuggestion }
+  | { kind: 'pin'; latitude: number; longitude: number }
+  | { kind: 'custom'; name: string }
 
-export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, disabled, inputRef }: PlacePickerProps) {
+/** Wait this long after the last keystroke before asking Google. */
+const SEARCH_DELAY_MS = 250
+
+export function PlacePicker({
+  places,
+  usedPlaceIds,
+  onPickPlace,
+  onAddCustom,
+  onAddFound,
+  onAddPin,
+  disabled,
+  inputRef,
+}: PlacePickerProps) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const listId = useId()
+  const [google, setGoogle] = useState<{ query: string; list: PlaceSuggestion[] } | null>(null)
+  const [picking, setPicking] = useState(false)
+  const pin = parseCoordinates(query)
+  const trimmed = query.trim()
+
+  // Ask Google once typing pauses (not for coordinates or very short text).
+  useEffect(() => {
+    if (trimmed.length < 3 || pin) return
+    let cancelled = false
+    const timer = setTimeout(() => {
+      searchPlaces(trimmed).then((list) => !cancelled && setGoogle({ query: trimmed, list }))
+    }, SEARCH_DELAY_MS)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [trimmed, pin])
   // Closing on blur waits a moment (so a click on an option still lands). If the
   // box gets focus back meanwhile (e.g. "+ Add another stop"), that close is cancelled.
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -44,16 +83,36 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
       .filter((p) => !q || [p.name, p.neighborhood, p.address].some((v) => v?.toLowerCase().includes(q)))
       .slice(0, 6)
       .map<Option>((place) => ({ kind: 'place', place }))
+    if (!q) return matches
+    if (pin) return [...matches, { kind: 'pin', ...pin }]
+    // Google results for exactly this text, minus places the library already listed.
+    const libraryNames = new Set(matches.map((m) => (m.kind === 'place' ? m.place.name.toLowerCase() : '')))
+    const found = (google?.query === query.trim() ? google.list : [])
+      .filter((s) => !libraryNames.has(s.name.toLowerCase()))
+      .map<Option>((suggestion) => ({ kind: 'google', suggestion }))
     const exact = places.some((p) => p.name.toLowerCase() === q)
-    return q && !exact ? [...matches, { kind: 'custom', name: query.trim() }] : matches
-  }, [places, usedPlaceIds, query])
+    return exact ? [...matches.slice(0, 4), ...found] : [...matches.slice(0, 4), ...found, { kind: 'custom', name: query.trim() }]
+  }, [places, usedPlaceIds, query, google, pin])
 
-  function choose(option: Option) {
-    if (option.kind === 'place') onPickPlace(option.place)
-    else onAddCustom(option.name)
+  function reset() {
     setQuery('')
     setOpen(false)
     setActive(0)
+  }
+
+  async function choose(option: Option) {
+    if (option.kind === 'place') onPickPlace(option.place)
+    else if (option.kind === 'pin') onAddPin(option.latitude, option.longitude)
+    else if (option.kind === 'custom') onAddCustom(option.name)
+    else {
+      // Fetch the address and location; if Google fails, keep the name as your own place.
+      setPicking(true)
+      const found = await placeDetails(option.suggestion)
+      setPicking(false)
+      if (found) onAddFound(found)
+      else onAddCustom(option.suggestion.name)
+    }
+    reset()
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -64,7 +123,7 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
       setActive((i) => Math.max(i - 1, 0))
-    } else if (event.key === 'Enter' && open && options[active]) {
+    } else if (event.key === 'Enter' && open && options[active] && !picking) {
       event.preventDefault()
       choose(options[active])
     } else if (event.key === 'Escape') {
@@ -110,15 +169,13 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
           <button
             type="button"
             className="btn btn--sm -mr-2.5 h-8 shrink-0 px-3"
+            disabled={picking}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => choose(options[active])}
           >
-            <Plus aria-hidden />
+            {picking ? <LoaderCircle aria-hidden className="animate-spin" /> : <Plus aria-hidden />}
             Add
-            <span className="sr-only">
-              {' '}
-              {options[active].kind === 'place' ? options[active].place.name : `“${options[active].name}” as your own place`}
-            </span>
+            <span className="sr-only"> {optionLabel(options[active])}</span>
           </button>
         ) : null}
       </label>
@@ -131,7 +188,7 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
         >
           {options.map((option, i) => (
             <li
-              key={option.kind === 'place' ? option.place.id : 'custom'}
+              key={optionKey(option)}
               id={`${listId}-${i}`}
               role="option"
               aria-selected={i === active}
@@ -150,6 +207,26 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
                     </span>
                   </span>
                 </>
+              ) : option.kind === 'google' ? (
+                <>
+                  <Globe aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-2" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold text-ink">{option.suggestion.name}</span>
+                    {option.suggestion.detail ? (
+                      <span className="block truncate text-sm text-muted-foreground">{option.suggestion.detail}</span>
+                    ) : null}
+                  </span>
+                </>
+              ) : option.kind === 'pin' ? (
+                <>
+                  <Crosshair aria-hidden className="mt-0.5 size-4 shrink-0 text-crumb-strong" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold text-ink">Drop a pin here</span>
+                    <span className="block text-sm text-muted-foreground">
+                      {option.latitude}, {option.longitude} · name it after
+                    </span>
+                  </span>
+                </>
               ) : (
                 <>
                   <Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-crumb-strong" />
@@ -165,4 +242,18 @@ export function PlacePicker({ places, usedPlaceIds, onPickPlace, onAddCustom, di
       ) : null}
     </div>
   )
+}
+
+function optionKey(option: Option) {
+  if (option.kind === 'place') return option.place.id
+  if (option.kind === 'google') return `g:${option.suggestion.prediction.placeId}`
+  return option.kind
+}
+
+/** What the Add button adds, for screen readers. */
+function optionLabel(option: Option) {
+  if (option.kind === 'place') return option.place.name
+  if (option.kind === 'google') return option.suggestion.name
+  if (option.kind === 'pin') return `a pin at ${option.latitude}, ${option.longitude}`
+  return `“${option.name}” as your own place`
 }

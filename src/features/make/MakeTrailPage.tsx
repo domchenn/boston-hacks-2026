@@ -1,7 +1,8 @@
 /**
  * Make a trail (docs/mockups/Web-Create + Mobile-Create): basics (name,
- * description, category), 2–8 stops picked from the place
- * library or added by hand, an optional crumb at each stop and how to get there, a live
+ * description, category), 2–8 stops picked from the place library, found with
+ * Google search, dropped as a pin at coordinates, or added by hand (those can be
+ * renamed), an optional crumb at each stop and how to get there, a live
  * preview card with a route map, and the "Ready to publish" checklist. Save draft / Publish trail
  * call save_trail() through ./api, which saves everything in one transaction.
  * Publish is always tappable: if something is missing it says what, marks the
@@ -24,6 +25,7 @@ import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
 import type { TravelMode } from '@/types/db-values'
 import { loadPlaces, saveTrail, type Place } from './api'
+import type { FoundPlace } from './googlePlaces'
 import {
   CATEGORY_OPTIONS,
   MAX_STOPS,
@@ -76,6 +78,22 @@ function customStop(name: string): StopDraft {
     travelMode: 'walk',
     crumb: '',
   }
+}
+
+/** A place found through Google search: its real address and location, no library link. */
+function foundStop(place: FoundPlace): StopDraft {
+  return {
+    ...customStop(place.name),
+    address: place.address,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    neighborhood: place.neighborhood,
+  }
+}
+
+/** A dropped pin at typed coordinates; you name it on the stop. */
+function pinStop(latitude: number, longitude: number): StopDraft {
+  return { ...customStop(`Pin at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`), latitude, longitude }
 }
 
 function formatMinutes(minutes: number) {
@@ -445,6 +463,8 @@ export function MakeTrailForm({
               disabled={draft.stops.length >= MAX_STOPS}
               onPickPlace={(place) => addStop(stopFromPlace(place))}
               onAddCustom={(name) => addStop(customStop(name))}
+              onAddFound={(place) => addStop(foundStop(place))}
+              onAddPin={(lat, lng) => addStop(pinStop(lat, lng))}
             />
             {placesError ? (
               <p className="mt-2 text-sm text-crumb-deep">Couldn't load the place library. You can still add your own places.</p>
@@ -485,7 +505,18 @@ export function MakeTrailForm({
                           {index + 1}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-bold text-ink">{stop.placeName}</p>
+                          {stop.experienceId ? (
+                            <p className="truncate font-bold text-ink">{stop.placeName}</p>
+                          ) : (
+                            // Your own places, Google results and pins can be renamed.
+                            <input
+                              aria-label={`Name of stop ${index + 1}`}
+                              className="w-full rounded-[8px] border border-transparent bg-transparent px-1 py-0.5 -ml-1 font-bold text-ink outline-none hover:border-line focus:border-line-strong focus:bg-white focus:shadow-[var(--focus-ring)]"
+                              value={stop.placeName}
+                              maxLength={120}
+                              onChange={(e) => updateStop(stop.key, { placeName: e.target.value })}
+                            />
+                          )}
                           {stop.experienceId ? (
                             <p className="truncate text-sm text-muted-foreground">{stop.address}</p>
                           ) : (
