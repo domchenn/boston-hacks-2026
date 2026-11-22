@@ -816,6 +816,55 @@ export type Database = {
           },
         ]
       }
+      trail_crew: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          responded_at: string | null
+          sidequest_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          responded_at?: string | null
+          sidequest_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          responded_at?: string | null
+          sidequest_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trail_crew_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trail_crew_sidequest_id_fkey"
+            columns: ["sidequest_id"]
+            isOneToOne: false
+            referencedRelation: "sidequests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trail_crew_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_sidequests: {
         Row: {
           completed_at: string | null
@@ -930,6 +979,10 @@ export type Database = {
         Returns: number
       }
       leave_outing: { Args: { p_outing_id: string }; Returns: undefined }
+      respond_to_crew: {
+        Args: { p_accept: boolean; p_sidequest_id: string }
+        Returns: undefined
+      }
       respond_to_outing: {
         Args: { p_accept: boolean; p_outing_id: string }
         Returns: undefined
@@ -937,6 +990,10 @@ export type Database = {
       save_trail: {
         Args: { p_trail: Json; p_trail_id?: string }
         Returns: string
+      }
+      set_trail_crew: {
+        Args: { p_sidequest_id: string; p_user_ids: string[] }
+        Returns: number
       }
       start_outing: { Args: { p_sidequest_id: string }; Returns: string }
       trail_attendees: {
