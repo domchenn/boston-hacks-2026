@@ -1,6 +1,6 @@
 /**
  * Explore page, "Trails for you" (docs/mockups/Web-Explore + Main) with a
- * time-of-day greeting under it (./greeting): tabs For you /
+ * time-of-day greeting under it (./greeting): tabs For you / Trending (./TrendingPanel) /
  * Nearby (./NearbyPanel) / Friends (./FriendsPanel), filters (category, neighborhood,
  * cost range, length, Late night, Near a T station), a grid of TrailCards and, on wide
  * screens, a map of where the shown trails start (TrailsMap), its top level with
@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
 import { loadNeighborhoods, loadTrails, matchesSearch, NEAR_T_MILES, type MapTrail } from './api'
 import { NearbyPanel } from './NearbyPanel'
+import { TrendingPanel } from './TrendingPanel'
+import { rankTrails, useTrending } from './useTrending'
 import {
   CATEGORY_OPTIONS,
   FILTER_KEYS,
@@ -37,10 +39,11 @@ import { CostRangeFilter } from './CostRangeFilter'
 import { exploreGreeting } from './greeting'
 import { useSession } from '@/lib/useSession'
 
-type Tab = 'for-you' | 'nearby' | 'friends'
+type Tab = 'for-you' | 'trending' | 'nearby' | 'friends'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'for-you', label: 'For you' },
+  { id: 'trending', label: 'Trending' },
   { id: 'nearby', label: 'Nearby' },
   { id: 'friends', label: 'Friends' },
 ]
@@ -187,9 +190,13 @@ export function ExplorePage() {
   }, [])
 
   const trails = (result?.trails ?? []).filter((t) => !q || matchesSearch(t, q))
+  // Trending (./useTrending): the ranking loads the first time the tab opens.
+  const trending = useTrending(tab === 'trending')
+  const trendingTrails = !loading && trending.entries ? rankTrails(trails, trending.entries) : null
   const ready = tab === 'for-you' && !loading && !result?.error
   // The map shows the same trails as the grid (nothing on the coming-soon tabs).
-  const mapTrails = (tab === 'for-you' || tab === 'nearby') && !loading ? trails : []
+  const mapTrails =
+    tab === 'trending' ? (trendingTrails ?? []) : (tab === 'for-you' || tab === 'nearby') && !loading ? trails : []
 
   // A shared link may name a neighborhood with no trails right now; keep it selectable.
   const neighborhoodNames =
@@ -214,7 +221,21 @@ export function ExplorePage() {
   const clearSearch = () => setParams(withFilter(params, 'q', ''))
 
   let body: ReactNode
-  if (tab === 'nearby') {
+  if (tab === 'trending') {
+    body = (
+      <TrendingPanel
+        trails={trendingTrails}
+        error={trending.error ?? (loading ? null : (result?.error ?? null))}
+        onRetry={() => {
+          trending.retry()
+          setAttempt((n) => n + 1)
+        }}
+        searching={q !== ''}
+        hoverId={hoverId}
+        onHover={setHoverId}
+      />
+    )
+  } else if (tab === 'nearby') {
     // Nearby (task G7): the same trails, sorted by distance from you. See ./NearbyPanel.
     body = (
       <NearbyPanel
