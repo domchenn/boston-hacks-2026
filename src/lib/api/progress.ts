@@ -1,33 +1,30 @@
 /**
- * Trail actions for the logged-in user: save, join, leave, start, finish, abort, and
- * ticking crumbs. Each action writes the user's single user_sidequests row (one
- * per user per trail) with an upsert on (user_id, sidequest_id); toggleCrumb
- * inserts or deletes a checklist_completions row.
+ * Each person's summary of a trail: save, unsave, and their status (one
+ * user_sidequests row per user per trail: saved / in progress / finished /
+ * stopped), which drives Saved, the Finished tab, ratings and badges.
  *
- * Owner: Gio. Signatures are the agreed contract (trail detail, active trail and
- * Saved pages call them); don't rename them.
+ * Doing a trail lives in outings now (@/lib/api/outings): starting, the shared
+ * crumb checklist, finishing and stopping all go through outing functions that
+ * keep this row in step. What's left here:
  *
- * What each action does from the row's current status ("–" = left unchanged):
- *
- *   current \ action   save    unsave           join       leave   start        finish     abort
- *   (no row)           saved   –                signed_up  –       in_progress  completed  –
- *   saved              –       removed (1)      signed_up  –       in_progress  completed  aborted
- *   signed_up          –       –                –          saved   in_progress  completed  aborted
- *   in_progress        saved   –                –          –       – (resume)   completed  aborted
- *   completed          –       –                –          –       –            –          –
- *   aborted            saved   –                signed_up  –       in_progress  completed  –
+ *   current \ action   save    unsave
+ *   (no row)           saved   –
+ *   saved              –       removed (1)
+ *   in_progress        saved   –
+ *   completed          –       –
+ *   aborted            saved   –
  *
  *   (1) Deleted if the trail was never started; if it was paused mid-trail
  *       ("save for later") it becomes aborted, which keeps the history.
  *
  * A finished trail is never moved out of `completed`: that would clear its
  * completed_at and take it off the user's Finished tab. "Save" on an in-progress
- * trail is "save for later" (ticked crumbs are kept, PRD Flow C).
+ * trail is "save for later" (the outing stays open to continue, PRD Flow C).
  *
- * The database enforces the hard rules (join only scheduled trails, tick crumbs
- * only on trails you've started, private rows). Failures throw a ProgressError
- * whose `message` is ready to show and whose `code` says what to do (e.g.
- * `not_signed_in` → send to /login?next=…).
+ * Failures throw a ProgressError whose `message` is ready to show and whose
+ * `code` says what to do (e.g. `not_signed_in` → send to /login?next=…).
+ *
+ * Owner: Gio. Signatures are the agreed contract; don't rename them.
  */
 
 import { supabase } from '@/lib/supabase'
@@ -182,64 +179,5 @@ export async function unsaveTrail(trailId: string): Promise<void> {
     if (error) throw toProgressError(error, 'trail')
   } catch (error) {
     throw error instanceof ProgressError ? error : toProgressError(null, 'trail')
-  }
-}
-
-/** Start the trail (status 'in_progress'). Resumes if already started. */
-export function startTrail(trailId: string): Promise<void> {
-  return transition(trailId, 'in_progress', [null, 'saved', 'signed_up', 'aborted'])
-}
-
-/** Finish the trail (status 'completed'). Unlocks rating. */
-export function finishTrail(trailId: string): Promise<void> {
-  return transition(trailId, 'completed', [null, 'saved', 'signed_up', 'in_progress', 'aborted'])
-}
-
-/** Stop the attempt (status 'aborted'). Doesn't count as finished. */
-export function abortTrail(trailId: string): Promise<void> {
-  return transition(trailId, 'aborted', ['saved', 'signed_up', 'in_progress'])
-}
-
-/**
- * Ids of the crumbs the user has ticked on a trail, so an active trail can show
- * its ticks again after a refresh. Empty when logged out. (Added in task G3.)
- */
-export async function getMyTickedCrumbs(trailId: string): Promise<Set<string>> {
-  const { data: auth } = await supabase.auth.getSession()
-  const userId = auth.session?.user.id
-  if (!userId) return new Set()
-  try {
-    const { data, error } = await supabase
-      .from('checklist_completions')
-      .select('checklist_item_id, checklist_items!inner(sidequest_id)')
-      .eq('user_id', userId)
-      .eq('checklist_items.sidequest_id', trailId)
-    if (error) throw toProgressError(error, 'crumb')
-    return new Set(data.map((row) => row.checklist_item_id))
-  } catch (error) {
-    throw error instanceof ProgressError ? error : toProgressError(null, 'crumb')
-  }
-}
-
-/** Tick or untick a crumb (checklist_items row) during an active trail. */
-export async function toggleCrumb(crumbId: string, done: boolean): Promise<void> {
-  const userId = await requireUserId()
-  try {
-    const { error } = done
-      ? // Already ticked is fine: ignore the duplicate instead of failing.
-        await supabase
-          .from('checklist_completions')
-          .upsert(
-            { user_id: userId, checklist_item_id: crumbId },
-            { onConflict: 'user_id,checklist_item_id', ignoreDuplicates: true },
-          )
-      : await supabase
-          .from('checklist_completions')
-          .delete()
-          .eq('user_id', userId)
-          .eq('checklist_item_id', crumbId)
-    if (error) throw toProgressError(error, 'crumb')
-  } catch (error) {
-    throw error instanceof ProgressError ? error : toProgressError(null, 'crumb')
   }
 }

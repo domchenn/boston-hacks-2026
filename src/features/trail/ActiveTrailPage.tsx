@@ -3,8 +3,9 @@
  * with the user's position and the trail as an accordion of stops
  * (ActiveTrailStops): the stop you're at is open with how to get there, its
  * crumbs and a photo button; finishing a stop (its circle, "Done here", or the
- * last crumb) folds it away and opens the next. Then Finished / Save for later / Abort.
- * Opening the page starts (or resumes) the trail. Location is asked for only here
+ * last crumb) folds it away and opens the next. Then Finished / Save for later / Stop.
+ * Opening the page starts an outing of the trail, or resumes the one you're on
+ * (useActiveTrail); friends you invite (OutingCrew) share its checklist. Location is asked for only here
  * and never stored; the screen stays awake while the page is open.
  * Route: /trails/:id/go · Owner: Gio
  */
@@ -18,6 +19,7 @@ import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
 import { useStopPhotos } from './useStopPhotos'
 import { ActiveTrailStops } from './ActiveTrailStops'
+import { OutingCrew } from './OutingCrew'
 import { useActiveTrail } from './useActiveTrail'
 import { useLiveLocation, type LocationState } from './useLiveLocation'
 import { useWakeLock } from './useWakeLock'
@@ -58,7 +60,8 @@ function ActiveTrail({ trailId }: { trailId: string }) {
       </Message>
     )
   }
-  return <ActiveTrailView trail={load.trail} finished={load.myStatus === 'completed'} location={location} {...state} />
+  // Finished = this outing is done (you, or a friend on it, tapped Finished).
+  return <ActiveTrailView trail={load.trail} finished={state.outing?.status === 'completed'} location={location} {...state} />
 }
 
 type ViewProps = Omit<ReturnType<typeof useActiveTrail>, 'load' | 'retry'> & {
@@ -71,6 +74,8 @@ function ActiveTrailView({
   trail,
   finished,
   location,
+  outing,
+  ticks,
   ticked,
   pendingCrumbs,
   crumbError,
@@ -79,9 +84,19 @@ function ActiveTrailView({
   busy,
   actionError,
   run,
+  invite,
 }: ViewProps) {
   const { session } = useSession()
-  const photos = useStopPhotos(trail.id, session?.user.id ?? null)
+  const viewerId = session?.user.id ?? null
+  const withFriends = (outing?.members ?? []).some((m) => m.status === 'joined' && m.person.id !== viewerId)
+  /** "Maya" when a friend ticked this crumb (nothing for your own ticks). */
+  const tickedBy = (crumbId: string) => {
+    const by = ticks.get(crumbId)
+    if (!by || by === viewerId) return null
+    const person = outing?.members.find((m) => m.person.id === by)?.person
+    return person ? person.display_name || (person.username ? `@${person.username}` : null) : null
+  }
+  const photos = useStopPhotos(trail.id, viewerId, outing?.id ?? null)
   const [searchParams, setSearchParams] = useSearchParams()
   const [confirmAbort, setConfirmAbort] = useState(false)
   const { stops } = trail
@@ -208,13 +223,15 @@ function ActiveTrailView({
 
         {finished ? (
           <p className="mt-3 rounded-card bg-[var(--color-green-tint)] px-4 py-3 text-base text-ink">
-            <b>You finished this trail.</b> You can still look back over your crumbs.
+            <b>This outing is finished.</b> Rate the trail, or look back over your crumbs.
           </p>
         ) : allDone ? (
           <p className="mt-3 rounded-card bg-[var(--color-green-tint)] px-4 py-3 text-base text-ink">
             <b>Every crumb done.</b> Tap <b>Finished</b> to wrap up and rate the trail.
           </p>
         ) : null}
+
+        {outing && viewerId ? <OutingCrew outing={outing} viewerId={viewerId} onInvite={invite} finished={finished} /> : null}
 
         <TransitAlerts stops={stops} className="mt-3" />
 
@@ -237,6 +254,7 @@ function ActiveTrailView({
             setOpenIds(next)
           }}
           ticked={ticked}
+          tickedBy={tickedBy}
           pending={pendingCrumbs}
           onToggleCrumb={toggleCrumb}
           onSetStop={setStop}
@@ -258,13 +276,17 @@ function ActiveTrailView({
               </Link>
             </div>
           ) : confirmAbort ? (
-            <div role="group" aria-label="Abort this trail?" className="rounded-card border border-line bg-white p-4">
-              <p className="m-0 font-bold">Abort this trail?</p>
-              <p className="mt-1 mb-3 text-sm text-ink-2">It won’t count as finished. Your ticked crumbs are kept.</p>
+            <div role="group" aria-label="Stop this trail?" className="rounded-card border border-line bg-white p-4">
+              <p className="m-0 font-bold">{withFriends ? 'Leave this outing?' : 'Stop this trail?'}</p>
+              <p className="mt-1 mb-3 text-sm text-ink-2">
+                {withFriends
+                  ? 'Your friends can keep going without you. It won’t count as finished for you.'
+                  : 'It won’t count as finished. You can start it again any time.'}
+              </p>
               <div className="flex gap-3">
                 <button type="button" className="btn btn--ink flex-1" onClick={() => run('abort')} disabled={busy !== null}>
                   {busy === 'abort' ? <LoaderCircle className="animate-spin" aria-hidden /> : null}
-                  Yes, abort
+                  {withFriends ? 'Yes, leave' : 'Yes, stop'}
                 </button>
                 <button
                   type="button"
@@ -281,7 +303,7 @@ function ActiveTrailView({
             <div className="grid gap-2">
               <button type="button" className="btn btn--lg btn--block" onClick={() => run('finish')} disabled={busy !== null}>
                 {busy === 'finish' ? <LoaderCircle className="animate-spin" aria-hidden /> : null}
-                Finished
+                {withFriends ? 'We’re finished' : 'Finished'}
               </button>
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" className="btn btn--secondary" onClick={() => run('save')} disabled={busy !== null}>
@@ -294,7 +316,7 @@ function ActiveTrailView({
                   onClick={() => setConfirmAbort(true)}
                   disabled={busy !== null}
                 >
-                  Abort
+                  {withFriends ? 'Leave' : 'Stop'}
                 </button>
               </div>
             </div>

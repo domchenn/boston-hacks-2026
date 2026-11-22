@@ -2,19 +2,24 @@
  * The viewer's status on one trail (getMyStatus) and the Start / Save actions
  * from @/lib/api/progress. Once the trail is finished it also checks getMyRating so
  * the page can offer "Rate this trail" (not rated yet) or "Edit your rating".
+ * Also loads the viewer's outings of the trail (getMyOutings: the one in progress
+ * → "Continue trail", finished ones → history and "Do it again") and open invites
+ * from friends to join an outing (respond accepts or declines). Start just opens
+ * /trails/:id/go, which starts or resumes the outing.
  * Logged-out viewers are sent to /login?next=/trails/:id.
  * Used by TrailActions on the Trail detail page; one instance per page.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { getMyStatus, saveTrail, startTrail, unsaveTrail } from '@/lib/api/progress'
+import { getMyOutingInvites, getMyOutings, respondToOuting, type Outing, type OutingInvite } from '@/lib/api/outings'
+import { getMyStatus, saveTrail, unsaveTrail } from '@/lib/api/progress'
 import { getMyRating } from '@/lib/api/ratings'
 import { useSession } from '@/lib/useSession'
 import type { UserSidequestStatus } from '@/types/db-values'
 import { loginPath } from './trailLinks'
 
-type Action = 'start' | 'save'
+type Action = 'start' | 'save' | 'respond'
 
 /** Turns API errors into something a person can act on. */
 function friendlyError(error: unknown) {
@@ -32,7 +37,22 @@ export function useTrailActions(trailId: string) {
   const [rated, setRated] = useState<{ trailId: string; value: boolean } | null>(null)
   const [busy, setBusy] = useState<Action | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [outings, setOutings] = useState<{ trailId: string; list: Outing[]; invites: OutingInvite[] } | null>(null)
+  const [outingsAttempt, setOutingsAttempt] = useState(0)
   const userId = session?.user.id ?? null
+
+  useEffect(() => {
+    if (sessionLoading || !userId) return
+    let cancelled = false
+    Promise.all([getMyOutings(trailId), getMyOutingInvites(trailId)]).then(
+      ([list, invites]) => !cancelled && setOutings({ trailId, list, invites }),
+      // Can't tell: show no history; Start still works (it starts or resumes on the next page).
+      () => !cancelled && setOutings({ trailId, list: [], invites: [] }),
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [trailId, userId, sessionLoading, outingsAttempt])
 
   useEffect(() => {
     if (sessionLoading || !userId) return
@@ -66,8 +86,15 @@ export function useTrailActions(trailId: string) {
 
   /** null = not finished (nothing to rate) or still checking. */
   const hasRated = finished && rated?.trailId === trailId ? rated.value : null
+  const mine = userId && outings?.trailId === trailId ? outings : null
+  const myOutings = mine?.list ?? []
+  const activeOuting =
+    myOutings.find((o) => o.status === 'active' && o.members.some((m) => m.person.id === userId && m.status === 'joined')) ??
+    null
   const statusLoading =
-    sessionLoading || (userId !== null && status?.trailId !== trailId) || (finished && hasRated === null)
+    sessionLoading ||
+    (userId !== null && (status?.trailId !== trailId || outings?.trailId !== trailId)) ||
+    (finished && hasRated === null)
 
   const run = useCallback(
     async (action: Action, call: () => Promise<void>, next: UserSidequestStatus | null) => {
@@ -95,10 +122,19 @@ export function useTrailActions(trailId: string) {
     status: current,
     statusLoading,
     hasRated,
+    /** Your outings of this trail, newest first (finished ones are your history). */
+    outings: myOutings,
+    activeOuting,
+    invites: mine?.invites ?? [],
     busy,
     error,
-    start: async () => {
-      if (await run('start', () => startTrail(trailId), 'in_progress')) navigate(`/trails/${trailId}/go`)
+    // The Active trail page starts a fresh outing, or resumes the one you're on.
+    start: () => (userId ? navigate(`/trails/${trailId}/go`) : navigate(loginPath(`/trails/${trailId}`))),
+    /** Join a friend's outing (then go), or say no thanks. */
+    respond: async (invite: OutingInvite, accept: boolean) => {
+      const ok = await run('respond', () => respondToOuting(invite.outingId, accept), current)
+      if (ok && accept) navigate(`/trails/${trailId}/go`)
+      else if (ok) setOutingsAttempt((n) => n + 1)
     },
     toggleSave: () =>
       current === 'saved'

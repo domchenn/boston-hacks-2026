@@ -1,6 +1,5 @@
 /**
- * Trail photos: a proof photo on a ticked crumb (checklist_completions.photo_url)
- * and public photos from an outing (quest_photos), stored in the Supabase
+ * Trail photos: public photos from an outing (quest_photos), stored in the Supabase
  * Storage bucket `trail-photos` under a folder named after the user's id
  * (the bucket's policies only allow that folder; see the add_trail_photos_storage
  * migration).
@@ -9,7 +8,8 @@
  * so phone photos stay small and fit the 5 MB limit.
  *
  * A photo can be pinned to one stop (quest_photos.stop_id), for the photo button
- * on each stop of Active trail.
+ * on each stop of Active trail, and to the outing it was taken on
+ * (quest_photos.outing_id), so doing a trail again starts with a clean photo strip.
  *
  * Used by: Active trail (photos per stop), Trail detail and the
  * Finished / Rate screen (photo grid).
@@ -25,6 +25,8 @@ export type TrailPhoto = {
   createdAt: string
   /** The stop it was taken at, if it was added from a stop on Active trail. */
   stopId: string | null
+  /** The outing it was taken on, if known. */
+  outingId: string | null
   uploader: TrailCreator | null
 }
 
@@ -89,40 +91,20 @@ function pathFromUrl(url: string): string | null {
   return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length))
 }
 
-/**
- * Attach a proof photo to a crumb you've already ticked during an active
- * trail. Returns the photo URL. (Tick the crumb first; the camera button only
- * shows on ticked crumbs.)
- */
-export async function uploadCrumbPhoto(crumbId: string, file: File): Promise<string> {
-  const userId = await currentUserId()
-  const { path, url } = await upload(file, `crumbs/${crumbId}`)
-  const { data, error } = await supabase
-    .from('checklist_completions')
-    .update({ photo_url: url })
-    .eq('user_id', userId)
-    .eq('checklist_item_id', crumbId)
-    .select('checklist_item_id')
-  if (error || !data?.length) {
-    await supabase.storage.from(BUCKET).remove([path])
-    throw new Error(error ? 'Couldn’t save that photo. Please try again.' : 'Tick the crumb before adding a photo.')
-  }
-  return url
-}
-
 /** Add a public photo to a trail you've started, saved or finished, optionally at one of its stops. */
 export async function addTrailPhoto(
   trailId: string,
   file: File,
   caption?: string,
   stopId?: string,
+  outingId?: string,
 ): Promise<TrailPhoto> {
   const userId = await currentUserId()
   const { path, url } = await upload(file, `trails/${trailId}`)
   const { data, error } = await supabase
     .from('quest_photos')
-    .insert({ user_id: userId, sidequest_id: trailId, photo_url: url, caption: caption?.trim() || null, stop_id: stopId ?? null })
-    .select('id, photo_url, caption, created_at, stop_id, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
+    .insert({ user_id: userId, sidequest_id: trailId, photo_url: url, caption: caption?.trim() || null, stop_id: stopId ?? null, outing_id: outingId ?? null })
+    .select('id, photo_url, caption, created_at, stop_id, outing_id, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
     .single()
   if (error || !data) {
     await supabase.storage.from(BUCKET).remove([path])
@@ -136,6 +118,7 @@ export async function addTrailPhoto(
     caption: data.caption,
     createdAt: data.created_at,
     stopId: data.stop_id,
+    outingId: data.outing_id,
     uploader: data.uploader,
   }
 }
@@ -144,7 +127,7 @@ export async function addTrailPhoto(
 export async function getTrailPhotos(trailId: string): Promise<TrailPhoto[]> {
   const { data, error } = await supabase
     .from('quest_photos')
-    .select('id, photo_url, caption, created_at, stop_id, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
+    .select('id, photo_url, caption, created_at, stop_id, outing_id, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
     .eq('sidequest_id', trailId)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -154,6 +137,7 @@ export async function getTrailPhotos(trailId: string): Promise<TrailPhoto[]> {
     caption: p.caption,
     createdAt: p.created_at,
     stopId: p.stop_id,
+    outingId: p.outing_id,
     uploader: p.uploader,
   }))
 }

@@ -1,7 +1,8 @@
 /**
  * Trail detail page (docs/mockups/Web-Detail + Mobile-Detail), loaded with getTrail(id):
  * eyebrow, title, cost / time / stops / crumbs / rating, description, Start trail /
- * Save / Share / Rate this trail (TrailActions), the stops with crumbs, Good to know,
+ * Save / Share / Rate this trail (TrailActions), outing invites and your past
+ * outings of it (TrailOutings), the stops with crumbs, Good to know,
  * the creator, photos (TrailPhotos, hidden when there are none) and reviews. The route map (RouteMap) sits on the right on desktop and
  * above the stops on phones. Phones get a sticky action bar. Shows the Rate page's
  * "rating posted" notice from router state.
@@ -21,6 +22,7 @@ import { TrailRemixRow } from '@/features/make/TrailRemixRow'
 import { TrailActions } from './TrailActions'
 import { TrailCreatorCard, TrailGoodToKnow } from './TrailGoodToKnow'
 import { BackLink, TrailMessage } from './TrailPageMessage'
+import { TrailOutings } from './TrailOutings'
 import { TrailPhotos } from './TrailPhotos'
 import { TrailReviews } from './TrailReviews'
 import { TrailStops } from './TrailStops'
@@ -177,6 +179,8 @@ export function TrailDetailPage() {
               layout="inline"
             />
           </div>
+
+          <TrailOutings trailId={trail.id} actions={actions} />
 
           <h2 className="mt-8 text-xl font-bold tracking-[var(--tracking-tight)] md:mt-10">The trail</h2>
           <TransitAlerts stops={trail.stops} className="mb-4" />

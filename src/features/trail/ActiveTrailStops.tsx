@@ -23,7 +23,20 @@ import { StopPhotoButton, StopPhotoStrip } from './ActiveTrailPhotos'
 import { LegDirections } from './LegDirections'
 
 /** One crumb: a full-width toggle with a 26px ring that fills green when done. */
-function CrumbToggle({ crumb, done, saving, onToggle }: { crumb: TrailCrumb; done: boolean; saving: boolean; onToggle: () => void }) {
+function CrumbToggle({
+  crumb,
+  done,
+  saving,
+  by,
+  onToggle,
+}: {
+  crumb: TrailCrumb
+  done: boolean
+  saving: boolean
+  /** A friend's name when they ticked it. */
+  by?: string | null
+  onToggle: () => void
+}) {
   return (
     <button
       type="button"
@@ -50,6 +63,7 @@ function CrumbToggle({ crumb, done, saving, onToggle }: { crumb: TrailCrumb; don
       <span className={cn('flex-1 text-base leading-snug', done && 'text-muted-foreground line-through decoration-1')}>
         <span className="font-semibold">{crumb.type === 'see' ? 'See: ' : 'Do: '}</span>
         {crumb.label}
+        {done && by ? <span className="ml-1.5 text-xs font-semibold text-done">· {by}</span> : null}
       </span>
     </button>
   )
@@ -70,6 +84,8 @@ type ActiveTrailStopsProps = {
   openIds: Set<string>
   onToggleOpen: (stopId: string) => void
   ticked: Set<string>
+  /** Who ticked a crumb, when it was a friend on the outing. */
+  tickedBy?: (crumbId: string) => string | null
   pending: Set<string>
   onToggleCrumb: (crumbId: string) => void
   /** Tick or untick every crumb at a stop. */
@@ -88,6 +104,7 @@ export function ActiveTrailStops({
   openIds,
   onToggleOpen,
   ticked,
+  tickedBy,
   pending,
   onToggleCrumb,
   onSetStop,
@@ -185,6 +202,7 @@ export function ActiveTrailStops({
                             key={crumb.id}
                             crumb={crumb}
                             done={ticked.has(crumb.id)}
+                            by={tickedBy?.(crumb.id)}
                             saving={pending.has(crumb.id)}
                             onToggle={() => onToggleCrumb(crumb.id)}
                           />
@@ -219,6 +237,7 @@ export function ActiveTrailStops({
               key={crumb.id}
               crumb={crumb}
               done={ticked.has(crumb.id)}
+              by={tickedBy?.(crumb.id)}
               saving={pending.has(crumb.id)}
               onToggle={() => onToggleCrumb(crumb.id)}
             />

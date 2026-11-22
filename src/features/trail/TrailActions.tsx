@@ -21,14 +21,15 @@ type TrailActionsProps = {
 }
 
 export function TrailActions({ trailId, actions, title = 'A trail', layout }: TrailActionsProps) {
-  const { status, statusLoading, hasRated, busy, error, start, toggleSave } = actions
+  const { status, statusLoading, hasRated, busy, error, start, toggleSave, activeOuting, outings } = actions
   const bar = layout === 'bar'
   const ratePath = `/trails/${trailId}/rate`
 
-  const startLabel =
-    status === 'in_progress' ? 'Continue trail' : status === 'completed' ? 'Do it again' : 'Start trail'
+  // An outing in progress → Continue; finished before → Do it again (a fresh outing).
+  const startLabel = activeOuting ? 'Continue trail' : status === 'completed' ? 'Do it again' : 'Start trail'
+  const timesDone = outings.filter((o) => o.status === 'completed').length
   // Finished but not rated yet: rating becomes the main button, "Do it again" steps back.
-  const rateFirst = status === 'completed' && hasRated === false
+  const rateFirst = status === 'completed' && hasRated === false && !activeOuting
   // One row per user per trail, so Save only makes sense before you've started.
   const canSave = status === null || status === 'saved' || status === 'aborted'
   const saved = status === 'saved'
@@ -85,7 +86,7 @@ export function TrailActions({ trailId, actions, title = 'A trail', layout }: Tr
         {status === 'completed' && !bar ? (
           <span className="inline-flex items-center gap-1.5 font-semibold text-done">
             <Check aria-hidden className="size-4" />
-            You finished this trail
+            {timesDone > 1 ? `You’ve done this trail ${timesDone} times` : 'You finished this trail'}
             {hasRated ? (
               <>
                 <span aria-hidden className="text-muted-foreground">
