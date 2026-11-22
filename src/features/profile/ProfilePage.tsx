@@ -2,7 +2,8 @@
  * Profile page. /me is the signed-in user (sent to /login or /onboarding first if
  * needed); /u/:username is anyone. Kept short: avatar, name, university, bio, one
  * line of numbers (followers · following · finished · made, plus the maker rating
- * once there is one; FollowBar) and the tabs (ProfileTrails: trails, Badges on
+ * once there is one; FollowBar), a strip of your earned badges (BadgeStrip) and
+ * the tabs (ProfileTrails: Finished / Made / Badges on
  * your own page, Activity on others'). Settings (edit profile, private account,
  * close friends, log out) sit behind the gear (ProfileSettingsDialog). Private
  * accounts show a lock note. Layout
@@ -13,6 +14,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import { CircleAlert, Lock, Settings, Star } from 'lucide-react'
 import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
+import { BadgeStrip } from '@/features/badges/BadgeStrip'
 import { FollowBar } from '@/features/friends/FollowBar'
 import { useSession } from '@/lib/useSession'
 import {
@@ -190,6 +192,7 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
           </>
         }
       />
+      {isOwn ? <BadgeStrip userId={profile.id} /> : null}
       {profile.is_private && !isOwn ? (
         <p className="mt-3 mb-0 flex items-center gap-2 rounded-card bg-paper px-4 py-3 text-sm text-ink-2">
           <Lock aria-hidden className="size-4 flex-none" />

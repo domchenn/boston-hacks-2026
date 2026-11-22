@@ -1,6 +1,6 @@
 /**
- * The tabs on a profile. Your own page: Finished / Saved / Signed up / Made
- * (progress tabs are private) / Badges (ProfileBadges). Someone else's: Trails
+ * The tabs on a profile. Your own page: Finished (private progress) / Made /
+ * Badges (ProfileBadges); saved trails have their own Saved page. Someone else's: Trails
  * (their published trails) / Activity (PersonActivity: what they made, finished
  * or joined, if you follow them).
  * The open tab lives in ?tab= so it survives refresh and can be linked. Each tab
@@ -16,24 +16,20 @@ import { ProfileBadges } from '@/features/badges/ProfileBadges'
 import { PersonActivity } from '@/features/friends/FriendsActivity'
 import { getMadeTrails, getMyTrails, type ProfileTrail, type ProgressTab, type Result } from './api'
 
-type TrailTabId = 'finished' | 'saved' | 'signed-up' | 'made'
+type TrailTabId = 'finished' | 'made'
 type TabId = TrailTabId | 'badges' | 'activity'
 
 const TABS: Record<TrailTabId, { label: string; status: ProgressTab | null }> = {
   finished: { label: 'Finished', status: 'completed' },
-  saved: { label: 'Saved', status: 'saved' },
-  'signed-up': { label: 'Signed up', status: 'signed_up' },
   made: { label: 'Made', status: null },
 }
 const LABELS: Record<TabId, string> = {
   finished: 'Finished',
-  saved: 'Saved',
-  'signed-up': 'Signed up',
   made: 'Made',
   badges: 'Badges',
   activity: 'Activity',
 }
-const OWN_TABS: TabId[] = ['finished', 'saved', 'signed-up', 'made', 'badges']
+const OWN_TABS: TabId[] = ['finished', 'made', 'badges']
 const OTHER_TABS: TabId[] = ['made', 'activity']
 
 export function ProfileTrails({
@@ -199,7 +195,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const dayFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
-const whenFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })
 
 /** Style guide stats: "~$20 · 2 hr", "Free" when it costs nothing. */
 function statsFor(trail: ProfileTrail): string[] {
@@ -224,11 +219,7 @@ function eyebrowFor(trail: ProfileTrail, tab: TrailTabId): { text: string; varia
   }
   if (trail.trailStatus === 'draft') return { text: 'Draft', variant: 'draft' }
   const category = trail.category ? CATEGORY_LABELS[trail.category] ?? null : null
-  if (trail.scheduledAt) {
-    const when = whenFormat.format(new Date(trail.scheduledAt))
-    return { text: [tab === 'signed-up' ? 'Going' : category, when].filter(Boolean).join(' · '), variant: 'scheduled' }
-  }
-  return { text: [category, 'Anytime'].filter(Boolean).join(' · '), variant: 'anytime' }
+  return { text: category ?? 'Trail', variant: 'anytime' }
 }
 
 function ProfileTrailCard({ trail, tab }: { trail: ProfileTrail; tab: TrailTabId }) {
@@ -257,16 +248,6 @@ function EmptyTab({ tab, isOwn, name }: { tab: TrailTabId; isOwn: boolean; name:
     finished: {
       title: 'No finished trails yet',
       text: 'Pick one from Explore and check off its crumbs. It shows up here when you’re done.',
-      cta: { to: '/', label: 'Explore trails' },
-    },
-    saved: {
-      title: 'No saved trails yet',
-      text: 'Save one from your feed, or make your own. It only takes two stops.',
-      cta: { to: '/', label: 'Explore trails' },
-    },
-    'signed-up': {
-      title: 'Nothing on your calendar',
-      text: 'Sign up for a scheduled trail and it shows up here.',
       cta: { to: '/', label: 'Explore trails' },
     },
     made: isOwn
