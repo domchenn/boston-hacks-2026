@@ -19,6 +19,8 @@ import {
   Navigation,
 } from 'lucide-react'
 import { RouteMap } from '@/components/RouteMap'
+import { StopTransit } from '@/components/StopTransit'
+import { TransitAlerts } from '@/components/TransitAlerts'
 import type { TrailDetail } from '@/lib/api/trails'
 import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
@@ -204,6 +206,10 @@ function ActiveTrailView({
               Open in Google Maps
               <span className="sr-only"> (directions to {current.placeName}, opens in a new tab)</span>
             </a>
+            {current.latitude !== null && current.longitude !== null ? (
+              <StopTransit latitude={current.latitude} longitude={current.longitude} refreshMs={30_000} className="mt-3" />
+            ) : null}
+            <TransitAlerts stops={stops} className="mt-3" />
 
             <CrumbChecklist
               title="Crumbs here"

@@ -56,7 +56,8 @@ Every route already exists in `src/App.tsx` and points at a placeholder page. **
 | `save_trail(p_trail, p_trail_id)` database function | `src/features/make/api.ts` → `saveTrail()` | ✅ done (D2) |
 | `<RouteMap stops mode="preview" \| "live" userLocation? selectedStopId? onSelectStop? />` | `@/components/RouteMap` | ✅ done (D3); needs `VITE_GOOGLE_MAPS_API_KEY`, falls back to a stop list without it |
 | `getDirectionsLink(to, mode, from?)`, `getTrailDirectionsLink(places)`, `loadGoogleMaps()` | `@/lib/maps` | ✅ done (D3) |
-| `<NearbyStations latitude longitude limit? />`, `loadStations()`, `nearestStations()` | `@/components/NearbyStations`, `@/lib/mbta` | ✅ done (D4) |
+| `<StopTransit latitude longitude refreshMs? />` (T stations + next trains, nearest bus stop + next buses, Bluebikes dock), `<TransitAlerts stops />` | `@/components/StopTransit`, `@/components/TransitAlerts` | ✅ done (D7; replaced D4's NearbyStations) |
+| `loadStations()`, `nearestStations()`, `getArrivals()`, `getNearbyBusStops()`, `getAlerts()` · `getNearbyDocks()` | `@/lib/mbta` · `@/lib/bluebikes` | ✅ done (D4, D7) |
 | `getMyRating`, `rateTrail`, `deleteMyRating` | `@/lib/api/ratings` | ✅ done (J3) |
 | `uploadCrumbPhoto`, `addTrailPhoto`, `getTrailPhotos`, `deletePhoto` | `@/lib/api/photos` | ✅ done (D5). Camera button only on ticked crumbs. |
 
@@ -209,7 +210,7 @@ Branch: `feat/explore-filters`
 - Search across title, description, neighborhood and stop names.
 - Extend `getFeed()` in `@/lib/api/trails` with any new filter parameters it needs (small additive change; mention it in the PR).
 
-### G6 · Gio · Communities (BU / BC) ✅ (#30, #31)
+### G6 · Gio · Communities (BU / BC) ✅ (#30, #31) · UI hidden for now (`SHOW_COMMUNITIES = false` in `src/features/communities/api.ts`)
 Branch: `feat/communities`
 - Settings on the You page: join one community (BU or BC) or none, saved to `profiles.community_id`.
 - Explore: a community switcher (All / BU / BC). Community-only trails are already hidden from non-members by the database.

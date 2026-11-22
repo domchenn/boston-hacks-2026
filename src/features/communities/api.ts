@@ -9,6 +9,13 @@ import { supabase } from '@/lib/supabase'
 
 export type Community = { id: string; name: string; slug: string }
 
+/**
+ * Communities are switched off in the UI for now (team decision): the Explore
+ * switcher, the You page setting and Make a trail's "Who can see this" are
+ * hidden. The data, RLS and code stay; set this to true to bring them back.
+ */
+export const SHOW_COMMUNITIES = false
+
 const NETWORK_ERROR = 'We couldn’t reach Breadcrumb. Check your connection and try again.'
 const GENERIC_ERROR = 'Something went wrong. Please try again.'
 

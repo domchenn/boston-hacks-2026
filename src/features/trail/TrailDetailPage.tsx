@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 import { Check, Star } from 'lucide-react'
 import { Link, useLocation, useParams } from 'react-router'
 import { RouteMap } from '@/components/RouteMap'
+import { TransitAlerts } from '@/components/TransitAlerts'
 import { CATEGORY_LABELS, formatCost, formatMinutes, formatSchedule } from '@/components/trailFormat'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
@@ -184,6 +185,7 @@ export function TrailDetailPage() {
           </div>
 
           <h2 className="mt-8 text-xl font-bold tracking-[var(--tracking-tight)] md:mt-10">The trail</h2>
+          <TransitAlerts stops={trail.stops} className="mb-4" />
           <RouteMap stops={trail.stops} primaryLine={trail.primaryLine} className="mb-4 aspect-[4/3] lg:hidden" />
           <TrailStops stops={trail.stops} betweenStopCrumbs={trail.betweenStopCrumbs} primaryLine={trail.primaryLine} />
 

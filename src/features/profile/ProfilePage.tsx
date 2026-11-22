@@ -19,6 +19,7 @@ import {
   type QuestgiverRating,
 } from './api'
 import { CommunitySetting } from '@/features/communities/CommunitySetting'
+import { SHOW_COMMUNITIES } from '@/features/communities/api'
 import { ProfileTrails } from './ProfileTrails'
 import './profile.css'
 
@@ -182,7 +183,7 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
       </dl>
 
       {/* Join BU / BC (or none). Reloads the header so the new community shows. */}
-      {isOwn ? <CommunitySetting onChanged={() => setAttempt((n) => n + 1)} /> : null}
+      {isOwn && SHOW_COMMUNITIES ? <CommunitySetting onChanged={() => setAttempt((n) => n + 1)} /> : null}
 
       <ProfileTrails userId={profile.id} isOwn={isOwn} name={name} />
     </div>
