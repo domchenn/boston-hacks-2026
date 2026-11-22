@@ -2,13 +2,14 @@
  * App shell shared by every page (docs/mockups/Web-Explore + Main). Desktop header:
  * logo, Explore / Map / Saved / You nav, search box, orange "Make a trail" button
  * and the account menu (log in / log out via useSession()). Phones get a compact
- * header (logo, search toggle, account) plus the bottom tab bar with the + button.
+ * header (logo, search toggle, account) plus the bottom tab bar with the + button
+ * (hidden on /trails/:id pages, which have their own sticky Start trail bar).
  * Search sends you to Explore with ?q=…; the current route's page renders in <Outlet />.
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Bookmark, Compass, LogIn, LogOut, MapIcon, Plus, Search, User, X } from 'lucide-react'
-import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate, useSearchParams } from 'react-router'
 import { BrandLogo } from '@/components/BrandLogo'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/lib/useSession'
@@ -181,6 +182,8 @@ function TabBar() {
 
 export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
+  // Trail pages have their own sticky Start trail bar on phones (Mobile-Detail mockup), so no tab bar there.
+  const onTrailPage = useMatch('/trails/:id/*') !== null
 
   return (
     <div className="flex min-h-dvh flex-col bg-paper">
@@ -232,11 +235,16 @@ export function AppLayout() {
         ) : null}
       </header>
 
-      <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 pt-5 pb-28 md:px-6 md:pt-8 md:pb-12">
+      <main
+        className={cn(
+          'mx-auto w-full max-w-[1360px] flex-1 px-4 pt-5 md:px-6 md:pt-8 md:pb-12',
+          onTrailPage ? 'pb-6' : 'pb-28',
+        )}
+      >
         <Outlet />
       </main>
 
-      <TabBar />
+      {onTrailPage ? null : <TabBar />}
     </div>
   )
 }
