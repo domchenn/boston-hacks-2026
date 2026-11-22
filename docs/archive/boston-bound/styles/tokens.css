@@ -8,7 +8,6 @@
 
 /* Fonts (Google Fonts, SIL Open Font License).
    Archivo at 125% width stands in for Presicav, which needs a paid webfont license. */
-@import url("https://fonts.googleapis.com/css2?family=Akshar:wght@400..700&family=Archivo:wdth,wght@100..125,500..800&family=Noto+Sans:ital,wght@0,400..700;1,400&display=swap");
 
 :root {
   /* ---- Core palette (from bostonhacks.org) ------------------------------ */
