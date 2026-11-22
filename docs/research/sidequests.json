@@ -81,6 +81,582 @@
           ]
         }
       ]
+    },
+    {
+      "key": "freedom-trail-student-budget",
+      "title": "Freedom Trail on a Student Budget",
+      "description": "Walk the heart of Boston's Freedom Trail from Boston Common to the North End for about $12: a graveyard full of Revolution-era names, the Old State House, a matcha break, Faneuil Hall and Paul Revere's own house. Every stop is a short walk from the last, and the red line on the sidewalk does the navigating.",
+      "category": "attractions",
+      "neighborhood": "Downtown",
+      "estimated_cost": 12,
+      "estimated_duration_minutes": 210,
+      "scheduled_at": null,
+      "status": "published",
+      "primary_line": "gl",
+      "is_curated": true,
+      "stops": [
+        {
+          "stop_order": 0,
+          "experience_key": "boston-common-tremont-st",
+          "place_name": "Boston Common",
+          "address": "139 Tremont St, Boston, MA 02111",
+          "latitude": 42.35582,
+          "longitude": -71.06258,
+          "description": "The Freedom Trail starts at the Visitor Center on Tremont Street, across from Boston Common.",
+          "planned_activity": "Start at the Visitor Center and find the red line.",
+          "travel_mode_to_stop": null,
+          "estimated_cost": 0,
+          "notes": "Park Street station (Red and Green Lines) is right at the corner of Tremont St.",
+          "checklist": [
+            { "label": "Find the red line that marks the Freedom Trail", "item_type": "see", "is_checkpoint": true },
+            { "label": "Grab a free trail map at the Visitor Center", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 1,
+          "experience_key": "granary-burying-ground-tremont-st",
+          "place_name": "Granary Burying Ground",
+          "address": "95 Tremont St, Boston, MA 02108",
+          "latitude": 42.35713,
+          "longitude": -71.06179,
+          "description": "A 1660 burying ground where Samuel Adams, John Hancock and Paul Revere are buried.",
+          "planned_activity": "Wander the graves.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 3 min walk.",
+          "checklist": [
+            { "label": "Find the grave of Paul Revere, Samuel Adams or John Hancock", "item_type": "see", "is_checkpoint": false },
+            { "label": "Find the oldest date you can on a headstone", "item_type": "see", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 2,
+          "experience_key": "old-state-house-washington-st",
+          "place_name": "Old State House",
+          "address": "206 Washington St, Boston, MA 02109",
+          "latitude": 42.35873,
+          "longitude": -71.05747,
+          "description": "The 1713 State House, with the Boston Massacre site marked on the cobblestones outside. Seeing it from the street is free.",
+          "planned_activity": "See the building and the marker outside.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 6 min walk.",
+          "checklist": [
+            { "label": "Stand on the Boston Massacre site marker", "item_type": "do", "is_checkpoint": true },
+            { "label": "Look up at the balcony where the Declaration of Independence was read", "item_type": "see", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 3,
+          "experience_key": "wishing-cup-court-st",
+          "place_name": "Wishing Cup",
+          "address": "45 Court St, Boston, MA 02108",
+          "latitude": 42.35926,
+          "longitude": -71.05908,
+          "description": "Community cafe with a matcha menu, a short walk from the State House.",
+          "planned_activity": "Matcha break.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 7,
+          "notes": "About 2 min walk. Matcha price is an estimate.",
+          "checklist": [
+            { "label": "Order a matcha", "item_type": "do", "is_checkpoint": false },
+            { "label": "Sip it on the walk to Faneuil Hall", "item_type": "do", "is_checkpoint": true }
+          ]
+        },
+        {
+          "stop_order": 4,
+          "experience_key": "faneuil-hall-marketplace-south-market-st",
+          "place_name": "Faneuil Hall Marketplace",
+          "address": "1 Faneuil Hall Square, Boston, MA 02109",
+          "latitude": 42.36003,
+          "longitude": -71.05623,
+          "description": "The 1742 hall and Quincy Market food hall, free to walk through.",
+          "planned_activity": "Walk through the market.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 4 min walk.",
+          "checklist": [
+            { "label": "Find the grasshopper weathervane on top of Faneuil Hall", "item_type": "see", "is_checkpoint": false },
+            { "label": "Walk through the Quincy Market food hall", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 5,
+          "experience_key": "paul-revere-house-north-sq",
+          "place_name": "Paul Revere House",
+          "address": "19 North Square, Boston, MA 02113",
+          "latitude": 42.36374,
+          "longitude": -71.05368,
+          "description": "Paul Revere's 17th-century home, one of the oldest buildings in downtown Boston.",
+          "planned_activity": "Tour Paul Revere's house.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 5,
+          "notes": "About 8 min walk. About $5, and college students pay a little less. Check the current price.",
+          "checklist": [
+            { "label": "Step inside a house from the 1600s", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 6,
+          "experience_key": "old-north-church-salem-st",
+          "place_name": "Old North Church & Paul Revere Mall",
+          "address": "193 Salem St, Boston, MA 02113",
+          "latitude": 42.36632,
+          "longitude": -71.05445,
+          "description": "The church where two lanterns signaled Paul Revere's ride, with his statue on horseback just behind it.",
+          "planned_activity": "Finish at the steeple.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 5 min walk. The church interior is ticketed; the steeple and the Mall are free to see.",
+          "checklist": [
+            { "label": "Find the Paul Revere statue on horseback", "item_type": "see", "is_checkpoint": false },
+            { "label": "Look up at the steeple where the two lanterns hung", "item_type": "see", "is_checkpoint": true }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "red-line-brain-crawl",
+      "title": "Red Line Brain Crawl: MIT to Harvard",
+      "description": "Ride the Red Line from Kendall to Harvard and hit a science museum, a sticky bun, a wall of legal graffiti and a free art museum, then end with a late-night slice. Museum stops are daytime, so start before lunch.",
+      "category": "arts_culture",
+      "neighborhood": "Central/Kendall Square",
+      "estimated_cost": 30,
+      "estimated_duration_minutes": 300,
+      "scheduled_at": null,
+      "status": "published",
+      "primary_line": "rl",
+      "is_curated": true,
+      "stops": [
+        {
+          "stop_order": 0,
+          "experience_key": "mit-museum-main-st",
+          "place_name": "MIT Museum",
+          "address": "314 Main St, Cambridge, MA 02142",
+          "latitude": 42.36198,
+          "longitude": -71.08642,
+          "description": "MIT's museum of science, technology and art, with robots, holograms and rotating exhibits.",
+          "planned_activity": "Explore the museum with your college ID.",
+          "travel_mode_to_stop": null,
+          "estimated_cost": 10,
+          "notes": "Kendall/MIT station (Red Line). The student rate is $10 with a college ID; the museum is open daily 10am to 5pm.",
+          "checklist": [
+            { "label": "Show your college ID for the student rate", "item_type": "do", "is_checkpoint": false },
+            { "label": "See a robot or a hologram exhibit", "item_type": "see", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 1,
+          "experience_key": "flour-bakery-mass-ave",
+          "place_name": "Flour Bakery + Café",
+          "address": "190 Massachusetts Ave, Cambridge, MA 02139",
+          "latitude": 42.360996,
+          "longitude": -71.096827,
+          "description": "Bakery cafe known for sticky buns and sandwiches.",
+          "planned_activity": "Lunch and a sticky bun.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 12,
+          "notes": "About 14 min walk. Or ride the Red Line one stop to Central.",
+          "checklist": [
+            { "label": "Try the sticky bun to share", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 2,
+          "experience_key": "graffiti-alley-modica-way",
+          "place_name": "Graffiti Alley (Modica Way)",
+          "address": "567 Massachusetts Ave, Cambridge, MA 02139",
+          "latitude": 42.36491,
+          "longitude": -71.10229,
+          "description": "A walkway where graffiti is legal and the murals keep changing.",
+          "planned_activity": "Hunt for the best mural.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 10 min walk.",
+          "checklist": [
+            { "label": "Photograph your favorite mural", "item_type": "do", "is_checkpoint": false },
+            { "label": "Find a mural you can't believe someone painted", "item_type": "see", "is_checkpoint": true }
+          ]
+        },
+        {
+          "stop_order": 3,
+          "experience_key": "harvard-art-museums-quincy-st",
+          "place_name": "Harvard Art Museums",
+          "address": "32 Quincy St, Cambridge, MA 02138",
+          "latitude": 42.3741,
+          "longitude": -71.11411,
+          "description": "Three museums under one glass roof. Admission is free for everyone; open Tuesday to Sunday, 10am to 5pm.",
+          "planned_activity": "Pick one gallery and stay a while.",
+          "travel_mode_to_stop": "train",
+          "estimated_cost": 0,
+          "notes": "Ride the Red Line from Central to Harvard (1 stop). Closed Mondays.",
+          "checklist": [
+            { "label": "Find the glass roof over the courtyard", "item_type": "see", "is_checkpoint": false },
+            { "label": "Pick one painting to spend a full minute with", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 4,
+          "experience_key": "pinocchios-pizza-winthrop-st",
+          "place_name": "Pinocchio's Pizza & Subs",
+          "address": "74 Winthrop St, Cambridge, MA 02138",
+          "latitude": 42.372003,
+          "longitude": -71.120268,
+          "description": "Harvard Square pizza shop since 1966 that stays open late.",
+          "planned_activity": "Finish with a Sicilian slice.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 8,
+          "notes": "About 9 min walk.",
+          "checklist": [
+            { "label": "Order a Sicilian slice", "item_type": "do", "is_checkpoint": false }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "east-boston-skyline-slices-planes",
+      "title": "East Boston: Skyline, Slices and Planes",
+      "description": "Ride the Blue Line across the harbor for the best view of the Boston skyline, a classic East Boston pizza, and a beach where planes land right overhead. Santarpio's is cash only, so stop at an ATM first.",
+      "category": "outdoors",
+      "neighborhood": "East Boston",
+      "estimated_cost": 12,
+      "estimated_duration_minutes": 210,
+      "scheduled_at": null,
+      "status": "published",
+      "primary_line": "bl",
+      "is_curated": true,
+      "stops": [
+        {
+          "stop_order": 0,
+          "experience_key": "piers-park-marginal-st",
+          "place_name": "Piers Park",
+          "address": "Marginal St, East Boston, MA 02128",
+          "latitude": 42.36454,
+          "longitude": -71.03598,
+          "description": "Waterfront park with views of downtown across the harbor.",
+          "planned_activity": "Walk out on the pier for the skyline.",
+          "travel_mode_to_stop": null,
+          "estimated_cost": 0,
+          "notes": "About 8 min walk from Maverick station (Blue Line).",
+          "checklist": [
+            { "label": "Walk to the end of the pier for the skyline view", "item_type": "do", "is_checkpoint": true },
+            { "label": "Spot a ship moving through the harbor", "item_type": "see", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 1,
+          "experience_key": "santarpios-pizza-chelsea-st",
+          "place_name": "Santarpio's Pizza",
+          "address": "111 Chelsea St, East Boston, MA 02128",
+          "latitude": 42.37267,
+          "longitude": -71.03534,
+          "description": "Old-school East Boston pizza joint known for brick-oven pies and grilled sausage.",
+          "planned_activity": "Split a pie.",
+          "travel_mode_to_stop": "train",
+          "estimated_cost": 12,
+          "notes": "Ride the Blue Line from Maverick to Airport (1 stop), then about 6 min on foot. Cash only, with an ATM inside. Price is an estimate; check hours.",
+          "checklist": [
+            { "label": "Split a pie with the group", "item_type": "do", "is_checkpoint": false },
+            { "label": "Bring cash. It's cash only", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 2,
+          "experience_key": "constitution-beach-ocean-ave",
+          "place_name": "Constitution Beach",
+          "address": "Ocean Ave, East Boston, MA 02128",
+          "latitude": 42.38359,
+          "longitude": -71.01136,
+          "description": "Harbor-side beach where planes take off and land at Logan.",
+          "planned_activity": "Watch the planes come in.",
+          "travel_mode_to_stop": "train",
+          "estimated_cost": 0,
+          "notes": "Ride the Blue Line from Airport to Orient Heights (2 stops), then about 10 min on foot.",
+          "checklist": [
+            { "label": "Watch a plane land from the beach", "item_type": "see", "is_checkpoint": true },
+            { "label": "Take a photo with a plane overhead", "item_type": "do", "is_checkpoint": false }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "jamaica-plain-arboretum-pond-ice-cream",
+      "title": "Jamaica Plain: Arboretum, Pond and Ice Cream",
+      "description": "Take the Orange Line to the end and walk through Harvard's free Arnold Arboretum, around Jamaica Pond, and finish with ice cream on Centre Street. A few miles of easy walking and one cheap treat.",
+      "category": "outdoors",
+      "neighborhood": "Jamaica Plain",
+      "estimated_cost": 6,
+      "estimated_duration_minutes": 210,
+      "scheduled_at": null,
+      "status": "published",
+      "primary_line": "ol",
+      "is_curated": true,
+      "stops": [
+        {
+          "stop_order": 0,
+          "experience_key": "arnold-arboretum-arborway",
+          "place_name": "Arnold Arboretum",
+          "address": "125 Arborway, Boston, MA 02130",
+          "latitude": 42.30737,
+          "longitude": -71.12083,
+          "description": "Harvard's living tree museum, free every day from sunrise to sunset.",
+          "planned_activity": "Walk through the collection to the visitor center.",
+          "travel_mode_to_stop": null,
+          "estimated_cost": 0,
+          "notes": "From Forest Hills station (Orange Line), enter at the Forest Hills Gate and walk about 15 min through the grounds to the visitor center. The visitor center is open 10am to 4pm.",
+          "checklist": [
+            { "label": "Find a tree with an ID tag and look up what it is", "item_type": "see", "is_checkpoint": false },
+            { "label": "Find the Hunnewell Visitor Center", "item_type": "see", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 1,
+          "experience_key": "jamaica-pond-jamaicaway",
+          "place_name": "Jamaica Pond",
+          "address": "507 Jamaicaway, Boston, MA 02130",
+          "latitude": 42.31568,
+          "longitude": -71.11761,
+          "description": "Spring-fed pond ringed by a walking path, with a boat house on its shore.",
+          "planned_activity": "Walk a loop around the pond.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 16 min walk.",
+          "checklist": [
+            { "label": "Walk the path around the pond", "item_type": "do", "is_checkpoint": true },
+            { "label": "Spot the boat house", "item_type": "see", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 2,
+          "experience_key": "jp-licks-centre-st",
+          "place_name": "JP Licks",
+          "address": "659 Centre St, Jamaica Plain, MA 02130",
+          "latitude": 42.31285,
+          "longitude": -71.11446,
+          "description": "Local ice cream shop on Centre Street.",
+          "planned_activity": "Treat yourself.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 6,
+          "notes": "About 7 min walk. Green Street station (Orange Line) is the closest T stop. Price is an estimate.",
+          "checklist": [
+            { "label": "Try a flavor you have never had", "item_type": "do", "is_checkpoint": false }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "broke-in-boston-under-10",
+      "title": "Broke in Boston: Under $10",
+      "description": "A full afternoon for the price of one coffee and a bagel: a grand free library, the Public Garden, and the Charles River Esplanade, all by Green Line and on foot. Everything but the coffee is free.",
+      "category": "affordable",
+      "neighborhood": "Back Bay",
+      "estimated_cost": 8,
+      "estimated_duration_minutes": 230,
+      "scheduled_at": null,
+      "status": "published",
+      "primary_line": "gl",
+      "is_curated": true,
+      "stops": [
+        {
+          "stop_order": 0,
+          "experience_key": "pavement-coffeehouse-newbury-st",
+          "place_name": "Pavement Coffeehouse",
+          "address": "286 Newbury St, Boston, MA 02115",
+          "latitude": 42.34889,
+          "longitude": -71.08441,
+          "description": "Local coffee shop on Newbury Street with bagels and a cozy room.",
+          "planned_activity": "Coffee and a bagel to start.",
+          "travel_mode_to_stop": null,
+          "estimated_cost": 8,
+          "notes": "Hynes Convention Center station (Green Line) is a short walk away. Price is an estimate.",
+          "checklist": [
+            { "label": "Order a coffee and a bagel for under $8", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 1,
+          "experience_key": "boston-public-library-boylston-st",
+          "place_name": "Boston Public Library, Central Library",
+          "address": "700 Boylston St, Boston, MA 02116",
+          "latitude": 42.34933,
+          "longitude": -71.07865,
+          "description": "Landmark library in Copley Square with murals, a courtyard and the grand Bates Hall reading room.",
+          "planned_activity": "Walk in for free.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 8 min walk.",
+          "checklist": [
+            { "label": "Step into the Bates Hall reading room", "item_type": "see", "is_checkpoint": false },
+            { "label": "Find the courtyard", "item_type": "see", "is_checkpoint": true }
+          ]
+        },
+        {
+          "stop_order": 2,
+          "experience_key": "public-garden-charles-st",
+          "place_name": "Boston Public Garden",
+          "address": "4 Charles St, Boston, MA 02116",
+          "latitude": 42.35409,
+          "longitude": -71.07004,
+          "description": "Historic garden with a lagoon, a footbridge and the Make Way for Ducklings statues.",
+          "planned_activity": "Loop the lagoon.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 14 min walk.",
+          "checklist": [
+            { "label": "Find the Make Way for Ducklings statues", "item_type": "see", "is_checkpoint": false },
+            { "label": "Cross the lagoon footbridge", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 3,
+          "experience_key": "charles-river-esplanade-mugar-way",
+          "place_name": "Charles River Esplanade & Hatch Shell",
+          "address": "47 David G Mugar Way, Boston, MA 02108",
+          "latitude": 42.3573,
+          "longitude": -71.0737,
+          "description": "Riverside path along the Charles, centered on the Hatch Shell.",
+          "planned_activity": "End by the river.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 8 min walk. Cross Storrow Drive by the footbridge.",
+          "checklist": [
+            { "label": "Find the Hatch Shell", "item_type": "see", "is_checkpoint": false },
+            { "label": "Walk the river path with the Charles on your side", "item_type": "do", "is_checkpoint": true }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "finals-week-midnight-run",
+      "title": "Finals Week Midnight Run",
+      "description": "Two North End stops that stay open when everything else has closed: espresso at a classic Italian cafe, then cannoli at a bakery that never closes. The T doesn't run all night, so check the last train home before you go.",
+      "category": "food_drink",
+      "neighborhood": "North End",
+      "estimated_cost": 16,
+      "estimated_duration_minutes": 90,
+      "scheduled_at": null,
+      "status": "published",
+      "primary_line": "ol",
+      "is_curated": true,
+      "stops": [
+        {
+          "stop_order": 0,
+          "experience_key": "caffe-vittoria-hanover-st",
+          "place_name": "Caffè Vittoria",
+          "address": "290 Hanover St, Boston, MA 02113",
+          "latitude": 42.36407,
+          "longitude": -71.05437,
+          "description": "Old-school Italian cafe on Hanover Street that stays open late.",
+          "planned_activity": "Espresso and a cannoli.",
+          "travel_mode_to_stop": null,
+          "estimated_cost": 10,
+          "notes": "Haymarket station (Orange and Green Lines). Listed hours run to about midnight, so check before you go.",
+          "checklist": [
+            { "label": "Order an espresso and a cannoli", "item_type": "do", "is_checkpoint": false },
+            { "label": "Check the last train home", "item_type": "do", "is_checkpoint": true }
+          ]
+        },
+        {
+          "stop_order": 1,
+          "experience_key": "bovas-bakery-salem-st",
+          "place_name": "Bova's Bakery",
+          "address": "134 Salem St, Boston, MA 02113",
+          "latitude": 42.3652,
+          "longitude": -71.05559,
+          "description": "Family-run Italian bakery open 24 hours.",
+          "planned_activity": "Late-night pastry run.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 6,
+          "notes": "About 3 min walk.",
+          "checklist": [
+            { "label": "Order a cannoli or a calzone", "item_type": "do", "is_checkpoint": false },
+            { "label": "Take a photo of your late-night haul", "item_type": "do", "is_checkpoint": false }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "matcha-fens-free-thursday-gardner",
+      "title": "Matcha, the Fens and Free Thursday at the Gardner",
+      "description": "Go on a Thursday: start with a matcha near Fenway, walk the Back Bay Fens, and get to the Isabella Stewart Gardner Museum by 5pm, when general admission is free until 9. The first Thursday of the month adds live music in the courtyard.",
+      "category": "arts_culture",
+      "neighborhood": "Fenway",
+      "estimated_cost": 8,
+      "estimated_duration_minutes": 210,
+      "scheduled_at": null,
+      "status": "published",
+      "primary_line": "gl",
+      "is_curated": true,
+      "stops": [
+        {
+          "stop_order": 0,
+          "experience_key": "matcha-cafe-maiko-jersey-st",
+          "place_name": "Matcha Cafe Maiko",
+          "address": "115 Jersey St, Boston, MA 02215",
+          "latitude": 42.34272,
+          "longitude": -71.09706,
+          "description": "Matcha cafe near Fenway Park.",
+          "planned_activity": "Matcha first.",
+          "travel_mode_to_stop": null,
+          "estimated_cost": 8,
+          "notes": "About 11 min walk from Kenmore station (Green Line). Hours vary by listing (one has Thursdays 2pm to 9pm), so check before you go. Price is an estimate.",
+          "checklist": [
+            { "label": "Order a matcha", "item_type": "do", "is_checkpoint": false },
+            { "label": "Try a matcha dessert", "item_type": "do", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 1,
+          "experience_key": "fenway-victory-gardens-park-dr",
+          "place_name": "Fenway Victory Gardens",
+          "address": "Park Dr, Boston, MA 02215",
+          "latitude": 42.34532,
+          "longitude": -71.09324,
+          "description": "Community garden plots in the Back Bay Fens.",
+          "planned_activity": "Walk the Fens.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 7 min walk.",
+          "checklist": [
+            { "label": "Find the garden plots", "item_type": "see", "is_checkpoint": false },
+            { "label": "Walk the Fens path", "item_type": "do", "is_checkpoint": true }
+          ]
+        },
+        {
+          "stop_order": 2,
+          "experience_key": "kelleher-rose-garden-park-dr",
+          "place_name": "James P. Kelleher Rose Garden",
+          "address": "73 Park Dr, Boston, MA 02215",
+          "latitude": 42.34164,
+          "longitude": -71.09476,
+          "description": "Free formal rose garden inside the Fens, prettiest in early summer.",
+          "planned_activity": "Stop at the rose garden.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 7 min walk. If it's getting dark, take the busier streets and go with friends.",
+          "checklist": [
+            { "label": "Find the rose garden", "item_type": "see", "is_checkpoint": false }
+          ]
+        },
+        {
+          "stop_order": 3,
+          "experience_key": "gardner-museum-evans-way",
+          "place_name": "Isabella Stewart Gardner Museum",
+          "address": "25 Evans Way, Boston, MA 02115",
+          "latitude": 42.33825,
+          "longitude": -71.09915,
+          "description": "A Venetian-style palace of art around a flowering courtyard. Free general admission every Thursday, 5 to 9pm; reserve ahead.",
+          "planned_activity": "Free admission from 5 to 9pm.",
+          "travel_mode_to_stop": "walk",
+          "estimated_cost": 0,
+          "notes": "About 8 min walk. Reservations are recommended. The first Thursday of each month adds live music, performances and art making.",
+          "checklist": [
+            { "label": "Reserve a free Thursday night ticket ahead of time", "item_type": "do", "is_checkpoint": false },
+            { "label": "Find the courtyard", "item_type": "see", "is_checkpoint": false },
+            { "label": "Pick your favorite room", "item_type": "do", "is_checkpoint": true }
+          ]
+        }
+      ]
     }
   ]
 }
