@@ -50,6 +50,7 @@ Set these in `.env`. That file is gitignored, so never commit it.
 | --- | --- |
 | `VITE_SUPABASE_URL` | Supabase Dashboard → Project Settings → API → Project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Same page → **publishable** key (or the legacy `anon` key) |
+| `VITE_MBTA_API_KEY` *(optional)* | [api-v3.mbta.com](https://api-v3.mbta.com) → request a key. Raises the MBTA rate limit; the app works without it. |
 | `VITE_GOOGLE_MAPS_API_KEY` *(optional)* | Google Cloud Console → a browser key with **Maps JavaScript API** and **Directions API** enabled, restricted to `http://localhost:5173/*` and the Vercel domain. Without it, maps show a stop list with Google Maps links. |
 
 Anything prefixed with `VITE_` is shipped to the browser. **Never** put the `service_role` or secret key in this app. Security is enforced by Row Level Security in the database, not by the frontend.
@@ -113,6 +114,21 @@ supabase/
 ```
 
 Add these folders when you first need them: `src/features/<feature>/` (see conventions), `src/hooks/`, `src/contexts/`.
+
+## Deploying (Vercel)
+
+The app is a static Vite site. `vercel.json` builds it and sends every URL (e.g. `/trails/123`) to `index.html` so React Router handles it on refresh.
+
+**First time (one person):**
+1. Go to [vercel.com/new](https://vercel.com/new), sign in with GitHub and import `domchenn/boston-hacks-2026`. Vercel detects Vite; keep the defaults.
+2. **Environment Variables:** add `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_GOOGLE_MAPS_API_KEY` (and optionally `VITE_MBTA_API_KEY`) with the same values as your `.env`. Then **Deploy**.
+3. Note the URL (e.g. `https://breadcrumb.vercel.app`) and allow it everywhere the app is restricted:
+   - **Supabase** → Authentication → URL Configuration: set **Site URL** to it and add `https://<your-app>.vercel.app/**` to **Redirect URLs**.
+   - **Google Cloud** → Credentials → the Maps key → Website restrictions: add `https://<your-app>.vercel.app/*`.
+   - **Google OAuth client** (if Google sign-in uses one): its authorized redirect URI stays the Supabase callback; nothing to add for Vercel.
+4. Open the URL on your phone. Location (Active trail) needs HTTPS, which Vercel provides.
+
+**After that:** every merge to `main` redeploys automatically, and every PR gets its own preview URL.
 
 ## Team conventions
 

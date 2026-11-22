@@ -1,11 +1,13 @@
 /**
  * "The trail" on the Trail detail page: numbered stops joined by dotted lines, each
  * with its address, what to do there, its crumbs (See / Do) and how to get to the
- * next stop (walk, T, bus, bike). Only shows travel modes that are stored; no
+ * next stop (walk, T, bus, bike), plus the nearest T stations (NearbyStations).
+ * Only shows travel modes that are stored; no
  * invented times or routes. Styled by .stops / .stop / .crumb-item in components.css.
  */
 
 import { Bike, Bus, Footprints, TrainFront } from 'lucide-react'
+import { NearbyStations } from '@/components/NearbyStations'
 import type { TrailCrumb, TrailStop } from '@/lib/api/trails'
 import type { TravelMode } from '@/types/db-values'
 
@@ -44,6 +46,9 @@ export function TrailStops({ stops, betweenStopCrumbs }: { stops: TrailStop[]; b
               <div className="min-w-0">
                 <h3 className="stop__name">{stop.placeName}</h3>
                 {stop.address ? <p className="stop__place">{stop.address}</p> : null}
+                {stop.latitude !== null && stop.longitude !== null ? (
+                  <NearbyStations latitude={stop.latitude} longitude={stop.longitude} />
+                ) : null}
                 {stop.description ? <p className="mt-2 text-base leading-normal text-ink-2">{stop.description}</p> : null}
                 {showActivity ? <p className="mt-2 text-base leading-normal text-ink-2">{stop.plannedActivity}</p> : null}
                 {stop.crumbs.length > 0 ? (

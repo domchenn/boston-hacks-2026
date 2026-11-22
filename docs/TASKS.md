@@ -56,6 +56,7 @@ Every route already exists in `src/App.tsx` and points at a placeholder page. **
 | `save_trail(p_trail, p_trail_id)` database function | `src/features/make/api.ts` → `saveTrail()` | ✅ done (D2) |
 | `<RouteMap stops mode="preview" \| "live" userLocation? selectedStopId? onSelectStop? />` | `@/components/RouteMap` | ✅ done (D3); needs `VITE_GOOGLE_MAPS_API_KEY`, falls back to a stop list without it |
 | `getDirectionsLink(to, mode, from?)`, `getTrailDirectionsLink(places)`, `loadGoogleMaps()` | `@/lib/maps` | ✅ done (D3) |
+| `<NearbyStations latitude longitude limit? />`, `loadStations()`, `nearestStations()` | `@/components/NearbyStations`, `@/lib/mbta` | ✅ done (D4) |
 | `getMyRating`, `rateTrail`, `deleteMyRating` | `@/lib/api/ratings` | ⏳ stubs exist; filled in by task J3 |
 
 Call shared functions by these names even before they're finished, so nobody waits.
