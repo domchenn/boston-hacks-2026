@@ -287,7 +287,7 @@ export function MakeTrailForm({
         </div>
         <div
           className={cn(
-            'fixed inset-x-0 z-20 flex gap-2 border-t border-line bg-white/95 p-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0',
+            'fixed inset-x-0 z-20 flex gap-2 border-t border-line bg-white/95 p-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 z-0',
             editing ? 'bottom-0' : 'bottom-[calc(var(--tabbar-height)+env(safe-area-inset-bottom,0px))]',
           )}
         >
