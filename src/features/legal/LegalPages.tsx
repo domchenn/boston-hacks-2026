@@ -67,7 +67,8 @@ export function PrivacyPage() {
           places on a trail, never about you.
         </li>
         <li>
-          <b>Vercel</b> hosts the website.
+          <b>Vercel</b> hosts the website and counts page visits with Vercel Web Analytics: anonymous, no cookies, and
+          not linked to your account.
         </li>
       </ul>
 
