@@ -1,21 +1,21 @@
 /**
- * Reusable trail card: eyebrow (category, or "Finished"), title, who made it
- * ("@username", small and muted, so a trusted creator is easy to spot), the dotted
- * trail with first/last stop names, then cost, time, stops and rating. The whole
- * card links to /trails/:id. Styled by .trail-card in docs/styles/components.css.
- * Used by Explore (feed grid), the Map tab and Saved / You. Takes any object with the
- * fields of TrailCardData, so a FeedTrail from @/lib/api/trails can be passed as-is.
- * `selected` gives the ink edge and lift the Web-Explore mockup uses for the card
- * whose pin is highlighted on the map.
+ * Reusable trail card, kept minimal so the feed is easy to scan. Shows: eyebrow
+ * (category · neighborhood, or distance on Nearby) with "@username" on the right, the
+ * title (max 2 lines), where it starts, then cost · time, a "N stops" toggle and the
+ * rating / "In progress". The toggle opens the path (numbered stop list) in place,
+ * collapsed by default; it uses `places` when the caller has them (Explore feed) and
+ * otherwise loads the stops with getTrail() on first open. The title link is stretched
+ * over the whole card, so clicking anywhere but the toggle opens /trails/:id.
+ * Base styles: .trail-card / .stops / .num-ring in docs/styles/components.css.
+ * Used by Explore, the Map tab, Saved / You, Friends and the Make preview.
  */
 
-import type { CSSProperties, ReactNode } from 'react'
-import { Star } from 'lucide-react'
+import { useId, useState, type CSSProperties, type ReactNode } from 'react'
+import { ChevronDown, Star } from 'lucide-react'
 import { Link } from 'react-router'
-import { TrailLine } from '@/components/TrailLine'
 import { categoryLabel, formatCost, formatDistance, formatMinutes } from '@/components/trailFormat'
+import { getTrail } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
-import { lineColor } from '@/lib/transitColors'
 import type { Category, TransitLine, UserSidequestStatus } from '@/types/db-values'
 
 /** The fields a card needs (a subset of FeedTrail). */
@@ -30,15 +30,18 @@ export type TrailCardData = {
   scheduledAt?: string | null
   stopCount: number
   firstStopName: string | null
+  /** Not shown on the card any more; kept so FeedTrail still fits as-is. */
   lastStopName: string | null
   rating: { average: number | null; count: number }
+  /** Every stop in order (getFeed sets this). Without it the path is loaded on first open. */
+  places?: { name: string }[]
   /** Explore's Nearby tab: miles from the user to the first stop, shown as "0.4 mi away" (task G7). */
   distanceMiles?: number
-  /** Main T line; colors the dots and rings in that line's color. Optional. */
+  /** Main T line. Not shown on the card (maps use it for pin colors); kept for FeedTrail. */
   primaryLine?: TransitLine | null
   /** The creator's own category name (category 'other'); shown instead of "Other". */
   customCategory?: string | null
-  /** Who made it; shown as "@username" under the title when there is one. */
+  /** Who made it; shown as "@username" top-right when there is one. */
   creator?: { username: string | null } | null
 }
 
@@ -51,26 +54,39 @@ type TrailCardProps = {
   className?: string
 }
 
-/** Small stable number from the id, so each card's wave is different but never changes. */
-function waveSeed(id: string) {
-  let h = 0
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 997
-  return h % 7
-}
+type PathState = { status: 'idle' | 'loading' | 'error' } | { status: 'ready'; names: string[] }
 
 export function TrailCard({ trail, progress, selected, className }: TrailCardProps) {
+  const pathId = useId()
+  const [open, setOpen] = useState(false)
+  const [loaded, setLoaded] = useState<PathState>({ status: 'idle' })
+  const path: PathState = trail.places ? { status: 'ready', names: trail.places.map((p) => p.name) } : loaded
+
+  function togglePath() {
+    setOpen((was) => !was)
+    if (!trail.places && (loaded.status === 'idle' || loaded.status === 'error')) {
+      setLoaded({ status: 'loading' })
+      getTrail(trail.id)
+        .then((detail) =>
+          setLoaded(detail ? { status: 'ready', names: detail.stops.map((s) => s.placeName) } : { status: 'error' }),
+        )
+        .catch(() => setLoaded({ status: 'error' }))
+    }
+  }
+
   const done = progress === 'completed'
   const eyebrow = [categoryLabel(trail.category, trail.customCategory), done ? 'Finished' : null]
     .filter(Boolean)
     .join(' · ')
-  const labels = [trail.firstStopName, trail.lastStopName].filter((name): name is string => Boolean(name))
+  const where = trail.distanceMiles !== undefined ? formatDistance(trail.distanceMiles) : trail.neighborhood
 
-  let end: ReactNode
+  // Bottom-right: only something worth noticing. Unrated trails show nothing (no "New").
+  let end: ReactNode = null
   if (progress === 'in_progress') end = <span className="status-link">In progress</span>
   else if (trail.rating.count > 0 && trail.rating.average !== null) {
     end = (
       <span className="rating">
-        <Star aria-hidden />
+        <Star aria-hidden className="size-4 fill-current" />
         {trail.rating.average.toFixed(1)}
         <span className="sr-only">
           {' '}
@@ -78,13 +94,19 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         </span>
       </span>
     )
-  } else end = <span className="text-muted font-medium">New</span>
+  }
+
+  const stats = [
+    trail.estimatedCost !== null ? formatCost(trail.estimatedCost) : null,
+    trail.estimatedMinutes !== null ? formatMinutes(trail.estimatedMinutes) : null,
+  ].filter(Boolean)
 
   return (
-    <Link
-      to={`/trails/${trail.id}`}
+    <div
       className={cn(
-        'trail-card',
+        'trail-card relative flex flex-col',
+        'hover:shadow-[var(--shadow-card),0_10px_28px_color-mix(in_srgb,var(--color-ink)_7%,transparent)]',
+        'has-[a:focus-visible]:shadow-[var(--focus-ring)]',
         done && 'trail-card--done',
         selected &&
           'border-ink shadow-[0_0_0_1px_var(--color-ink),0_10px_28px_color-mix(in_srgb,var(--color-ink)_8%,transparent)]',
@@ -92,47 +114,66 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
       )}
     >
       <div className="trail-card__head">
-        <span className="trail-card__eyebrow shrink-0">{eyebrow}</span>
-        {trail.distanceMiles !== undefined ? (
-          <span className="trail-card__meta min-w-0 truncate">{formatDistance(trail.distanceMiles)}</span>
-        ) : trail.neighborhood ? (
-          <span className="trail-card__meta min-w-0 truncate">{trail.neighborhood}</span>
+        <span className="min-w-0 truncate text-sm">
+          {eyebrow ? <span className="trail-card__eyebrow">{eyebrow}</span> : null}
+          {eyebrow && where ? <span className="text-muted-foreground"> · </span> : null}
+          {where ? <span className="text-muted-foreground">{where}</span> : null}
+        </span>
+        {trail.creator?.username ? (
+          <span className="max-w-[45%] shrink-0 truncate text-sm text-muted-foreground">
+            <span className="sr-only">Made by </span>@{trail.creator.username}
+          </span>
         ) : null}
       </div>
-      <h2 className="trail-card__title">{trail.title}</h2>
-      {/* Plain text, not a link: the whole card is already a link to the trail. */}
-      {trail.creator?.username ? (
-        <p className="mt-0.5 mb-0 truncate text-sm font-medium text-muted-foreground">
-          <span className="sr-only">Made by </span>@{trail.creator.username}
-        </p>
+
+      <h2 className="trail-card__title line-clamp-2">
+        {/* Stretched link: its ::after covers the card, so the whole card opens the trail. */}
+        <Link
+          to={`/trails/${trail.id}`}
+          className="text-inherit no-underline outline-none after:absolute after:inset-0 after:content-['']"
+        >
+          {trail.title}
+        </Link>
+      </h2>
+      {trail.firstStopName ? (
+        <p className="mt-1 mb-0 truncate text-sm text-muted-foreground">Starts at {trail.firstStopName}</p>
       ) : null}
 
-      <div
-        className={cn('trail', done && 'trail--done')}
-        style={!done && lineColor(trail.primaryLine) ? ({ '--color-trail': lineColor(trail.primaryLine) } as CSSProperties) : undefined}
-      >
-        <TrailLine stops={trail.stopCount} state={done ? 'done' : 'open'} seed={waveSeed(trail.id)} />
-        {labels.length > 0 && !done ? (
-          <div className="trail__labels" style={{ '--stops': labels.length } as CSSProperties}>
-            {labels.map((name, i) => (
-              <span key={i} title={name}>
-                {name}
-              </span>
-            ))}
-          </div>
-        ) : null}
+      {/* mt-auto pins this row to the bottom so stats line up across a grid row. */}
+      <div className="mt-auto flex items-center gap-3 pt-4 text-sm font-semibold">
+        {stats.length > 0 ? <span className="shrink-0">{stats.join(' · ')}</span> : null}
+        {/* relative z-10 lifts the toggle above the stretched link so it doesn't navigate. */}
+        <button
+          type="button"
+          onClick={togglePath}
+          aria-expanded={open}
+          aria-controls={pathId}
+          className="relative z-10 -my-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none"
+        >
+          {trail.stopCount} {trail.stopCount === 1 ? 'stop' : 'stops'}
+          <ChevronDown aria-hidden className={cn('size-4 transition-transform', open && 'rotate-180')} />
+        </button>
+        {end ? <span className="ml-auto shrink-0">{end}</span> : null}
       </div>
 
-      {done ? null : (
-        <div className="trail-card__stats">
-          {trail.estimatedCost !== null ? <span>{formatCost(trail.estimatedCost)}</span> : null}
-          {trail.estimatedMinutes !== null ? <span>{formatMinutes(trail.estimatedMinutes)}</span> : null}
-          <span>
-            {trail.stopCount} {trail.stopCount === 1 ? 'stop' : 'stops'}
-          </span>
-          <span className="trail-card__end">{end}</span>
+      {open ? (
+        <div id={pathId} className="mt-3 border-t border-border pt-3 text-sm">
+          {path.status === 'ready' ? (
+            <ol className="stops m-0" style={{ '--stop-num-size': '22px' } as CSSProperties}>
+              {path.names.map((name, i) => (
+                <li key={i} className="stop pb-2.5">
+                  <span className="num-ring text-xs">{i + 1}</span>
+                  <span className="min-w-0 truncate leading-[22px]">{name}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="m-0 text-muted-foreground">
+              {path.status === 'error' ? "Couldn't load the stops. Close and reopen to retry." : 'Loading stops…'}
+            </p>
+          )}
         </div>
-      )}
-    </Link>
+      ) : null}
+    </div>
   )
 }
