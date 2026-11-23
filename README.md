@@ -1,152 +1,39 @@
 # Breadcrumb
 
-> You've lived here. Have you explored it?
+> **You've lived here. Have you explored it?**
 
-Breadcrumb is a social itinerary discovery app for Boston college students, built for BostonHacks 2026. Students create, discover, share, join, complete, and review "sidequests": outings around Boston made up of one or more stops (cafes, restaurants, attractions, activities).
+Breadcrumb is a social app for exploring Boston without a car. Students make and share **trails**, multi-stop outings strung together from real places, and anyone can follow one by T, bus, bike or on foot.
 
-- **Anytime sidequest** (`scheduled_at` is null): an itinerary others can save and follow whenever they like.
-- **Scheduled sidequest** (`scheduled_at` is set): an outing others can join.
+Live at **[breadcrumb.boston](https://breadcrumb.boston)** · Built at BostonHacks 2026 for the *Bos(tons) of Eats and Streets* track.
 
-This repo is currently the **shared foundation**: tooling, styling, routing, database schema, and Supabase client. Product features are built on top of it by individual developers.
+## The problem
 
-## Tech stack
+Boston is full of food, culture and neighborhoods worth seeing, yet most students spend four years in the same few blocks. When a free Saturday comes or friends visit, the question is always the same: *what should we do?*
 
-| Area | Tools |
-| --- | --- |
-| Frontend | React 19, Vite 8, TypeScript, React Router |
-| UI | Tailwind CSS v4, shadcn/ui, Lucide React |
-| Backend | Supabase (PostgreSQL, Auth, Storage later), `@supabase/supabase-js` |
-| Maps (planned) | MapLibre GL JS, MBTA V3 API (not installed yet) |
-| Deploy (planned) | Vercel (not set up yet) |
+The answers are scattered. Google Maps finds places but doesn't say what's worth doing or string a day together. TikTok and Instagram are full of ideas that are hard to save, compare or actually follow. Restaurant apps rank meals, not outings. And for students there's one more catch: no car. Every plan depends on knowing how to get there by T or on foot.
 
-## Getting started
+## What Breadcrumb does
 
-Requires Node 20+.
+A **trail** is a ready-made outing: a handful of stops in order, with what it costs, how long it takes, how to get between stops, and a few small things to do along the way (we call them **crumbs**). For example: "Sunday Café Hop" through Beacon Hill and Back Bay, the North End "Cannoli Duel", or "Broke in Boston" for under $10.
 
-```bash
-git clone https://github.com/domchenn/boston-hacks-2026.git
-cd boston-hacks-2026
-npm install
-cp .env.example .env   # then fill in the values, see below
-npm run dev
-```
+- **Discover.** Browse trails picked for you, what's trending lately, what's closest to you right now, or what your friends have been doing. Filter by category, neighborhood, cost, length, late night or near a T stop, or see every trail on one map.
+- **Get there.** Each trail shows the real route between stops, which line to ride and where to get off, with live train and bus times. No driving, no guesswork.
+- **Go.** Start a trail and it becomes a checklist: tick off crumbs at each stop, add photos, and see yourself on the map as you move.
+- **Share it.** Make your own trail from any place in the city, keep it public or just for friends, and send the link. Others can save it for later, try it, rate it, or remix it into their own version.
+- **Do it together.** Follow friends, see the trails you've both saved, and earn badges as you explore more of Boston.
 
-### Commands
+## Who it's for
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Start the dev server at http://localhost:5173 |
-| `npm run build` | Type-check, then build for production into `dist/` |
-| `npm run typecheck` | Type-check only (`tsc -b --noEmit`) |
-| `npm run lint` | Run ESLint |
-| `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](supabase/README.md)) |
-| `npm run preview` | Serve the production build locally |
+College students in Boston and Cambridge who want to see more of the city they live in, on a student budget, using the transit they already ride.
 
-### Environment variables
+## Why we built it
 
-Set these in `.env`. That file is gitignored, so never commit it.
+We kept having the same conversation: friends visiting, a free weekend, and no idea where to go beyond the usual spots. The best plans we'd ever had came from someone who'd already done it and told us exactly where to go and how to get there. Breadcrumb turns that word-of-mouth into something you can save, follow and pass on, like leaving a trail of breadcrumbs for the next person.
 
-| Variable | Where to find it |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Supabase Dashboard → Project Settings → API → Project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Same page → **publishable** key (or the legacy `anon` key) |
-| `VITE_MBTA_API_KEY` *(optional)* | [api-v3.mbta.com](https://api-v3.mbta.com) → request a key. Raises the MBTA rate limit; the app works without it. |
-| `VITE_GOOGLE_MAPS_API_KEY` *(optional)* | Google Cloud Console → a browser key with **Maps JavaScript API** and **Directions API** enabled, restricted to `http://localhost:5173/*` and the Vercel domain. Without it, maps show a stop list with Google Maps links. |
+## Who we are
 
-Anything prefixed with `VITE_` is shipped to the browser. **Never** put the `service_role` or secret key in this app. Security is enforced by Row Level Security in the database, not by the frontend.
+We're four college students: three from Boston College and one from Boston University. We teamed up at BostonHacks 2026 to build Breadcrumb.
 
-If the variables are missing, `src/lib/supabase.ts` throws a clear error the first time the client is imported.
+---
 
-## Supabase database setup
-
-The schema lives in **[`supabase/migrations/`](supabase/migrations/)**: one SQL file per change, each named for what it does and starting with a header comment. They're applied with the **Supabase CLI**, which tracks which migrations have run. Full workflow: [`supabase/README.md`](supabase/README.md).
-
-First-time setup for the shared project (done once, by Person A):
-
-```bash
-npx supabase login
-npx supabase link --project-ref <project-ref>   # the xxxx in https://xxxx.supabase.co
-npx supabase db reset --remote                   # one time only: clears hand-made tables, applies all migrations
-npm run db:types                                 # regenerates src/types/database.types.ts
-```
-
-Then, under **Authentication → Providers**, enable the sign-in methods you want (e.g. email, Google).
-
-**Don't paste schema SQL into the Supabase SQL Editor.** The CLI can't see changes made that way. After this first setup, new migrations go out with `npm run db:push`.
-
-### What the schema enforces
-
-Migrations run in timestamp order; [`supabase/README.md`](supabase/README.md) lists what each one does.
-
-- A profile row is created automatically on signup (`username` starts as `NULL` and is chosen during onboarding).
-- Draft sidequests, and everything attached to them, are visible only to their creator. Community-only sidequests are visible only to that community's members.
-- Each user has **one progress row per sidequest** in `user_sidequests` (`saved`, `signed_up`, `in_progress`, `completed`, `aborted`). It's private to that user. Signing up is only allowed for sidequests with a scheduled start.
-- Checklist ticks are private and only allowed on a quest you've started.
-- Ratings (price, time, enjoyment, memorability, 1–5 each) require a **completed** run, one per user, and creators can't rate their own. The views `sidequest_rating_stats` and `questgiver_ratings` give the averages.
-- `experiences` (the curated place library) is read-only for users; the team adds rows through `seed.sql`.
-- Users can only write their own rows. Deleting a sidequest cascades to everything attached to it. Use `status = 'archived'` to hide one instead.
-
-### Database types
-
-`src/types/database.types.ts` gives TypeScript types for every table, generated from the live project. After any migration is pushed, regenerate it with `npm run db:types` and commit the result. Don't edit it by hand. Allowed values for restricted text columns (statuses, categories, T lines…) live in `src/types/db-values.ts`.
-
-## Folder structure
-
-```text
-src/
-├── assets/             static images/fonts imported by code
-├── components/
-│   ├── ui/             shadcn/ui primitives (generated: `npx shadcn@latest add <name>`)
-│   └── layout/         app shell (AppLayout: header + <Outlet/>)
-├── pages/              route-level components (HomePage, NotFoundPage)
-├── lib/
-│   ├── supabase.ts     the ONE shared Supabase client
-│   └── utils.ts        cn() class helper
-├── types/
-│   └── database.types.ts
-├── App.tsx             route table
-├── main.tsx            entry point
-└── index.css           Tailwind + theme tokens
-supabase/
-├── config.toml        Supabase CLI config
-├── migrations/        one SQL file per schema change (CLI-managed)
-└── seed.sql
-```
-
-Add these folders when you first need them: `src/features/<feature>/` (see conventions), `src/hooks/`, `src/contexts/`.
-
-## Deploying (Vercel)
-
-The app is a static Vite site. `vercel.json` builds it and sends every URL (e.g. `/trails/123`) to `index.html` so React Router handles it on refresh.
-
-**First time (one person):**
-1. Go to [vercel.com/new](https://vercel.com/new), sign in with GitHub and import `domchenn/boston-hacks-2026`. Vercel detects Vite; keep the defaults.
-2. **Environment Variables:** add `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_GOOGLE_MAPS_API_KEY` (and optionally `VITE_MBTA_API_KEY`) with the same values as your `.env`. Then **Deploy**.
-3. Note the URL (e.g. `https://breadcrumb.vercel.app`) and allow it everywhere the app is restricted:
-   - **Supabase** → Authentication → URL Configuration: set **Site URL** to it and add `https://<your-app>.vercel.app/**` to **Redirect URLs**.
-   - **Google Cloud** → Credentials → the Maps key → Website restrictions: add `https://<your-app>.vercel.app/*`.
-   - **Google OAuth client** (if Google sign-in uses one): its authorized redirect URI stays the Supabase callback; nothing to add for Vercel.
-4. Open the URL on your phone. Location (Active trail) needs HTTPS, which Vercel provides.
-
-**After that:** every merge to `main` redeploys automatically, and every PR gets its own preview URL.
-
-## Team conventions
-
-**Feature folders.** Each workstream owns a folder so people rarely edit the same files:
-
-```text
-src/features/
-├── auth/         auth + profiles   (pages, components, hooks, api.ts)
-├── discovery/    feed + social
-├── sidequests/   create / edit / detail / save / join / complete / review
-└── maps/         MapLibre + MBTA
-```
-
-- Put Supabase queries in `src/features/<feature>/api.ts`, not inside components.
-- Don't import another feature's internals. If two features need something, move it to `src/components/`, `src/lib/`, or `src/hooks/`.
-- Use the row types: `import type { Tables } from '@/types/database.types'` → `Tables<'sidequests'>`.
-- Add your routes to `src/App.tsx` as children of `AppLayout`. Keep that diff small to avoid conflicts.
-- Use the `@/` alias for imports from `src`.
-- Add UI primitives with `npx shadcn@latest add button card ...` (they land in `src/components/ui/`). Use theme tokens (`bg-primary`, `text-muted-foreground`), not hard-coded colors. Design mobile-first: base styles target phones, and `sm:`/`md:` add larger layouts.
-- Branch per feature (`feat/discovery-feed`) and open a PR into `main`. Run `npm run build && npm run lint` before pushing.
-- Never commit `.env` or any secret key.
+Working on the code? See **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** for setup, and **[AGENTS.md](AGENTS.md)** for how we work.
