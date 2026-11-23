@@ -17,6 +17,7 @@ import { categoryLabel, formatCost, formatDistance, formatMinutes } from '@/comp
 import { getTrail } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
 import type { Category, TransitLine, UserSidequestStatus } from '@/types/db-values'
+import { LuMapPin } from "react-icons/lu";
 
 /** The fields a card needs (a subset of FeedTrail). */
 export type TrailCardData = {
@@ -126,7 +127,7 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         ) : null}
       </div>
 
-      <h2 className="trail-card__title line-clamp-2">
+      <h2 className="trail-card__title line-clamp-2 mt-3">
         {/* Stretched link: its ::after covers the card, so the whole card opens the trail. */}
         <Link
           to={`/trails/${trail.id}`}
@@ -136,7 +137,10 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         </Link>
       </h2>
       {trail.firstStopName ? (
-        <p className="mt-1 mb-0 truncate text-sm text-muted-foreground">Starts at {trail.firstStopName}</p>
+        <div className="flex items-center mt-3">
+          <LuMapPin/>
+          <p className="mt-0 mb-0 truncate text-sm text-muted-foreground ml-1">{trail.firstStopName}</p>
+        </div>
       ) : null}
 
       {/* mt-auto pins this row to the bottom so stats line up across a grid row. */}
