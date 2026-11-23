@@ -1,21 +1,19 @@
 /**
- * Reusable trail card: eyebrow (category, or "Finished"), title, who made it
- * ("@username", small and muted, so a trusted creator is easy to spot), the dotted
- * trail with first/last stop names, then cost, time, stops and rating. The whole
- * card links to /trails/:id. Styled by .trail-card in docs/styles/components.css.
+ * Reusable trail card, kept minimal so the feed is easy to scan; the detail page has
+ * the full stop list. Shows: eyebrow (category · neighborhood, or distance on Nearby)
+ * with the rating / "In progress" on the right, the title (max 2 lines), where it
+ * starts, then cost · time · stops and "@username". The whole card links to /trails/:id.
+ * Base styles are .trail-card in docs/styles/components.css; layout tweaks are Tailwind.
  * Used by Explore (feed grid), the Map tab and Saved / You. Takes any object with the
  * fields of TrailCardData, so a FeedTrail from @/lib/api/trails can be passed as-is.
- * `selected` gives the ink edge and lift the Web-Explore mockup uses for the card
- * whose pin is highlighted on the map.
+ * `selected` gives the ink edge and lift for the card whose map pin is highlighted.
  */
 
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Star } from 'lucide-react'
 import { Link } from 'react-router'
-import { TrailLine } from '@/components/TrailLine'
 import { categoryLabel, formatCost, formatDistance, formatMinutes } from '@/components/trailFormat'
 import { cn } from '@/lib/utils'
-import { lineColor } from '@/lib/transitColors'
 import type { Category, TransitLine, UserSidequestStatus } from '@/types/db-values'
 
 /** The fields a card needs (a subset of FeedTrail). */
@@ -30,15 +28,16 @@ export type TrailCardData = {
   scheduledAt?: string | null
   stopCount: number
   firstStopName: string | null
+  /** Not shown on the card any more; kept so FeedTrail still fits as-is. */
   lastStopName: string | null
   rating: { average: number | null; count: number }
   /** Explore's Nearby tab: miles from the user to the first stop, shown as "0.4 mi away" (task G7). */
   distanceMiles?: number
-  /** Main T line; colors the dots and rings in that line's color. Optional. */
+  /** Main T line. Not shown on the card (maps use it for pin colors); kept for FeedTrail. */
   primaryLine?: TransitLine | null
   /** The creator's own category name (category 'other'); shown instead of "Other". */
   customCategory?: string | null
-  /** Who made it; shown as "@username" under the title when there is one. */
+  /** Who made it; shown as "@username" in the stats row when there is one. */
   creator?: { username: string | null } | null
 }
 
@@ -51,26 +50,20 @@ type TrailCardProps = {
   className?: string
 }
 
-/** Small stable number from the id, so each card's wave is different but never changes. */
-function waveSeed(id: string) {
-  let h = 0
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 997
-  return h % 7
-}
-
 export function TrailCard({ trail, progress, selected, className }: TrailCardProps) {
   const done = progress === 'completed'
   const eyebrow = [categoryLabel(trail.category, trail.customCategory), done ? 'Finished' : null]
     .filter(Boolean)
     .join(' · ')
-  const labels = [trail.firstStopName, trail.lastStopName].filter((name): name is string => Boolean(name))
+  const where = trail.distanceMiles !== undefined ? formatDistance(trail.distanceMiles) : trail.neighborhood
 
-  let end: ReactNode
-  if (progress === 'in_progress') end = <span className="status-link">In progress</span>
+  // Top-right corner: only something worth noticing. Unrated trails show nothing (no "New").
+  let corner: ReactNode = null
+  if (progress === 'in_progress') corner = <span className="status-link">In progress</span>
   else if (trail.rating.count > 0 && trail.rating.average !== null) {
-    end = (
+    corner = (
       <span className="rating">
-        <Star aria-hidden />
+        <Star aria-hidden className="size-4 fill-current" />
         {trail.rating.average.toFixed(1)}
         <span className="sr-only">
           {' '}
@@ -78,13 +71,19 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         </span>
       </span>
     )
-  } else end = <span className="text-muted font-medium">New</span>
+  }
+
+  const stats = [
+    trail.estimatedCost !== null ? formatCost(trail.estimatedCost) : null,
+    trail.estimatedMinutes !== null ? formatMinutes(trail.estimatedMinutes) : null,
+    `${trail.stopCount} ${trail.stopCount === 1 ? 'stop' : 'stops'}`,
+  ].filter(Boolean)
 
   return (
     <Link
       to={`/trails/${trail.id}`}
       className={cn(
-        'trail-card',
+        'trail-card flex flex-col',
         done && 'trail-card--done',
         selected &&
           'border-ink shadow-[0_0_0_1px_var(--color-ink),0_10px_28px_color-mix(in_srgb,var(--color-ink)_8%,transparent)]',
@@ -92,47 +91,29 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
       )}
     >
       <div className="trail-card__head">
-        <span className="trail-card__eyebrow shrink-0">{eyebrow}</span>
-        {trail.distanceMiles !== undefined ? (
-          <span className="trail-card__meta min-w-0 truncate">{formatDistance(trail.distanceMiles)}</span>
-        ) : trail.neighborhood ? (
-          <span className="trail-card__meta min-w-0 truncate">{trail.neighborhood}</span>
-        ) : null}
+        <span className="min-w-0 truncate text-sm">
+          {eyebrow ? <span className="trail-card__eyebrow">{eyebrow}</span> : null}
+          {eyebrow && where ? <span className="text-muted-foreground"> · </span> : null}
+          {where ? <span className="text-muted-foreground">{where}</span> : null}
+        </span>
+        {corner ? <span className="shrink-0 text-sm font-semibold">{corner}</span> : null}
       </div>
-      <h2 className="trail-card__title">{trail.title}</h2>
-      {/* Plain text, not a link: the whole card is already a link to the trail. */}
-      {trail.creator?.username ? (
-        <p className="mt-0.5 mb-0 truncate text-sm font-medium text-muted-foreground">
-          <span className="sr-only">Made by </span>@{trail.creator.username}
-        </p>
+
+      <h2 className="trail-card__title line-clamp-2">{trail.title}</h2>
+      {trail.firstStopName ? (
+        <p className="mt-1 mb-0 truncate text-sm text-muted-foreground">Starts at {trail.firstStopName}</p>
       ) : null}
 
-      <div
-        className={cn('trail', done && 'trail--done')}
-        style={!done && lineColor(trail.primaryLine) ? ({ '--color-trail': lineColor(trail.primaryLine) } as CSSProperties) : undefined}
-      >
-        <TrailLine stops={trail.stopCount} state={done ? 'done' : 'open'} seed={waveSeed(trail.id)} />
-        {labels.length > 0 && !done ? (
-          <div className="trail__labels" style={{ '--stops': labels.length } as CSSProperties}>
-            {labels.map((name, i) => (
-              <span key={i} title={name}>
-                {name}
-              </span>
-            ))}
-          </div>
+      {/* mt-auto pins this row to the bottom so stats line up across a grid row. */}
+      <div className="mt-auto flex items-baseline gap-3 pt-4 text-sm">
+        <span className="shrink-0 font-semibold">{stats.join(' · ')}</span>
+        {/* Plain text, not a link: the whole card is already a link to the trail. */}
+        {trail.creator?.username ? (
+          <span className="ml-auto min-w-0 truncate text-muted-foreground">
+            <span className="sr-only">Made by </span>@{trail.creator.username}
+          </span>
         ) : null}
       </div>
-
-      {done ? null : (
-        <div className="trail-card__stats">
-          {trail.estimatedCost !== null ? <span>{formatCost(trail.estimatedCost)}</span> : null}
-          {trail.estimatedMinutes !== null ? <span>{formatMinutes(trail.estimatedMinutes)}</span> : null}
-          <span>
-            {trail.stopCount} {trail.stopCount === 1 ? 'stop' : 'stops'}
-          </span>
-          <span className="trail-card__end">{end}</span>
-        </div>
-      )}
     </Link>
   )
 }
