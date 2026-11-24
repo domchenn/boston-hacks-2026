@@ -4,19 +4,21 @@
  * title (max 2 lines), where it starts, then cost · time, a "N stops" toggle and the
  * rating / "In progress". The toggle opens the path (numbered stop list) in place,
  * collapsed by default; it uses `places` when the caller has them (Explore feed) and
- * otherwise loads the stops with getTrail() on first open. The title link is stretched
+ * otherwise loads the stops with getTrail() on first open. A long list scrolls, with a
+ * fade at the bottom until the last stop is in view. The title link is stretched
  * over the whole card, so clicking anywhere but the toggle opens /trails/:id.
  * Base styles: .trail-card / .stops / .num-ring in docs/styles/components.css.
  * Used by Explore, the Map tab, Saved / You, Friends and the Make preview.
  */
 
-import { useId, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChevronDown, Star } from 'lucide-react'
 import { Link } from 'react-router'
 import { categoryLabel, formatCost, formatDistance, formatMinutes } from '@/components/trailFormat'
 import { getTrail } from '@/lib/api/trails'
 import { cn } from '@/lib/utils'
 import type { Category, TransitLine, UserSidequestStatus } from '@/types/db-values'
+import { LuMapPin } from "react-icons/lu";
 
 /** The fields a card needs (a subset of FeedTrail). */
 export type TrailCardData = {
@@ -61,6 +63,20 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
   const [open, setOpen] = useState(false)
   const [loaded, setLoaded] = useState<PathState>({ status: 'idle' })
   const path: PathState = trail.places ? { status: 'ready', names: trail.places.map((p) => p.name) } : loaded
+  const stopsRef = useRef<HTMLOListElement>(null)
+  // True while the stop list has more below the fold; shows a fade so users know to scroll.
+  const [moreBelow, setMoreBelow] = useState(false)
+  const stopsReady = open && path.status === 'ready'
+
+  function updateMoreBelow() {
+    const el = stopsRef.current
+    setMoreBelow(!!el && el.scrollHeight - el.scrollTop - el.clientHeight > 1)
+  }
+
+  useEffect(() => {
+    if (!stopsReady) return
+    updateMoreBelow()
+  }, [stopsReady])
 
   function togglePath() {
     setOpen((was) => !was)
@@ -104,7 +120,7 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
   return (
     <div
       className={cn(
-        'trail-card relative flex flex-col',
+        'trail-card relative flex flex-col p-5',
         'hover:shadow-[var(--shadow-card),0_10px_28px_color-mix(in_srgb,var(--color-ink)_7%,transparent)]',
         'has-[a:focus-visible]:shadow-[var(--focus-ring)]',
         done && 'trail-card--done',
@@ -126,7 +142,7 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         ) : null}
       </div>
 
-      <h2 className="trail-card__title line-clamp-2">
+      <h2 className="trail-card__title line-clamp-2 mt-3">
         {/* Stretched link: its ::after covers the card, so the whole card opens the trail. */}
         <Link
           to={`/trails/${trail.id}`}
@@ -136,7 +152,10 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
         </Link>
       </h2>
       {trail.firstStopName ? (
-        <p className="mt-1 mb-0 truncate text-sm text-muted-foreground">Starts at {trail.firstStopName}</p>
+        <div className="flex items-center mt-3">
+          <LuMapPin className='text-muted-foreground'/>
+          <p className="mt-0 mb-0 truncate text-sm text-muted-foreground ml-1">{trail.firstStopName}</p>
+        </div>
       ) : null}
 
       {/* mt-auto pins this row to the bottom so stats line up across a grid row. */}
@@ -159,14 +178,29 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
       {open ? (
         <div id={pathId} className="mt-3 border-t border-border pt-3 text-sm">
           {path.status === 'ready' ? (
-            <ol className="stops m-0" style={{ '--stop-num-size': '22px' } as CSSProperties}>
-              {path.names.map((name, i) => (
-                <li key={i} className="stop pb-2.5">
-                  <span className="num-ring text-xs">{i + 1}</span>
-                  <span className="min-w-0 truncate leading-[22px]">{name}</span>
-                </li>
-              ))}
-            </ol>
+            <div className="relative">
+              <ol
+                ref={stopsRef}
+                onScroll={updateMoreBelow}
+                className="stops m-0 overflow-y-auto max-h-[160px] scrollbar-none"
+                style={{ '--stop-num-size': '22px' } as CSSProperties}
+              >
+                {path.names.map((name, i) => (
+                  <li key={i} className="stop pb-2.5">
+                    <span className="num-ring text-xs">{i + 1}</span>
+                    <span className="min-w-0 truncate leading-[22px]">{name}</span>
+                  </li>
+                ))}
+              </ol>
+              {/* Fade over the bottom of the list while more stops are hidden below. */}
+              <div
+                aria-hidden
+                className={cn(
+                  'pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-[var(--color-surface)] transition-opacity',
+                  moreBelow ? 'opacity-100' : 'opacity-0',
+                )}
+              />
+            </div>
           ) : (
             <p className="m-0 text-muted-foreground">
               {path.status === 'error' ? "Couldn't load the stops. Close and reopen to retry." : 'Loading stops…'}
