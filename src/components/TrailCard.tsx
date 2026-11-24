@@ -105,7 +105,7 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
   return (
     <div
       className={cn(
-        'trail-card relative flex flex-col',
+        'trail-card relative flex flex-col p-5',
         'hover:shadow-[var(--shadow-card),0_10px_28px_color-mix(in_srgb,var(--color-ink)_7%,transparent)]',
         'has-[a:focus-visible]:shadow-[var(--focus-ring)]',
         done && 'trail-card--done',
@@ -138,7 +138,7 @@ export function TrailCard({ trail, progress, selected, className }: TrailCardPro
       </h2>
       {trail.firstStopName ? (
         <div className="flex items-center mt-3">
-          <LuMapPin/>
+          <LuMapPin className='text-muted-foreground'/>
           <p className="mt-0 mb-0 truncate text-sm text-muted-foreground ml-1">{trail.firstStopName}</p>
         </div>
       ) : null}
