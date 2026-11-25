@@ -43,6 +43,6 @@ Target implementation progress is tracked below; baseline evidence is in [BASELI
 ## Handoff log
 | Task | Status | PR/commit | Verified checks/environment | Blocker / next action | Claimed by |
 |---|---|---|---|---|---|
-| M00 | In review | docs/migration-plan baseline PR (see PR description) | 2026-11-24: npm ci, lint, typecheck, build PASS; local pgTAP 18 files/181 assertions PASS; main CI 45471291211 both jobs PASS; documentation links/diff checked | Audit complete; acceptance pending. Local ledger drift and hosted-state limits recorded in BASELINE.md. Next: M01 backup/restore verification; unsafe reset guidance already removed. | Solo developer / Codex |
+| M00 | In review | [PR #90](https://github.com/domchenn/breadcrumb/pull/90) | 2026-11-24: npm ci, lint, typecheck, build PASS; local pgTAP 18 files/181 assertions PASS; main CI 45471291211 both jobs PASS; documentation links/diff checked | Audit complete; acceptance pending. Local ledger drift and hosted-state limits recorded in BASELINE.md. Next: M01 backup/restore verification; unsafe reset guidance already removed. | Solo developer / Codex |
 
 Append new rows or update relevant rows; statuses: Pending, In progress, In review, Blocked, Done, Deferred. Never record secrets or pretend a check ran. If a task becomes unnecessary, explain in DECISIONS.md and mark Deferred rather than silently deleting it.
