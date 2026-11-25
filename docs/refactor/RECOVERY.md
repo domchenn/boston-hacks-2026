@@ -1,6 +1,6 @@
 # M01 — backup and recovery readiness
 
-Status: documentation accepted through merged [PR #91](https://github.com/domchenn/breadcrumb/pull/91) (b6dddc3). A replacement backup passed an isolated database/media restore on 2026-11-25; see [the drill report](#restore-drill--2026-11-25). M01 stays open until the owner accepts the remaining gaps. Earlier sections are historical and are superseded by that report where they differ. Inspected 2026-11-24 against main `132967738ab39c1ccf5c0fb0950a9904ddf77d61`. This is a recovery runbook and evidence register, not proof of a successful restore. At initial preparation, no backup export, restore, project creation, credential change or remote database write was performed. The subsequent manual-backup attempt is recorded below.
+Status: documentation accepted through merged [PR #91](https://github.com/domchenn/breadcrumb/pull/91) (b6dddc3). A replacement backup passed an isolated database/media restore on 2026-11-25; see [the drill report](#restore-drill--2026-11-25). The owner reopened the image and accepted the remaining limits on 2026-11-25, so M01 is accepted with the gaps listed there. Earlier sections are historical and are superseded by that report where they differ. Inspected 2026-11-24 against main `132967738ab39c1ccf5c0fb0950a9904ddf77d61`. This is a recovery runbook and evidence register, not proof of a successful restore. At initial preparation, no backup export, restore, project creation, credential change or remote database write was performed. The subsequent manual-backup attempt is recorded below.
 
 ## Verified environment and evidence
 
@@ -43,7 +43,7 @@ This is an export with verified bytes, not a completed restore drill. Database d
 
 **First archive is not recoverable.** The stored Keychain password for `breadcrumb-20261125T040509Z.sparseimage` no longer opens it. The Keychain item was modified on 2026-11-25 and the owner has no other copy of the original password. The file's checksum still matches, but do not count it as a backup.
 
-**Replacement backup.** With the owner's approval, production `gekcvmzpahocsxnvsdyy` was exported at 2026-11-25T19:19Z into a new AES-256 image, `~/Breadcrumb Backups/breadcrumb-backup-2.sparseimage`. The owner created it, holds its password and opened it once by password before the export. Reopening it after the export is still pending. The owner chose to keep backups only on this computer and not buy Supabase backups. Exports stay outside the checkout because the GitHub repository is public.
+**Replacement backup.** With the owner's approval, production `gekcvmzpahocsxnvsdyy` was exported at 2026-11-25T19:19Z into a new AES-256 image, `~/Breadcrumb Backups/breadcrumb-backup-2.sparseimage`. The owner created it, holds its password and opened it once by password before the export. The owner reopened and ejected it after the export using the saved password (terminal output supplied 2026-11-25), and the image checksum still matches. The owner chose to keep backups only on this computer and not buy Supabase backups. Exports stay outside the checkout because the GitHub repository is public.
 
 | Check | Result |
 |---|---|
@@ -63,7 +63,7 @@ Restore order and prerequisites for a bare PostgreSQL server: create the Supabas
 
 Not covered: login (email and Google), photo serving over HTTP, Realtime, hosted platform roles, project configuration and secrets, and Vault data. Database and photos are not one atomic snapshot. There is no off-site copy or schedule.
 
-Proposed limits, **awaiting owner acceptance**: export manually before any production database change; possible loss is everything since the last export; best-effort downtime with no target; test login and photo serving on staging in M03; inventory setting names without secret values.
+Limits **accepted by the owner on 2026-11-25**: backup kept only on this computer, so losing it loses the backup; export manually before any production database change; possible loss is everything since the last export; best-effort downtime with no target; test login and photo serving on staging in M03; inventory setting names without secret values.
 
 ## Recovery coverage required for Breadcrumb
 
@@ -109,7 +109,7 @@ On 2026-11-24, npm run lint, npm run typecheck and npm run build passed. Build r
 
 ## Acceptance record
 
-M01 remains unchecked until the human owner supplies or verifies all of these:
+The original acceptance criteria were the following. The owner accepted M01 on 2026-11-25 with the gaps listed in the drill report; the criteria not met there (off-site retention, configuration coverage, and auth and application checks) were accepted as gaps:
 
 - Confirmed source, plan, method, usable backup timestamp/window and agreed recovery objectives.
 - Database/Auth/history/security coverage plus separate media/configuration recovery evidence.
@@ -117,4 +117,4 @@ M01 remains unchecked until the human owner supplies or verifies all of these:
 - Approved isolated destination and completed restore report, including SQL, auth, media, visibility and application checks.
 - Explicit owner acceptance of gaps, measured recovery point/time and the production restore/cutover authorization boundary.
 
-Current report: **database and photo restore verified 2026-11-25; M01 not accepted** until the replacement image is reopened and the owner accepts the limits in the drill report. Existing remote-reset setup guidance was already removed in M00 and remains absent. Preparation can be reviewed independently; merging documentation must not mark backup/restore verification done. M02 is the next independent migration task (depends on accepted M00); inspect deployment effects before any branch/protection configuration. M03 remains dependent on full M01 and M02 acceptance.
+Current report: **database and photo restore verified, and M01 accepted by the owner on 2026-11-25** with the limits and untested areas in the drill report. This does not authorize a production restore or cutover. Existing remote-reset setup guidance was already removed in M00 and remains absent. Preparation can be reviewed independently; merging documentation must not mark backup/restore verification done. M02 is the next independent migration task (depends on accepted M00); inspect deployment effects before any branch/protection configuration. M01 and M02 are accepted, so M03 is unblocked once this record merges.
