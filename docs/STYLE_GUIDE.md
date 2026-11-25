@@ -230,9 +230,9 @@ During a run, reuse the stop list: finished stops get `.is-done` + `.num-ring--d
 | `trail-divider.svg` | Section breaks and onboarding |
 | `empty-trail.svg` | Empty states: a trail waiting for its next stop. Pair it with one heading, one sentence and one button |
 
-**Logo rules:** use the crumbs exactly as drawn, without stretching, re-coloring them per line, or adding outlines or shadows. Use crumb orange on white or paper, and white on crumb orange.
+The generated SVGs are built from the repo root with `python docs/tools/build_assets.py docs/assets/svg`. The script still draws the old `logo-mark.svg`, so restore the current one after running it.
 
-Regenerate them from the repo root with `python docs/tools/build_assets.py docs/assets/svg`.
+**Logo rules:** use the crumbs exactly as drawn, without stretching, re-coloring them per line, or adding outlines or shadows. Use crumb orange on white or paper, and white on crumb orange.
 
 ## 10. Do and don't
 
