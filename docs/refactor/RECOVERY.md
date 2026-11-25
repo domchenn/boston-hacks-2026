@@ -12,24 +12,32 @@ The active developer confirmed during M01 that Supabase project `gekcvmzpahocsxn
 | Hosted backup metadata | `supabase backups list --remote=gekcvmzpahocsxnvsdyy --output json` succeeded: backups=null, physical_backup_data={}, pitr_enabled=false, walg_enabled=true, region=us-east-2. |
 | Interpretation | No backup records, usable recovery window or completed backup timestamp were returned. WAL-G being enabled does not demonstrate an accessible/restorable backup. PITR is disabled. Do not infer the billing tier, retention or absence of all backups from this response. |
 | Plan and scheduled backup availability | Developer supplied the production Database → Backups screenshot on 2026-11-24: “Free Plan does not include project backups.” Scheduled provider backups are unavailable on the current plan; no usable backup timestamp/window is shown. This confirms the plan independently of the CLI response. No billing change is authorized. |
-| Off-site archive and media copy | Unverified. No repository backup job or recovery archive manifest exists. External backups may exist; owner must confirm location, access, encryption, retention and last successful run without sharing secrets. |
+| Local archive and media copy | Manual database/Auth/history and media export completed after explicit approval. AES-256 image, file manifest, read-back verification and encrypted-image checksum are stored outside Git under ~/Breadcrumb Backups/. All 6 Storage objects match source sizes and single-part ETag checksums; before/after inventories match. Only one local copy exists; off-site custody and retention remain unverified. |
 | Restore destination | None approved. No disposable hosted project or full local recovery environment has been selected. Existing local Breadcrumb stack has migration drift and must not be reset or used as a restore target. |
 | Recovery drill / objectives | Not run; recovery point objective (maximum acceptable lost data) and recovery time objective (maximum acceptable outage) are not yet agreed. Do not invent service guarantees. |
 | Tooling | Installed Supabase CLI 3.2.0 supports backups list and db dump; read-only help and local db dump --dry-run passed. Local host pg_dump is major 15, while the server is 17; do not use the older binary to dump this server. The existing Supabase DB container provides pg_dump 17.12. |
 
-Next recovery action: choose and authorize a manual database/media backup workflow on the current plan, or have the human owner configure an approved provider backup option. The screenshot does not establish whether independent manual backups already exist. No export or upgrade has been performed.
+Next recovery action: place the completed encrypted image and checksum on a separate private device/storage, preserve its password separately, and approve a specific isolated restore-test destination. The current one-time export does not establish a recurring schedule or recoverability. No upgrade has been performed.
 
 The local dry-run confirms that a plain `supabase db dump` is schema-only and excludes auth, storage and supabase_migrations among other managed schemas. It is **not** a complete application backup. No dump contents, credentials or personal data were collected.
 
-## Manual backup attempt — 2026-11-24
+## Manual backup execution — 2026-11-24
 
-The developer authorized help carrying out a manual backup, noting the current user base is very small. A read-only production **schema-only** export succeeded (71,967 bytes). The local data-dump dry-run confirms Auth and Storage data are included by that mode, but supabase_migrations requires separate explicit coverage.
+The developer authorized a manual backup, noting the current user base is very small. After automatic approval review rejected the original unencrypted temporary export destination, the agent prepared an AES-256 encrypted macOS disk image and the developer explicitly approved the sensitive export scope and exact destination. The rejected command did not run; the approved export wrote directly into the mounted encrypted filesystem.
 
-Automatic approval review rejected exporting production data/roles/managed schemas/Storage metadata to an unencrypted temporary directory because the sensitive payload and destination had not been specifically approved. That export command did not run. No Auth records, password hashes, application records or uploaded photos have been exported by this attempt.
+Completed archive: `~/Breadcrumb Backups/breadcrumb-20261125T040509Z.sparseimage` (the filename uses UTC). Its generated password is in the local login Keychain, generic password item `Breadcrumb backup 20261125T040509Z`, account dominicchen. No password, source records, SQL dump or photo content is committed to Git or printed in the report. The final image is about 14.8 MB; its adjacent README and SHA-256 checksum describe custody and limitations.
 
-A safer destination was prepared and tested for mounting/detaching: an AES-256 encrypted sparse disk image under `/Users/dominicchen/Breadcrumb Backups/`, outside Git. It currently contains **schema only** and an INCOMPLETE status file. The generated unlock password is stored in the local login Keychain under its timestamped Breadcrumb backup item; it was never printed or committed. This is one local copy, not off-site protection or a verified full backup.
+Exported coverage:
 
-The reviewed export scope is production project gekcvmzpahocsxnvsdyy: schema, roles/grants/RLS, application and Auth data (including password hashes), managed-schema customizations, migration history, Storage metadata and uploaded files, written directly to the mounted encrypted image. A separate approval request names the exact image path and scope. A private export helper is prepared but has not been run. No production restore, reset, migration, billing or persistent production credential change is authorized or performed.
+- Application/private schemas, roles/grants/RLS and RPC definitions.
+- Application and Auth data, including account/identity records and password hashes.
+- Managed Auth/Storage schema definitions and customizations.
+- Separate supabase_migrations data: 21 applied migration-history entries.
+- Storage metadata and all 6 uploaded objects; private before/after inventory logs and file manifest.
+
+Verification: all 11 SQL/media files passed SHA-256 read-back after closing and reopening the encrypted image. All 6 downloaded photos match source Storage metadata by size and single-part ETag checksum, and before/after Storage inventories are identical. The CLI required --experimental for Storage commands; the initial missing-flag failure was corrected before downloading. The image is detached. The earlier plaintext schema-only staging file was removed.
+
+This is an export with verified bytes, not a completed restore drill. Database dump stages and media copies do not form one atomic application snapshot. Configuration/secrets coverage, full recovery including login/media/authorization behavior, recurring schedule/retention and off-site retrieval remain unverified. Source production tables were not reset, migrated, restored or edited; no billing or persistent production credential change was requested or performed. Existing local database data was left intact.
 
 ## Recovery coverage required for Breadcrumb
 
@@ -71,7 +79,7 @@ Before starting, the owner must approve the exact destination and data scope. A 
 
 ## Validation of this preparation PR
 
-On 2026-11-24, npm run lint, npm run typecheck and npm run build passed. Build retains the existing 875.65 kB JS chunk warning. npm run test:db passed all 181 assertions across 18 files against the existing local stack, without a reset; its M00 ledger-drift limitation still applies. Local Markdown links and git diff --check passed (including the subsequent screenshot-evidence update); a repository search found no remaining remote-reset setup commands in the reviewed Markdown. These checks validate the unchanged application baseline and documentation, not backup completeness or recovery. Browser/device testing, production data export and all restore drills were not run.
+On 2026-11-24, npm run lint, npm run typecheck and npm run build passed. Build retains the existing 875.65 kB JS chunk warning. npm run test:db passed all 181 assertions across 18 files against the existing local stack, without a reset; its M00 ledger-drift limitation still applies. Local Markdown links and git diff --check passed (including the subsequent screenshot-evidence update); a repository search found no remaining remote-reset setup commands in the reviewed Markdown. These checks validate the unchanged application baseline and documentation, not backup completeness or recovery. These app checks preceded the manual export; its separate checksum/media checks are recorded above. Browser/device testing and all restore drills were not run.
 
 ## Acceptance record
 
