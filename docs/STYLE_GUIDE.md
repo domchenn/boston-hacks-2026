@@ -72,7 +72,7 @@ Trail dots and stop circles take the color of how you travel (source: `src/lib/t
 | Bus | MBTA bus yellow, darkened for contrast `#E5A800` (not orange, so it isn't mistaken for the Orange Line) |
 | Bike (Bluebikes) | Bluebikes blue `#1E88E5` (lighter than the Blue Line) |
 
-- **Cards:** feed cards no longer draw a dotted line (see the trail card in section 5). `primary_line` is used only on maps, for pin colors.
+- **Cards:** feed cards no longer draw a dotted line (see the trail card in section 5). `primary_line` sets Map tab pin colors and train-leg colors on routes and stop lists. It also feeds the detail page's good-to-know section and badges.
 - **Stop lists:** set `--leg-color` on a `.stop`; its ring and the dots down to the next stop use that leg's color. Finished stops still turn green.
 - **Maps:** each part of a route is drawn in its own color (walk, the actual T line from Google, bus, bike), and each stop circle in the color of the leg that arrives there.
 ## 2. Typography
@@ -226,11 +226,11 @@ During a run, reuse the stop list: finished stops get `.is-done` + `.num-ring--d
 | `logo-mark.svg` | Three hand-cut crumbs in different sizes: a large one at the bottom left, a medium one at the top right and a small one at the bottom right. Solid crumb orange (`#E8552D`), with soft, uneven edges. In the app bar it sits 25 px wide next to the "breadcrumb" wordmark (`BrandLogo`) |
 | `public/favicon.svg` | The browser-tab favicon: the same three crumbs in white on a crumb-orange rounded square (corner radius about 23% of the width) |
 | `app-icon.svg` | Older home-screen icon (three round dots on dark orange). It still uses the previous mark, so match it to the favicon before using it |
-
-**Logo rules:** use the crumbs exactly as drawn, without stretching, re-coloring them per line, or adding outlines or shadows. Use crumb orange on white or paper, and white on crumb orange.
 | `stop-ring.svg`, `stop-done.svg`, `stop-number.svg` | Static stop markers (use `.num-ring` for live numbers) |
 | `trail-divider.svg` | Section breaks and onboarding |
 | `empty-trail.svg` | Empty states: a trail waiting for its next stop. Pair it with one heading, one sentence and one button |
+
+**Logo rules:** use the crumbs exactly as drawn, without stretching, re-coloring them per line, or adding outlines or shadows. Use crumb orange on white or paper, and white on crumb orange.
 
 Regenerate them from the repo root with `python docs/tools/build_assets.py docs/assets/svg`.
 
