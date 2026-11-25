@@ -1,6 +1,6 @@
 # M01 — backup and recovery readiness
 
-Status: preparation in review; recovery acceptance blocked on the evidence below. Inspected 2026-11-24 against main `132967738ab39c1ccf5c0fb0950a9904ddf77d61`. This is a recovery runbook and evidence register, not proof of a successful restore. No backup export, restore, project creation, credential change or remote database write was performed.
+Status: preparation in review; recovery acceptance blocked on the evidence below. Inspected 2026-11-24 against main `132967738ab39c1ccf5c0fb0950a9904ddf77d61`. This is a recovery runbook and evidence register, not proof of a successful restore. At initial preparation, no backup export, restore, project creation, credential change or remote database write was performed. The subsequent manual-backup attempt is recorded below.
 
 ## Verified environment and evidence
 
@@ -20,6 +20,16 @@ The active developer confirmed during M01 that Supabase project `gekcvmzpahocsxn
 Next recovery action: choose and authorize a manual database/media backup workflow on the current plan, or have the human owner configure an approved provider backup option. The screenshot does not establish whether independent manual backups already exist. No export or upgrade has been performed.
 
 The local dry-run confirms that a plain `supabase db dump` is schema-only and excludes auth, storage and supabase_migrations among other managed schemas. It is **not** a complete application backup. No dump contents, credentials or personal data were collected.
+
+## Manual backup attempt — 2026-11-24
+
+The developer authorized help carrying out a manual backup, noting the current user base is very small. A read-only production **schema-only** export succeeded (71,967 bytes). The local data-dump dry-run confirms Auth and Storage data are included by that mode, but supabase_migrations requires separate explicit coverage.
+
+Automatic approval review rejected exporting production data/roles/managed schemas/Storage metadata to an unencrypted temporary directory because the sensitive payload and destination had not been specifically approved. That export command did not run. No Auth records, password hashes, application records or uploaded photos have been exported by this attempt.
+
+A safer destination was prepared and tested for mounting/detaching: an AES-256 encrypted sparse disk image under `/Users/dominicchen/Breadcrumb Backups/`, outside Git. It currently contains **schema only** and an INCOMPLETE status file. The generated unlock password is stored in the local login Keychain under its timestamped Breadcrumb backup item; it was never printed or committed. This is one local copy, not off-site protection or a verified full backup.
+
+The reviewed export scope is production project gekcvmzpahocsxnvsdyy: schema, roles/grants/RLS, application and Auth data (including password hashes), managed-schema customizations, migration history, Storage metadata and uploaded files, written directly to the mounted encrypted image. A separate approval request names the exact image path and scope. A private export helper is prepared but has not been run. No production restore, reset, migration, billing or persistent production credential change is authorized or performed.
 
 ## Recovery coverage required for Breadcrumb
 
