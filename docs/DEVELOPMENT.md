@@ -105,7 +105,7 @@ Run npm commands from the repo root; app commands forward to `apps/web` (for exa
 
 The app is a static Vite site in `apps/web`, so each Vercel project's **Root Directory** is `apps/web`. `apps/web/vercel.json` builds it and sends regular SPA URLs (e.g. `/trails/123`) to `index.html` so React Router handles refreshes; crawler/API requests have separate handling.
 
-Vercel deployment is intentionally manual, as confirmed by the active developer. Keep `vercel.json` Git deployments disabled (`git.deploymentEnabled: false`). Do not assume merges or PRs deploy anything. The crawler rewrite for `/trails/:id` goes to `apps/web/api/og.ts`; regular SPA routes fall back to `index.html`. Preserve both during file moves.
+Vercel deployment is intentionally manual, as confirmed by the active developer. Keep Git deployments disabled (`git.deploymentEnabled: false`) in **both** `apps/web/vercel.json` and the small root `vercel.json`. Vercel reads the file in each project's Root Directory, so the root copy keeps Git deploys off for any project still pointed at the repo root. Do not assume merges or PRs deploy anything. The crawler rewrite for `/trails/:id` goes to `apps/web/api/og.ts`; regular SPA routes fall back to `index.html`. Preserve both during file moves.
 
 Before configuring staging (M03), verify the existing Vercel project, production branch, manual deployment method, domain, environment scopes, Supabase auth redirects and restricted browser keys. Never reuse production credentials/data in previews by assumption. New services, secrets and deployments require human configuration/authorization. The target integration/release workflow is in [REFACTOR.md](refactor/REFACTOR.md).
 
