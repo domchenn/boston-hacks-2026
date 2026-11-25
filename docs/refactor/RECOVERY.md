@@ -1,6 +1,6 @@
 # M01 — backup and recovery readiness
 
-Status: preparation in review; recovery acceptance blocked on the evidence below. Inspected 2026-11-24 against main `132967738ab39c1ccf5c0fb0950a9904ddf77d61`. This is a recovery runbook and evidence register, not proof of a successful restore. At initial preparation, no backup export, restore, project creation, credential change or remote database write was performed. The subsequent manual-backup attempt is recorded below.
+Status: documentation accepted through merged [PR #91](https://github.com/domchenn/breadcrumb/pull/91) (b6dddc3); recovery acceptance remains blocked on the evidence below. Inspected 2026-11-24 against main `132967738ab39c1ccf5c0fb0950a9904ddf77d61`. This is a recovery runbook and evidence register, not proof of a successful restore. At initial preparation, no backup export, restore, project creation, credential change or remote database write was performed. The subsequent manual-backup attempt is recorded below.
 
 ## Verified environment and evidence
 
