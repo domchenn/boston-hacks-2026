@@ -56,7 +56,7 @@ Every outing is a **trail**: stops joined by a dotted line, with small tasks cal
 | `--color-sand` | `#EFEDE6` | Map land, skeleton loaders, sunken fills |
 | `--color-crumb-deep` | `#9A3412` | Hover and pressed state of orange buttons |
 
-Tints (`--color-crumb-tint`, `--color-blue-tint`, `--color-green-tint`) are soft backgrounds for badges and selected rows, always with ink or the matching strong color as text. `--color-crumb-pale` and `--color-crumb-soft` exist for the logo's first two dots. Map colors: `--map-land`, `--map-park`, `--map-water`, `--map-road`, `--map-label`.
+Tints (`--color-crumb-tint`, `--color-blue-tint`, `--color-green-tint`) are soft backgrounds for badges and selected rows, always with ink or the matching strong color as text. `--color-crumb-pale` and `--color-crumb-soft` were the first two dots of the old logo. The current logo is a single crumb orange (section 9), so don't use them for the brand. Map colors: `--map-land`, `--map-park`, `--map-water`, `--map-road`, `--map-label`.
 
 MBTA line colors (`--line-red`, `--line-orange`, `--line-green`, `--line-blue`, `--line-silver`) appear **only** as a 9 px dot beside a transit step (`.line-dot`), like "● Green Line, Arlington → Copley". Cards are never colored by line or category.
 
@@ -72,7 +72,7 @@ Trail dots and stop circles take the color of how you travel (source: `src/lib/t
 | Bus | MBTA bus yellow, darkened for contrast `#E5A800` (not orange, so it isn't mistaken for the Orange Line) |
 | Bike (Bluebikes) | Bluebikes blue `#1E88E5` (lighter than the Blue Line) |
 
-- **Cards:** the whole dotted line uses the trail's main T line (`primary_line`); trails without one stay crumb orange.
+- **Cards:** feed cards no longer draw a dotted line (see the trail card in section 5). `primary_line` sets Map tab pin colors and train-leg colors on routes and stop lists. It also feeds the detail page's good-to-know section and badges.
 - **Stop lists:** set `--leg-color` on a `.stop`; its ring and the dots down to the next stop use that leg's color. Finished stops still turn green.
 - **Maps:** each part of a route is drawn in its own color (walk, the actual T line from Google, bus, bike), and each stop circle in the color of the leg that arrives there.
 ## 2. Typography
@@ -96,7 +96,7 @@ Trail dots and stop circles take the color of how you travel (source: `src/lib/t
 
 ## 3. Shape, space, depth
 
-- **Spacing:** 4 px base (`--space-1` … `--space-16`). Screen gutter is 16 px, cards are 12 px apart, and card padding is 16 × 18.
+- **Spacing:** 4 px base (`--space-1` … `--space-16`). Screen gutter is 16 px, cards are 12 px apart, and trail cards have 20 px padding on every side (`p-5`).
 - **Radii:** `--radius-sm` 10 · `--radius-md` 14 · `--radius-card` 20 · `--radius-sheet` 24 (top corners) · `--radius-pill` for tabs, buttons and icon buttons.
 - **Shadows:** `--shadow-card` (barely there, always with a hairline border) · `--shadow-float` (buttons over the map) · `--shadow-sheet` (bottom sheet) · `--shadow-fab` (the + button, the only raised element).
 - **Focus:** a 3 px blue ring (`--focus-ring`) on every interactive element.
@@ -164,8 +164,8 @@ new google.maps.Polyline({
 | `.page-head`, `.page-title`, `.page-sub` | "Trails for you" / "You've lived here. Have you explored it?" |
 | `.tabs` > `.tab` | Filter pills. Selected (`.is-active` or `aria-selected="true"`) is solid ink. The row scrolls sideways |
 | `.feed` | The card list: 12 px gaps, gutter padding |
-| `.trail-card` | White card: `__head` (`__eyebrow` + `__meta`), `__title`, a `.trail`, and `__stats` with `__end` on the right |
-| `.trail-card--scheduled` / `--done` | Blue eyebrow with a `.status-link` ("Going", "Join") / green eyebrow, `.trail--done`, no stats row |
+| `.trail-card` | White card with a minimal layout, built by `src/components/TrailCard.tsx`. See "Trail card" below |
+| `.trail-card--done` | Green eyebrow that reads "… · Finished". (`--scheduled` remains in the CSS, but the app no longer shows dates) |
 | `.trail`, `.trail__line`, `.trail__labels` | The dotted trail (section 4). `--stops` sets the label columns |
 | `.rating` | Filled Lucide `star` + number, e.g. `★ 4.6 (12)` |
 | `.tabbar`, `__item`, `__fab` | Explore · Map · **+** · Saved · You. Active item is ink and bold. The + is a 54 px orange circle, raised 20 px |
@@ -181,8 +181,22 @@ new google.maps.Polyline({
 **Rules for components**
 
 - **One orange button per screen** ("Start trail", "Join"). Everything else is secondary, ink or ghost.
-- **Card states:** Anytime (orange "Cafés · Anytime", distance, stop labels, rating) · Scheduled (blue "Food · Sat 2:00 PM", "6 going", Join/Going) · Finished (green "Finished · Nov 16", "You rated 5", green trail).
-- Show stop labels under a card trail only when there are 3 or fewer stops. Otherwise show the count in the stats.
+### Trail card (minimal)
+
+The feed card is kept minimal so the list is quick to scan. It has no dotted trail, dates or line colors. From top to bottom:
+
+| Row | Content |
+|---|---|
+| Head | Eyebrow: the category (or the creator's own name for "other") in status color, then ` · ` and the neighborhood (or "0.4 mi away" on Nearby) in muted text. `@username` sits on the right in muted text, truncated to at most 45% of the width |
+| Title | 21 / 700, at most 2 lines (`line-clamp-2`), 12 px below the head |
+| Start | Map-pin icon + the first stop's name in muted 14 px, on one truncated line, 12 px below the title |
+| Bottom | Cost · time in 14 / 600, a **"N stops ▾"** toggle, and on the right either ★ average or "In progress". Unrated trails show nothing on the right (no "New"). The row is pinned to the bottom of the card (`mt-auto`) so the stats line up across a grid row |
+| Path (opens from the toggle) | A hairline divider, then the numbered stop list (`.stops` with 22 px `.num-ring`s). It's closed by default. It shows at most 160 px of stops, then scrolls with a hidden scrollbar and a fade at the bottom while more stops are below |
+
+- **States:** Default (orange eyebrow) · In progress (blue "In progress" on the right) · Finished (green eyebrow "Cafés · Finished", `.trail-card--done`).
+- **Clicking:** the title link stretches over the whole card, so a click anywhere opens `/trails/:id`. The stops toggle sits above it (`relative z-10`) and only opens or closes the path.
+- **Hover:** the card shadow gets a little deeper. Focus shows `--focus-ring` around the card. **Selected** (its pin is highlighted on the Map tab): ink border plus a 1 px ink ring.
+- The stop names come from the feed when it has them. Otherwise the card loads them with `getTrail()` the first time the toggle is opened.
 
 ## 6. Screens
 
@@ -209,13 +223,16 @@ During a run, reuse the stop list: finished stops get `.is-done` + `.num-ring--d
 
 | File | Use |
 |---|---|
-| `logo-mark.svg` | Three crumbs that grow and warm toward the end of the trail. Always next to the wordmark |
-| `app-icon.svg` | Home-screen icon and favicon: the three crumbs climbing on orange |
+| `logo-mark.svg` | Three hand-cut crumbs in different sizes: a large one at the bottom left, a medium one at the top right and a small one at the bottom right. Solid crumb orange (`#E8552D`), with soft, uneven edges. In the app bar it sits 25 px wide next to the "breadcrumb" wordmark (`BrandLogo`) |
+| `public/favicon.svg` | The browser-tab favicon: the same three crumbs in white on a crumb-orange rounded square (corner radius about 23% of the width) |
+| `app-icon.svg` | Older home-screen icon (three round dots on dark orange). It still uses the previous mark, so match it to the favicon before using it |
 | `stop-ring.svg`, `stop-done.svg`, `stop-number.svg` | Static stop markers (use `.num-ring` for live numbers) |
 | `trail-divider.svg` | Section breaks and onboarding |
 | `empty-trail.svg` | Empty states: a trail waiting for its next stop. Pair it with one heading, one sentence and one button |
 
-Regenerate them from the repo root with `python docs/tools/build_assets.py docs/assets/svg`.
+The generated SVGs are built from the repo root with `python docs/tools/build_assets.py docs/assets/svg`. The script still draws the old `logo-mark.svg`, so restore the current one after running it.
+
+**Logo rules:** use the crumbs exactly as drawn, without stretching, re-coloring them per line, or adding outlines or shadows. Use crumb orange on white or paper, and white on crumb orange.
 
 ## 10. Do and don't
 
