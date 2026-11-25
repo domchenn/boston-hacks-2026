@@ -106,7 +106,7 @@ Implemented features already live under `src/features/`; shared data adapters ar
 
 The app is a static Vite site. `vercel.json` builds it and sends regular SPA URLs (e.g. `/trails/123`) to `index.html` so React Router handles refreshes; crawler/API requests have separate handling.
 
-`vercel.json` explicitly disables Git deployments (`git.deploymentEnabled: false`). Do not assume merges or PRs deploy anything. The crawler rewrite for `/trails/:id` goes to `api/og.ts`; regular SPA routes fall back to `index.html`. Preserve both during file moves.
+Vercel deployment is intentionally manual, as confirmed by the active developer. Keep `vercel.json` Git deployments disabled (`git.deploymentEnabled: false`). Do not assume merges or PRs deploy anything. The crawler rewrite for `/trails/:id` goes to `api/og.ts`; regular SPA routes fall back to `index.html`. Preserve both during file moves.
 
 Before configuring staging (M03), verify the existing Vercel project, production branch, manual deployment method, domain, environment scopes, Supabase auth redirects and restricted browser keys. Never reuse production credentials/data in previews by assumption. New services, secrets and deployments require human configuration/authorization. The target integration/release workflow is in [REFACTOR.md](refactor/REFACTOR.md).
 

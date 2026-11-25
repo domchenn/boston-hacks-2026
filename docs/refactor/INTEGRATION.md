@@ -9,7 +9,7 @@ Status: repository changes prepared for review; hosted activation pending. Inspe
 | Branches | main, logo-edit and docs/m01-recovery-plan; no develop at inspection. M02 branch starts from verified main, not PR #91. |
 | Main protection | Active ruleset Protect main (27814053) targets ~DEFAULT_BRANCH. Requires PRs and both existing CI checks; prevents deletion/force pushes. Required approvals: 0. Admin RepositoryRole 5 can bypass through PRs; not audited as fully enforced for that actor. No setting was changed. |
 | Actions | Enabled, repository default token permission read, Actions cannot approve reviews. Workflow runs app checks and disposable runner-local database replay/pgTAP. No deployment step or production secret reference. |
-| Vercel | vercel.json disables Git-triggered deployments for every branch. No CLI, token or local project link is available. Browser reached Vercel email verification; hosted production branch, hooks, project mappings and environment scopes could not be inspected. |
+| Vercel | Signed-in browser inspection confirms Dom's Team / breadcrumb serves breadcrumb.boston; Production tracks main; current production source is badd951 (PR #89). Git settings show no deploy hooks. Developer explicitly requires manual deployment; preserve git.deploymentEnabled=false for all branches. No setting was changed. Environment names/scopes were inspected with values masked; the Maps key is scoped to Production and Preview, so preview isolation is not established. |
 | Supabase | GitHub app posts Supabase Preview (skipped on the inspected docs-only PR). Read-only branch inventory lists only default main mapped to production project gekcvmzpahocsxnvsdyy, status FUNCTIONS_DEPLOYED. No separate develop/staging project is verified. Deploy-to-production and preview creation settings remain unknown. |
 | Other deployment evidence | Repository hooks, environments and deployments endpoints returned no entries. This does not rule out GitHub Apps, Vercel hooks, manual deployments or external automation. Repository installation endpoint requires app authentication and was not an installed-app inventory. |
 
@@ -41,7 +41,7 @@ The payload follows the [GitHub rulesets API](https://docs.github.com/en/rest/re
 
 ## Activation sequence and authorization boundary
 
-1. Finish Vercel sign-in and inspect the actual Breadcrumb project without revealing secret values. Confirm its production branch remains main, identify Git/manual/deploy-hook triggers, and ensure creating or updating develop cannot promote production. Record evidence rather than assuming the checked-in file covers every path.
+1. Vercel read-only review completed: correct project/domain, production branch main, no deploy hooks and unchanged production source badd951. The developer explicitly requires manual deployment; retain git.deploymentEnabled=false, do not enable automatic staging/production deployments, and do not promote a deployment during bootstrap. The dashboard has generic branch-trigger text; this does not authorize overriding the checked-in Git deployment disablement. Remaining environment isolation/provider configuration belongs to M03.
 2. Inspect Supabase project GitHub Integration settings: connected repository, production branch, automatic preview behavior, migration/config paths and Deploy to production. Confirm develop will not target production or create unapproved billable resources. Do not change settings or enable branching as a side effect of this task.
 3. Human reviews/merges this bootstrap PR into main after both checks pass. PR #91 is not a prerequisite. This is the explicit pre-integration bootstrap exception; no release is implied.
 4. With deployment effects verified and explicit approval for the concrete remote actions, install the proposed develop ruleset and create develop from the exact accepted main SHA. Protect it before ordinary work begins. Do not push a protected branch as an agent or reset any remote history.
@@ -52,9 +52,9 @@ Do not activate integrations or change branch protection before approval. No rem
 
 ## Relationship to PR #91 and next task
 
-Leave #91 in draft if full restore acceptance is still pending. If either PR merges first, reconcile checklist/decision-log edits from the latest main before merging the other; preserve each task's evidence and do not mark M01 done merely because its docs merge. M02 does not include or depend on the recovery branch's commits.
+PR #91 is already open in draft. Its completed documentation and backup evidence can be marked ready for review and merged independently; the M01 checkbox must stay incomplete until full recovery acceptance. Draft status is a review preference, not a dependency on finishing the entire task. If either PR merges first, reconcile checklist/decision-log edits from the latest main before merging the other; preserve each task's evidence and do not mark M01 done merely because its docs merge. M02 does not include or depend on the recovery branch's commits.
 
-Next work: complete the read-only Vercel/Supabase integration review and obtain approval for the named remote activation steps. M03 remains blocked on full M01/M02 acceptance; no workspace move or staging project provisioning starts in this PR.
+Next work: complete the read-only Supabase integration review and obtain approval for the named remote activation steps. Vercel remains on manual deployment. M03 remains blocked on full M01/M02 acceptance; no workspace move or staging project provisioning starts in this PR.
 
 ## Validation
 
