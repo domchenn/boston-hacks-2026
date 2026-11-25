@@ -3,8 +3,8 @@
 Target implementation progress is tracked below; baseline evidence is in [BASELINE.md](BASELINE.md). Check a box only after its acceptance criteria are verified; PR-open work is in review, not done. For every task record PR/commit, checks, environment and blocker/next action in the handoff log. IDs are stable. Tasks may be split into smaller PRs. Dependencies are minimums; inspect actual state first.
 
 ## Foundation
-- [ ] M00 — Reconcile current repo, branches, deployments, migration history; run baseline CI-equivalent checks (no remote mutations). Evidence: [M00 baseline](BASELINE.md), 2026-11-24; audit complete, PR in review. Hosted deployment/database history remains explicitly unverified.
-- [ ] M01 — Verify backup/restore plan; remove outdated remote-reset guidance. Depends M00.
+- [x] M00 — Reconcile current repo, branches, deployments, migration history; run baseline CI-equivalent checks (no remote mutations). Evidence: [M00 baseline](BASELINE.md), 2026-11-24; accepted through merged PR #90 (1329677). Hosted deployment/database history remains explicitly unverified.
+- [ ] M01 — Verify backup/restore plan; remove outdated remote-reset guidance. Depends M00. [Recovery evidence and runbook](RECOVERY.md): preparation in review; backup availability/coverage and isolated restore acceptance still blocked.
 - [ ] M02 — Establish develop, branch protection and CI for integration/release. Depends M00; confirm deployment effects first.
 - [ ] M03 — Isolated staging Supabase, migrations, auth redirects, test credentials and Vercel deployment. Depends M01–M02. Verify no production data access.
 - [ ] M04 — Move Vite app into npm workspace, keep root SQL/scripts and one lockfile. Depends M03. Verify existing routes, OG previews and CI.
@@ -43,6 +43,7 @@ Target implementation progress is tracked below; baseline evidence is in [BASELI
 ## Handoff log
 | Task | Status | PR/commit | Verified checks/environment | Blocker / next action | Claimed by |
 |---|---|---|---|---|---|
-| M00 | In review | [PR #90](https://github.com/domchenn/breadcrumb/pull/90) | 2026-11-24: npm ci, lint, typecheck, build PASS; local pgTAP 18 files/181 assertions PASS; main CI 45471291211 both jobs PASS; documentation links/diff checked | Audit complete; acceptance pending. Local ledger drift and hosted-state limits recorded in BASELINE.md. Next: M01 backup/restore verification; unsafe reset guidance already removed. | Solo developer / Codex |
+| M00 | Done | [PR #90](https://github.com/domchenn/breadcrumb/pull/90) | 2026-11-24: npm ci, lint, typecheck, build PASS; local pgTAP 18 files/181 assertions PASS; main CI 45471291211 both jobs PASS; documentation links/diff checked | Accepted: developer merged PR #90 as 1329677. Local ledger drift and hosted-state limits remain in BASELINE.md. Unsafe reset guidance removed; M01 preparation follows. | Solo developer / Codex |
+| M01 | Blocked (preparation in review) | [draft PR #91](https://github.com/domchenn/breadcrumb/pull/91) | 2026-11-24: confirmed production project; read-only project/backup inventory and local dump dry-run; lint/typecheck/build PASS; local pgTAP 18 files/181 assertions PASS; links/diff PASS; details in RECOVERY.md | Dashboard confirms Free plan; PITR disabled. Explicitly approved database/Auth/history/media export completed into AES-256 image outside Git; 11 file checksums and all 6 media source checksums verified. Await off-site custody/retention, recovery objectives, configuration coverage and approved isolated restore evidence. Next independent task: M02 after deployment-effects review; M03 remains gated. | Solo developer / Codex |
 
 Append new rows or update relevant rows; statuses: Pending, In progress, In review, Blocked, Done, Deferred. Never record secrets or pretend a check ran. If a task becomes unnecessary, explain in DECISIONS.md and mark Deferred rather than silently deleting it.

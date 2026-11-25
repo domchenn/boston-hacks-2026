@@ -10,6 +10,8 @@ React/Vite/React Router, Tailwind/Radix, Supabase JS/Auth/PostgreSQL/Storage and
 
 M00 source and validation evidence: [BASELINE.md](BASELINE.md) (2026-11-24). Current main remains a root Vite application; all workspace/API/mobile descriptions below are future work.
 
+M00 was accepted by the developer merging PR #90. M01 [recovery preparation](RECOVERY.md) records production backup metadata and remaining evidence; it does not certify a backup or restore. M03 remains gated on verified recovery readiness.
+
 ## Execution order
 1. **Baseline and safety:** inspect current branch/status, run existing checks, inventory user flows, verify production configuration, migration history, backups and restore procedure. Remove unsafe remote-reset instructions. Do not mutate production.
 2. **Staging:** create develop from main once agreed, configure isolated Supabase project, Vercel staging and auth redirects/restricted map keys; use synthetic data. Protect branches and adapt CI. Verify merging to develop does not deploy production. Until configured, do not assume preview uses test data.
