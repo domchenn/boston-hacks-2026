@@ -43,3 +43,7 @@ Status: implemented with live evidence; follow-up evidence PR in review. After m
 ## 2026-11-25 — M01 local-only backups and restore drill
 
 Status: accepted by the owner 2026-11-25 (local-only storage and the remaining limits). The first archive can no longer be opened, so a replacement was exported and restored in an isolated container. Paid Supabase backups were declined because of cost. Storing the image in the checkout under gitignore was considered and rejected: the repository is public, a forced add would publish it and `git clean -fdx` would delete it. Consequence: losing this computer loses the backup. M01 is accepted with the limits in [RECOVERY.md](RECOVERY.md). M02 was accepted through merged PR #93.
+
+## 2026-11-25 — M03 staging setup
+
+Status: implemented by the owner. Staging is a separate free Supabase project in its own organization and a separate Vercel project, because Vercel custom environments need a paid plan. GitHub stays unconnected to the staging database so migrations remain a deliberate manual step. Alternatives considered: staging inside the existing organization, or Vercel previews in the production project (rejected because its keys are shared with previews). Moving production into the new organization is a separate, irreversible owner action and is not part of M03. See [STAGING.md](STAGING.md).

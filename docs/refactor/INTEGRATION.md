@@ -45,7 +45,7 @@ Do not assume Vercel's Git setting controls Supabase deployments: these are sepa
 
 Verified: develop source SHA, effective protections/no bypass, unchanged main/default, successful develop push CI, persisted Supabase automatic-deploy disablement and unchanged Vercel production deployment. The real evidence PR checks the develop PR path; its final CI/merge state is recorded in the handoff. M02 was accepted when the developer merged PR #93.
 
-M01 was accepted on 2026-11-25 (see RECOVERY.md). Next is M03; no staging provisioning, workspace move or production release was started by M02.
+M01 was accepted on 2026-11-25 (see RECOVERY.md). M03 evidence is in STAGING.md; no staging provisioning, workspace move or production release was started by M02.
 
 ## Validation scope
 
