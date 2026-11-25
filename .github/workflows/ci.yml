@@ -1,4 +1,4 @@
-# CI: runs on every pull request and on pushes to main.
+# CI: runs on every pull request and on pushes to main and develop.
 #
 # - app:      clean install, lint, typecheck and production build of the Vite app.
 # - database: starts a throwaway local Supabase database in Docker, applies every
@@ -11,7 +11,10 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop]
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}

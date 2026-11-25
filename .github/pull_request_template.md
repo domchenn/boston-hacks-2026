@@ -1,18 +1,22 @@
-## What does this PR do?
-<!-- One feature or fix. Link the task in docs/TASKS.md if there is one. -->
+## What changes?
+<!-- Keep one task per PR. Link the migration task or relevant issue. -->
 
-## Lane
-<!-- auth / profile / discovery / ratings / maps / create / quest / platform / db -->
+## Migration task and branch base
+<!-- Mxx; feature → develop once M02 is verified, release develop → main.
+     Before that, baseline/bootstrap PRs target main. Identify shared-file changes.
+     Task ownership is flexible when working solo. -->
 
-## Screenshots
-<!-- UI changes: add desktop and mobile (375 px) screenshots. -->
+## Validation
+<!-- Record commands, results, environment and any unrun checks honestly.
+     UI changes: include desktop and 375px screenshots. -->
 
-## How to test
-1.
+- [ ] `npm run lint`, `npm run typecheck`, and `npm run build` pass
+- [ ] Relevant local database checks pass, or an explicit limitation is recorded
+- [ ] Migration checklist/evidence and affected docs updated
+- [ ] No secrets, `.env`, backup archives or production data committed
+- [ ] Schema change? Additive migration, RLS/grants tests and intended-environment generated types
+- [ ] Required CI checks pass on the final PR commit
 
-## Checklist
-- [ ] `npm run build && npm run lint` pass
-- [ ] Only touches my lane's folder (or explains why it touches shared code)
-- [ ] No secrets or `.env` committed
-- [ ] DB change? New migration with RLS + tests in `supabase/tests/database/`, and types regenerated
-- [ ] CI is green
+## Acceptance and next task
+<!-- Repository changes are in review until accepted. State remaining hosted
+     configuration/approval and the next unblocked task. Never merge/deploy automatically. -->

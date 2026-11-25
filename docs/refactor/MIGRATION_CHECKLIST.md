@@ -3,9 +3,9 @@
 Target implementation progress is tracked below; baseline evidence is in [BASELINE.md](BASELINE.md). Check a box only after its acceptance criteria are verified; PR-open work is in review, not done. For every task record PR/commit, checks, environment and blocker/next action in the handoff log. IDs are stable. Tasks may be split into smaller PRs. Dependencies are minimums; inspect actual state first.
 
 ## Foundation
-- [ ] M00 — Reconcile current repo, branches, deployments, migration history; run baseline CI-equivalent checks (no remote mutations). Evidence: [M00 baseline](BASELINE.md), 2026-11-24; audit complete, PR in review. Hosted deployment/database history remains explicitly unverified.
-- [ ] M01 — Verify backup/restore plan; remove outdated remote-reset guidance. Depends M00.
-- [ ] M02 — Establish develop, branch protection and CI for integration/release. Depends M00; confirm deployment effects first.
+- [x] M00 — Reconcile current repo, branches, deployments, migration history; run baseline CI-equivalent checks (no remote mutations). Evidence: [M00 baseline](BASELINE.md), 2026-11-24; accepted through merged PR #90 (1329677). Hosted deployment/database history remains explicitly unverified.
+- [ ] M01 — Verify backup/restore plan; remove outdated remote-reset guidance. Depends M00. Preparation and encrypted-backup evidence remain in [draft PR #91](https://github.com/domchenn/breadcrumb/pull/91); full restore acceptance outstanding.
+- [ ] M02 — Establish develop, branch protection and CI for integration/release. Depends M00; [bootstrap preparation](INTEGRATION.md) in review. Hosted effects, remote ruleset/branch activation and workflow verification pending.
 - [ ] M03 — Isolated staging Supabase, migrations, auth redirects, test credentials and Vercel deployment. Depends M01–M02. Verify no production data access.
 - [ ] M04 — Move Vite app into npm workspace, keep root SQL/scripts and one lockfile. Depends M03. Verify existing routes, OG previews and CI.
 - [ ] M05 — Decide/add Turborepo tasks and shared config without breaking existing commands. Depends M04.
@@ -43,6 +43,7 @@ Target implementation progress is tracked below; baseline evidence is in [BASELI
 ## Handoff log
 | Task | Status | PR/commit | Verified checks/environment | Blocker / next action | Claimed by |
 |---|---|---|---|---|---|
-| M00 | In review | [PR #90](https://github.com/domchenn/breadcrumb/pull/90) | 2026-11-24: npm ci, lint, typecheck, build PASS; local pgTAP 18 files/181 assertions PASS; main CI 45471291211 both jobs PASS; documentation links/diff checked | Audit complete; acceptance pending. Local ledger drift and hosted-state limits recorded in BASELINE.md. Next: M01 backup/restore verification; unsafe reset guidance already removed. | Solo developer / Codex |
+| M00 | Done | [PR #90](https://github.com/domchenn/breadcrumb/pull/90) | 2026-11-24: npm ci, lint, typecheck, build PASS; local pgTAP 18 files/181 assertions PASS; main CI 45471291211 both jobs PASS; documentation links/diff checked | Accepted: developer merged PR #90 as 1329677. Local ledger drift and hosted-state limits remain in BASELINE.md. Unsafe reset guidance removed; M01 preparation follows. | Solo developer / Codex |
+| M02 | In review (activation pending) | refactor/m02-integration-bootstrap PR | 2026-11-24: lint/typecheck/build PASS; local pgTAP 18 files/181 assertions PASS; actionlint, ruleset structure/check identities, links and diff PASS; live review in INTEGRATION.md | Vercel requires sign-in; Supabase deploy/preview settings unknown. Proposed ruleset prepared, not applied; develop not created. Next: verify hosted effects and approve remote activation. M03 still depends on M01/M02. | Solo developer / Codex |
 
 Append new rows or update relevant rows; statuses: Pending, In progress, In review, Blocked, Done, Deferred. Never record secrets or pretend a check ran. If a task becomes unnecessary, explain in DECISIONS.md and mark Deferred rather than silently deleting it.
