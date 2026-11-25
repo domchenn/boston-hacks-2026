@@ -11,7 +11,7 @@ The database schema is managed with the **Supabase CLI**, the standard Supabase 
 
 The CLI is a dev dependency, so `npm install` gets it. Run it with `npx supabase …` or the npm scripts below.
 
-## One-time setup (per computer)
+## Optional remote linking (per computer)
 
 ```bash
 npx supabase login                               # opens the browser to authorize
@@ -24,7 +24,7 @@ npx supabase link --project-ref <project-ref>    # asks for the database passwor
 
 ## Everyday commands
 
-The CLI targets a *local* database by default. The npm scripts add `--remote` so they act on the linked Supabase project. If you run `npx supabase …` directly, add `--remote` yourself.
+The CLI targets a *local* database by default. The db:push, db:status and db:types npm scripts add `--remote` so they act on the linked Supabase project. Do not add `--remote` by default. Verify the target and obtain task-specific human authorization before remote writes; the designated human database owner performs reviewed remote changes. Local-only commands do not need a project link.
 
 | Command | What it does |
 |---|---|
@@ -39,13 +39,13 @@ The CLI targets a *local* database by default. The npm scripts add `--remote` so
 1. Branch: `git checkout -b db/<description>`.
 2. `npm run db:new -- <verb>_<what>`. Name it for what it does, starting with a verb: `add_quest_photo_storage_bucket`, `allow_editing_published_stops`. Never `update_schema` or `v3_changes`. The CLI adds the timestamp prefix.
 3. Write the SQL. **Start the file with a header comment** (copy one from an existing migration) saying what it changes, why, what it runs after, and which features use it.
-4. Enable RLS and add policies for every new table in the same file. (API access grants for new tables are automatic, via the `grant_api_access_to_app_tables` migration.)
-5. Open a PR. **Person A** reviews every `db/…` PR.
-6. After it's approved, Person A runs `npm run db:push`, then `npm run db:types`, and commits the regenerated types to the same PR before merging.
+4. Enable RLS, add policies and pgTAP tests, and verify grants in the same PR. Default grants from `grant_api_access_to_app_tables` depend on the creating role; do not assume they apply to every future table.
+5. Open a small PR following AGENTS.md; task ownership is flexible while working solo. Never bypass required checks or merge as an agent.
+6. The designated human database owner applies reviewed remote migrations only after target verification and authorization. Regenerate types from the intended environment and review the diff; `db:types` currently targets the linked remote, not local.
 
 Rules:
 - **Never edit a migration that has been pushed.** Fix it with a new migration.
-- Only Person A pushes to the shared project, so two people never apply migrations at once.
+- Only the designated human database owner applies reviewed shared-project migrations; coordinate one change at a time.
 - Don't run schema SQL in the Supabase SQL Editor. The CLI can't see those changes, and the next `db push` may break.
 
 ## Database tests
@@ -54,26 +54,17 @@ Rules:
 
 - **CI runs them on every PR** against a fresh local database built from `migrations/` (`.github/workflows/ci.yml`). A PR that breaks a security rule goes red.
 - **Changing a rule?** Update or add a test in the same PR. New table? Add a test file for its policies, e.g. `04_quest_photos.test.sql`.
-- Run them yourself with Docker running: `npx supabase db start`, `npx supabase db reset`, then `npm run test:db`.
+- Run `npm run test:db` against an existing local stack. For a fresh baseline, first confirm the local database is disposable, then use `npx supabase db start` and `npx supabase db reset`. Never reset an existing stack whose data or provenance is unknown.
 
 ## Optional: local database
 
-With Docker running, `npx supabase start` runs a full local Supabase (database, auth, storage, Studio UI) on your machine. `npx supabase db reset` rebuilds it from `migrations/` and then loads `seed.sql`. It's handy for testing a migration before pushing, but not required.
+With Docker running, `npx supabase start` runs a full local Supabase (database, auth, storage, Studio UI) on your machine. After confirming that local database is disposable, `npx supabase db reset` rebuilds it from `migrations/` and then loads `seed.sql`. It's handy for testing a migration before pushing, but not required.
 
-## First push to the shared project (one time)
+## Shared-project safety and recovery
 
-The shared project still has tables from an early schema that was pasted into the SQL Editor by hand (`saved_sidequests`, `community_members`, …). They hold no real data and the CLI doesn't know about them, so **reset the shared database once** and let the CLI build everything from `migrations/`:
+The old one-time remote-reset instructions were removed during M00: their assumption that the shared database has no valuable data is unsafe. Never reset a shared or remote database as setup. Migration files describe repository history; only a verified environment's migration ledger proves what is applied.
 
-```bash
-npx supabase link --project-ref <project-ref>
-npx supabase db reset --remote     # wipes the public schema, then applies all migrations + seed.sql
-npm run db:status                  # every migration should show as applied
-npm run db:types
-```
-
-- `db reset --remote` asks you to confirm. It deletes all data in the app's tables, which is fine now and **never OK after launch**.
-- Anyone who already signed up (e.g. OAuth testing) automatically gets a fresh profile row: the first migration backfills profiles for existing users.
-- From then on, use `npm run db:push` for new migrations. Never reset the shared project again.
+M01 must verify the actual backup plan, retention, Auth/Storage coverage, restore procedure and a recovery drill in an isolated disposable environment before production schema changes. No backup or restore capability has been verified by M00. `launch/remove_demo_data.sql` is destructive and requires separate human review/authorization; it is never a baseline command.
 
 ## Current migrations
 
@@ -94,4 +85,16 @@ npm run db:types
 | `20261122022403_add_community_to_save_trail` | `save_trail()` accepts an optional `community_id` ("Who can see this": everyone or only your own community); leaving it out keeps the current setting |
 | `20261122034826_add_trail_remixes` | `sidequests.remixed_from` (credit for remixed trails, guarded by a trigger so it can't be forged or changed) and `save_trail()` support for it |
 
-Add a row when you add a migration. Which ones are applied is tracked by the CLI (`npm run db:status`), not here.
+Additional migrations already present at M00:
+
+| Migration | Purpose |
+|---|---|
+| `20261122025445_add_friends_activity_function` | Visibility-aware friends activity RPC |
+| `20261122042043_add_stop_to_trail_photos` | Optional stop association and integrity check for photos |
+| `20261122042045_add_trail_visibility_and_close_friends` | Friends/close-friends audiences, helpers and save_trail update |
+| `20261122061906_add_trending_trails_function` | Trending RPC |
+| `20261122070225_add_friends_also_saved_function` | Mutual saved-trail RPC |
+| `20261122130147_seed_more_researched_trails` | Additional researched demo content |
+| `20261122133657_add_custom_trail_category` | Custom category and save_trail support |
+
+There are 21 migration files and 18 pgTAP test files. See [M00 baseline](../docs/refactor/BASELINE.md) for local ledger drift. Add a row when adding a migration. Applied history must be verified per environment; `npm run db:status` queries the linked remote, so inspect the intended target first.

@@ -19,7 +19,7 @@ Then open http://localhost:5178/style-guide.html.
 | `mockups/` | Mobile and web screen mockups in this style (see `mockups/README.md`) |
 | `archive/boston-bound/` | The previous system (T vehicles, Bluebikes, line pills), kept for reference. `mockup.html` still uses it |
 
-> **Naming.** The app is **Breadcrumb**. These mockups call an outing a **trail** and a checklist item a **crumb**. The PRD still calls them a *sidequest* and a *checkpoint*. They map one to one: trail = sidequest, stop = `sidequest_stops`, crumb = `quest_checkpoints`, Start trail = Start quest.
+> **Naming.** The app is **Breadcrumb**. These mockups call an outing a **trail** and a checklist item a **crumb**. The PRD still calls them a *sidequest* and a *checkpoint*. They map one to one: trail = sidequest, stop = `sidequest_stops`, crumb = `checklist_items`, Start trail = Start quest.
 
 ## Direction
 

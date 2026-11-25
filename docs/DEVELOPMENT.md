@@ -8,18 +8,18 @@ How to run, change and deploy the app. For what Breadcrumb is, see the [README](
 | --- | --- |
 | Frontend | React 19, Vite 8, TypeScript, React Router |
 | UI | Tailwind CSS v4, shadcn/ui, Lucide React |
-| Backend | Supabase (PostgreSQL, Auth, Storage later), `@supabase/supabase-js` |
-| Maps (planned) | MapLibre GL JS, MBTA V3 API (not installed yet) |
-| Deploy (planned) | Vercel (not set up yet) |
+| Backend | Supabase (PostgreSQL, Auth, Storage), `@supabase/supabase-js` |
+| Maps/transit | Google Maps JS + Directions/Places, MBTA V3, Bluebikes GBFS |
+| Deployment | Vercel configuration and OG Edge Function; hosted settings require verification |
 
 ## Getting started
 
-Requires Node 20+.
+Use Node 22.22+ within Node 22 to match CI and the locked React Router engine requirement. Local M00 validation used Node 24.8.0; CI selects Node 22. No runtime version file or package engines constraint is committed.
 
 ```bash
-git clone https://github.com/domchenn/boston-hacks-2026.git
-cd boston-hacks-2026
-npm install
+git clone https://github.com/domchenn/breadcrumb.git
+cd breadcrumb
+npm ci
 cp .env.example .env   # then fill in the values, see below
 npm run dev
 ```
@@ -33,6 +33,7 @@ npm run dev
 | `npm run typecheck` | Type-check only (`tsc -b --noEmit`) |
 | `npm run lint` | Run ESLint |
 | `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](../supabase/README.md)) |
+| `npm run test:db` | Run pgTAP against local Supabase (Docker) |
 | `npm run preview` | Serve the production build locally |
 
 ### Environment variables
@@ -54,18 +55,9 @@ If the variables are missing, `src/lib/supabase.ts` throws a clear error the fir
 
 The schema lives in **[`supabase/migrations/`](../supabase/migrations/)**: one SQL file per change, each named for what it does and starting with a header comment. They're applied with the **Supabase CLI**, which tracks which migrations have run. Full workflow: [`supabase/README.md`](../supabase/README.md).
 
-First-time setup for the shared project (done once, by Person A):
+Use a disposable local Supabase database for development and tests. See [database workflow](../supabase/README.md). Shared environments already contain data: do not reset them. Remote changes require a reviewed migration, verified target and task-specific human authorization.
 
-```bash
-npx supabase login
-npx supabase link --project-ref <project-ref>   # the xxxx in https://xxxx.supabase.co
-npx supabase db reset --remote                   # one time only: clears hand-made tables, applies all migrations
-npm run db:types                                 # regenerates src/types/database.types.ts
-```
-
-Then, under **Authentication → Providers**, enable the sign-in methods you want (e.g. email, Google).
-
-**Don't paste schema SQL into the Supabase SQL Editor.** The CLI can't see changes made that way. After this first setup, new migrations go out with `npm run db:push`.
+Enable sign-in providers and allow the correct `/login` redirects separately in each environment. `supabase/config.toml` currently specifies port 3000 for local auth, while Vite normally runs on 5173; reconcile and test this in M03. Local config does not prove hosted auth settings.
 
 ### What the schema enforces
 
@@ -91,8 +83,10 @@ src/
 ├── components/
 │   ├── ui/             shadcn/ui primitives (generated: `npx shadcn@latest add <name>`)
 │   └── layout/         app shell (AppLayout: header + <Outlet/>)
-├── pages/              route-level components (HomePage, NotFoundPage)
+├── pages/              fallback page (NotFoundPage); screens live in features/
+├── features/           implemented feature screens, hooks and adapters
 ├── lib/
+│   ├── api/             shared trail, progress, rating and photo adapters
 │   ├── supabase.ts     the ONE shared Supabase client
 │   └── utils.ts        cn() class helper
 ├── types/
@@ -106,33 +100,28 @@ supabase/
 └── seed.sql
 ```
 
-Add these folders when you first need them: `src/features/<feature>/` (see conventions), `src/hooks/`, `src/contexts/`.
+Implemented features already live under `src/features/`; shared data adapters are in `src/lib/api/`, with maps/transit clients in `src/lib/`. `api/og.ts` is the Vercel Edge Function at repository root, outside the app TypeScript project. See [M00 baseline](refactor/BASELINE.md) for the current inventory.
 
 ## Deploying (Vercel)
 
-The app is a static Vite site. `vercel.json` builds it and sends every URL (e.g. `/trails/123`) to `index.html` so React Router handles it on refresh.
+The app is a static Vite site. `vercel.json` builds it and sends regular SPA URLs (e.g. `/trails/123`) to `index.html` so React Router handles refreshes; crawler/API requests have separate handling.
 
-**First time (one person):**
-1. Go to [vercel.com/new](https://vercel.com/new), sign in with GitHub and import `domchenn/boston-hacks-2026`. Vercel detects Vite; keep the defaults.
-2. **Environment Variables:** add `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_GOOGLE_MAPS_API_KEY` (and optionally `VITE_MBTA_API_KEY`) with the same values as your `.env`. Then **Deploy**.
-3. Note the URL (e.g. `https://breadcrumb.vercel.app`) and allow it everywhere the app is restricted:
-   - **Supabase** → Authentication → URL Configuration: set **Site URL** to it and add `https://<your-app>.vercel.app/**` to **Redirect URLs**.
-   - **Google Cloud** → Credentials → the Maps key → Website restrictions: add `https://<your-app>.vercel.app/*`.
-   - **Google OAuth client** (if Google sign-in uses one): its authorized redirect URI stays the Supabase callback; nothing to add for Vercel.
-4. Open the URL on your phone. Location (Active trail) needs HTTPS, which Vercel provides.
+`vercel.json` explicitly disables Git deployments (`git.deploymentEnabled: false`). Do not assume merges or PRs deploy anything. The crawler rewrite for `/trails/:id` goes to `api/og.ts`; regular SPA routes fall back to `index.html`. Preserve both during file moves.
 
-**After that:** every merge to `main` redeploys automatically, and every PR gets its own preview URL.
+Before configuring staging (M03), verify the existing Vercel project, production branch, manual deployment method, domain, environment scopes, Supabase auth redirects and restricted browser keys. Never reuse production credentials/data in previews by assumption. New services, secrets and deployments require human configuration/authorization. The target integration/release workflow is in [REFACTOR.md](refactor/REFACTOR.md).
 
 ## Team conventions
 
-**Feature folders.** Each workstream owns a folder so people rarely edit the same files:
+**Feature folders.** Claim one task at a time; folders organize code rather than permanent developer ownership. Current examples:
 
 ```text
 src/features/
-├── auth/         auth + profiles   (pages, components, hooks, api.ts)
-├── discovery/    feed + social
-├── sidequests/   create / edit / detail / save / join / complete / review
-└── maps/         MapLibre + MBTA
+├── auth/         sign-in and onboarding
+├── explore/      feed, filters and discovery tabs
+├── trail/        detail, active trail, photos and reviews
+├── make/         create, edit and remix
+├── profile/      public/private profile screens
+└── map/          map screen (shared clients in src/lib/)
 ```
 
 - Put Supabase queries in `src/features/<feature>/api.ts`, not inside components.
@@ -141,5 +130,5 @@ src/features/
 - Add your routes to `src/App.tsx` as children of `AppLayout`. Keep that diff small to avoid conflicts.
 - Use the `@/` alias for imports from `src`.
 - Add UI primitives with `npx shadcn@latest add button card ...` (they land in `src/components/ui/`). Use theme tokens (`bg-primary`, `text-muted-foreground`), not hard-coded colors. Design mobile-first: base styles target phones, and `sm:`/`md:` add larger layouts.
-- Branch per feature (`feat/discovery-feed`) and open a PR into `main`. Run `npm run build && npm run lint` before pushing.
+- Follow [AGENTS.md](../AGENTS.md) for branch bases: baseline/bootstrap against verified main until M02; features against develop after integration is verified. Run lint, typecheck, build and relevant local database tests. Never merge automatically.
 - Never commit `.env` or any secret key.

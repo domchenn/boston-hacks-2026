@@ -1,6 +1,6 @@
 # Breadcrumb — Tasks
 
-Who builds what, in what order. **Agents: read this file, `AGENTS.md` and `docs/STYLE_GUIDE.md` before starting a task.**
+Historical hackathon task log. For current migration work, use [the migration checklist](refactor/MIGRATION_CHECKLIST.md) and [AGENTS.md](../AGENTS.md). Named owners and parallel rounds below describe past coordination; one developer can execute current tasks in dependency order. **Agents: read this file, `AGENTS.md` and `docs/STYLE_GUIDE.md` before starting a task.**
 
 Sources: [PRD.md](PRD.md) · design: [`mockups/`](mockups/) (Main = web, Mobile-* = phone) and [STYLE_GUIDE.md](STYLE_GUIDE.md) · database: [`supabase/README.md`](../supabase/README.md)
 
@@ -14,19 +14,15 @@ Sources: [PRD.md](PRD.md) · design: [`mockups/`](mockups/) (Main = web, Mobile-
 | Make a trail | create a `sidequests` row + stops + crumbs |
 | Start trail / Finished / Saved | `user_sidequests.status` = `in_progress` / `completed` / `saved` |
 
-Screens say trail and crumb. Code keeps the table names; don't rename tables. (The style guide mentions `quest_checkpoints`; that table doesn't exist. Crumbs are `checklist_items`.)
+Screens say trail and crumb. Code keeps the table names; don't rename tables. Crumbs are `checklist_items`.
 
 ## How to do a task
 
-1. `git checkout main && git pull`
-2. Open your agent in the repo and tell it: **"Do task <ID> from docs/TASKS.md."**
-3. Check the result with `npm run dev`, on desktop and at phone width.
-4. The agent creates the branch named in the task, runs `npm run build && npm run lint`, and opens a PR. **It doesn't merge.**
-5. Wait for CI to go green, then ask a teammate to review and merge. (`main` is protected: no direct pushes.)
+Follow the branch, checks and review workflow in [AGENTS.md](../AGENTS.md). Do not execute historical deployment or database instructions below without checking the current migration plan. Preserve task history as context, not an active assignment split.
 
 ## Routes
 
-Every route already exists in `src/App.tsx` and points at a placeholder page. **Replace your page's contents; don't edit `App.tsx`.**
+Routes in `src/App.tsx` now point to implemented screens. Inspect current source before changing them; this table is historical and omits newer legal/admin routes.
 
 | Path | Screen | Owner | File |
 |---|---|---|---|
