@@ -11,11 +11,13 @@ The active developer confirmed during M01 that Supabase project `gekcvmzpahocsxn
 | M00 accepted | Developer merged [PR #90](https://github.com/domchenn/breadcrumb/pull/90); main contains merge commit 1329677. Its baseline findings remain historical evidence. |
 | Hosted backup metadata | `supabase backups list --remote=gekcvmzpahocsxnvsdyy --output json` succeeded: backups=null, physical_backup_data={}, pitr_enabled=false, walg_enabled=true, region=us-east-2. |
 | Interpretation | No backup records, usable recovery window or completed backup timestamp were returned. WAL-G being enabled does not demonstrate an accessible/restorable backup. PITR is disabled. Do not infer the billing tier, retention or absence of all backups from this response. |
-| Plan, retention and last usable backup | Unverified. Human owner must inspect Database → Backups and organization billing; record plan, method, successful timestamp, available window and access permissions. No billing change is authorized. |
+| Plan and scheduled backup availability | Developer supplied the production Database → Backups screenshot on 2026-11-24: “Free Plan does not include project backups.” Scheduled provider backups are unavailable on the current plan; no usable backup timestamp/window is shown. This confirms the plan independently of the CLI response. No billing change is authorized. |
 | Off-site archive and media copy | Unverified. No repository backup job or recovery archive manifest exists. External backups may exist; owner must confirm location, access, encryption, retention and last successful run without sharing secrets. |
 | Restore destination | None approved. No disposable hosted project or full local recovery environment has been selected. Existing local Breadcrumb stack has migration drift and must not be reset or used as a restore target. |
 | Recovery drill / objectives | Not run; recovery point objective (maximum acceptable lost data) and recovery time objective (maximum acceptable outage) are not yet agreed. Do not invent service guarantees. |
 | Tooling | Installed Supabase CLI 3.2.0 supports backups list and db dump; read-only help and local db dump --dry-run passed. Local host pg_dump is major 15, while the server is 17; do not use the older binary to dump this server. The existing Supabase DB container provides pg_dump 17.12. |
+
+Next recovery action: choose and authorize a manual database/media backup workflow on the current plan, or have the human owner configure an approved provider backup option. The screenshot does not establish whether independent manual backups already exist. No export or upgrade has been performed.
 
 The local dry-run confirms that a plain `supabase db dump` is schema-only and excludes auth, storage and supabase_migrations among other managed schemas. It is **not** a complete application backup. No dump contents, credentials or personal data were collected.
 
@@ -59,7 +61,7 @@ Before starting, the owner must approve the exact destination and data scope. A 
 
 ## Validation of this preparation PR
 
-On 2026-11-24, npm run lint, npm run typecheck and npm run build passed. Build retains the existing 875.65 kB JS chunk warning. npm run test:db passed all 181 assertions across 18 files against the existing local stack, without a reset; its M00 ledger-drift limitation still applies. Local Markdown links and git diff --check passed; a repository search found no remaining remote-reset setup commands in the reviewed Markdown. These checks validate the unchanged application baseline and documentation, not backup completeness or recovery. Browser/device testing, production data export and all restore drills were not run.
+On 2026-11-24, npm run lint, npm run typecheck and npm run build passed. Build retains the existing 875.65 kB JS chunk warning. npm run test:db passed all 181 assertions across 18 files against the existing local stack, without a reset; its M00 ledger-drift limitation still applies. Local Markdown links and git diff --check passed (including the subsequent screenshot-evidence update); a repository search found no remaining remote-reset setup commands in the reviewed Markdown. These checks validate the unchanged application baseline and documentation, not backup completeness or recovery. Browser/device testing, production data export and all restore drills were not run.
 
 ## Acceptance record
 

@@ -64,7 +64,7 @@ With Docker running, `npx supabase start` runs a full local Supabase (database, 
 
 The old one-time remote-reset instructions were removed during M00: their assumption that the shared database has no valuable data is unsafe. Never reset a shared or remote database as setup. Migration files describe repository history; only a verified environment's migration ledger proves what is applied.
 
-Follow the [M01 recovery runbook and evidence register](../docs/refactor/RECOVERY.md) before production schema changes. The production project is confirmed, but the read-only backup response contains no backup records/window and reports PITR disabled. Database/media backup coverage and an isolated recovery drill remain unverified. A default `supabase db dump` is schema-only and excludes managed schemas; it is not a complete backup. `launch/remove_demo_data.sql` is destructive and requires separate human review/authorization; it is never a baseline command.
+Follow the [M01 recovery runbook and evidence register](../docs/refactor/RECOVERY.md) before production schema changes. The production project is confirmed; the developer-supplied dashboard screenshot confirms Free plan without scheduled project backups, and the read-only metadata reports PITR disabled. Database/media backup coverage and an isolated recovery drill remain unverified. A default `supabase db dump` is schema-only and excludes managed schemas; it is not a complete backup. `launch/remove_demo_data.sql` is destructive and requires separate human review/authorization; it is never a baseline command.
 
 ## Current migrations
 
