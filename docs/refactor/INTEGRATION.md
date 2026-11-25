@@ -1,6 +1,6 @@
 # M02 — integration bootstrap
 
-Status: repository changes prepared for review; hosted activation pending. Inspected 2026-11-24 against main 132967738ab39c1ccf5c0fb0950a9904ddf77d61. This PR is independent of draft [M01 PR #91](https://github.com/domchenn/breadcrumb/pull/91); it contains no recovery artifacts or production data. M03 still depends on accepted M01 and M02.
+Status: repository changes prepared for review; hosted activation pending. Inspected 2026-11-24 against main 132967738ab39c1ccf5c0fb0950a9904ddf77d61. M01 documentation was accepted in [PR #91](https://github.com/domchenn/breadcrumb/pull/91) and its merge commit b6dddc3 is now incorporated into this branch. M02 has no recovery artifacts or production data. M03 still depends on accepted M01 and M02.
 
 ## Current evidence
 
@@ -52,7 +52,7 @@ Do not activate integrations or change branch protection before approval. No rem
 
 ## Relationship to PR #91 and next task
 
-PR #91 is already open in draft. Its completed documentation and backup evidence can be marked ready for review and merged independently; the M01 checkbox must stay incomplete until full recovery acceptance. Draft status is a review preference, not a dependency on finishing the entire task. If either PR merges first, reconcile checklist/decision-log edits from the latest main before merging the other; preserve each task's evidence and do not mark M01 done merely because its docs merge. M02 does not include or depend on the recovery branch's commits.
+PR #91 documentation has merged into main as b6dddc3. Its recovery records and this PR’s integration records are both preserved after conflict resolution. The M01 checkbox remains incomplete until full recovery acceptance; merging its documentation did not certify a restore. M02 still has no dependency on finishing M01, while M03 depends on both.
 
 Next work: complete the read-only Supabase integration review and obtain approval for the named remote activation steps. Vercel remains on manual deployment. M03 remains blocked on full M01/M02 acceptance; no workspace move or staging project provisioning starts in this PR.
 

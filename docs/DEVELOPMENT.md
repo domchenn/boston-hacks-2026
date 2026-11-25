@@ -110,7 +110,7 @@ Vercel deployment is intentionally manual, as confirmed by the active developer.
 
 Before configuring staging (M03), verify the existing Vercel project, production branch, manual deployment method, domain, environment scopes, Supabase auth redirects and restricted browser keys. Never reuse production credentials/data in previews by assumption. New services, secrets and deployments require human configuration/authorization. The target integration/release workflow is in [REFACTOR.md](refactor/REFACTOR.md).
 
-Current integration bootstrap status and exact activation steps: [M02 integration guide](refactor/INTEGRATION.md). CI adds develop push checks in that PR; branch creation/protection and hosted deployment effects remain separate acceptance steps. PR #91 recovery work need not merge before this independent bootstrap.
+Current integration bootstrap status and exact activation steps: [M02 integration guide](refactor/INTEGRATION.md). CI adds develop push checks in that PR; branch creation/protection and hosted deployment effects remain separate acceptance steps. M01 recovery acceptance does not block this independent bootstrap.
 
 ## Team conventions
 
