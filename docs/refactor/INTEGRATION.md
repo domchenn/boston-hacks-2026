@@ -23,7 +23,7 @@ Status: approved activation implemented and verified; evidence PR in review. Boo
 
 Creation of develop emitted a push event and ran both jobs successfully in [run 45550117217](https://github.com/domchenn/breadcrumb/actions/runs/45550117217), head 640051a. The database job starts a disposable runner-local Supabase DB, replays migrations/seed and runs pgTAP; it does not target the linked production project.
 
-The activation-evidence branch starts from develop and its PR targets develop, providing a real PR-workflow check without an application/schema change. Required check names remain unchanged. No token write permissions, deployment jobs, credentials or dependencies were added. The evidence PR records its own CI results; human review/merge remains required, and agents never approve or merge it.
+The activation-evidence branch starts from develop and [PR #93](https://github.com/domchenn/breadcrumb/pull/93) targets develop, providing a real PR-workflow check without an application/schema change. Required check names remain unchanged. No token write permissions, deployment jobs, credentials or dependencies were added. The evidence PR records its own CI results; human review/merge remains required, and agents never approve or merge it.
 
 ## Deployment controls — manual
 
