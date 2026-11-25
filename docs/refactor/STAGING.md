@@ -4,10 +4,11 @@ Status: set up and verified 2026-11-25, with the limits below. Staging has its o
 
 | Piece | Staging | Production |
 |---|---|---|
-| Supabase | `breadcrumb-staging`, ref `amedzumavcsjcaueldzs`, us-east-2, Free, organization breadcrumb | `breadcrumb`, ref `gekcvmzpahocsxnvsdyy`, us-east-2 |
+| Supabase | `breadcrumb-staging`, ref `amedzumavcsjcaueldzs`, us-east-2, Free | `breadcrumb`, ref `gekcvmzpahocsxnvsdyy`, us-east-2, Free |
+| Organization | breadcrumb | breadcrumb (moved from giaqinoDev's Org on 2026-11-25) |
 | Website | Vercel project breadcrumb-staging, https://breadcrumb-staging-seven.vercel.app | Vercel project breadcrumb, breadcrumb.boston |
 | Deploys | Manual (`git.deploymentEnabled: false`) | Manual |
-| Supabase GitHub integration | Not connected | Connected; Deploy to production off |
+| Supabase GitHub integration | Not connected | Disconnected for the transfer; Deploy to production was off |
 | Maps key | Separate browser key | Own key |
 
 ## Evidence
@@ -28,6 +29,10 @@ Status: set up and verified 2026-11-25, with the limits below. Staging has its o
 - Deploy `develop` by hand in the breadcrumb-staging Vercel project. Variable changes need a new build.
 - Use only made-up test accounts and data. Never copy production data or keys here.
 - Free projects pause after about a week of low activity.
+
+## Production organization transfer — 2026-11-25
+
+Both developers agreed to move production into the breadcrumb organization. Before the move, the owner made a new encrypted backup (`breadcrumb-backup-3`: 51 tables, 6 of 6 photos matching, image checksum stored beside it) and disconnected the Supabase GitHub integration. The owner, an Owner of both organizations, then transferred the project. Afterward, the project ref, region, health, migrations (21 of 21), public row counts, photo access, sign-in providers, website bundle and publishable key all matched a snapshot taken before the move. The Vercel project connection remained. Members of the old organization only regain access through the new one. A full Google sign-in after the move is pending the owner's test.
 
 ## Not covered
 
