@@ -31,7 +31,7 @@ The CLI targets a *local* database by default. The db:push, db:status and db:typ
 | `npm run db:new -- <name>` | Create a new empty migration, e.g. `npm run db:new -- add_quest_photo_storage_bucket` |
 | `npm run db:status` | Show which migrations exist locally and which have been applied to the project |
 | `npm run db:push` | Apply all not-yet-applied migrations to the linked Supabase project |
-| `npm run db:types` | Regenerate `src/types/database.types.ts` from the live project |
+| `npm run db:types` | Regenerate `apps/web/src/types/database.types.ts` from the live project |
 | `npm run test:db` | Run the database security tests against a **local** database (needs Docker; see below) |
 
 ## Changing the schema

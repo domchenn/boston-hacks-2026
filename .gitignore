@@ -36,4 +36,4 @@ supabase/.branches
 .claude/
 
 # Temp file from npm run db:types
-src/types/database.types.tmp
+apps/web/src/types/database.types.tmp

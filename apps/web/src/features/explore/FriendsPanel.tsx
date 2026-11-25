@@ -20,7 +20,7 @@ import { PersonAvatar } from '@/features/friends/FriendsActivity'
 import { useFriendsActivity } from '@/features/friends/useFriendsActivity'
 import { loginPath } from '@/features/trail/trailLinks'
 import { useSession } from '@/lib/useSession'
-import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
+import emptyTrail from '../../../../../docs/assets/svg/empty-trail.svg'
 
 const ACTIVITY_LIMIT = 60
 

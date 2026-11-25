@@ -2,9 +2,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 /* Breadcrumb style guide (docs/STYLE_GUIDE.md): tokens + ready-made classes (.btn, .trail-card, .stops…). */
-@import "../docs/styles/tokens.css";
+@import "../../../docs/styles/tokens.css";
 /* components.css sits in Tailwind's components layer so utilities (md:hidden, mt-4…) can override its classes. */
-@import "../docs/styles/components.css" layer(components);
+@import "../../../docs/styles/components.css" layer(components);
 
 @custom-variant dark (&:is(.dark *));
 

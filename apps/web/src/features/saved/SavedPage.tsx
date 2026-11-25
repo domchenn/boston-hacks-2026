@@ -7,7 +7,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { BookmarkX, LoaderCircle } from 'lucide-react'
-import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
+import emptyTrail from '../../../../../docs/assets/svg/empty-trail.svg'
 import { TrailCard } from '@/components/TrailCard'
 import { ProgressError, progressErrorMessage, unsaveTrail } from '@/lib/api/progress'
 import { useSession } from '@/lib/useSession'

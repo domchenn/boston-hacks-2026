@@ -15,7 +15,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { MailCheck } from 'lucide-react'
-import logoMark from '../../../docs/assets/svg/logo-mark.svg'
+import logoMark from '../../../../../docs/assets/svg/logo-mark.svg'
 import { useSession } from '@/lib/useSession'
 import {
   isAuthRedirectUrl,

@@ -7,7 +7,7 @@
 import { useId, type CSSProperties } from 'react'
 import { Bike, Bus, CalendarDays, Clock, Footprints, TrainFront, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
-import logoMark from '../../../docs/assets/svg/logo-mark.svg'
+import logoMark from '../../../../../docs/assets/svg/logo-mark.svg'
 import { LINE_INFO, formatMinutes } from '@/components/trailFormat'
 import type { TrailDetail } from '@/lib/api/trails'
 

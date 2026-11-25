@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import { CircleAlert, Lock, Settings, Star } from 'lucide-react'
-import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
+import emptyTrail from '../../../../../docs/assets/svg/empty-trail.svg'
 import { BadgeStrip } from '@/features/badges/BadgeStrip'
 import { FollowBar } from '@/features/friends/FollowBar'
 import { useSession } from '@/lib/useSession'
