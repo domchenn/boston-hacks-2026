@@ -1,6 +1,6 @@
 # M02 — integration workflow
 
-Status: approved activation implemented and verified; evidence PR in review. Bootstrap [PR #92](https://github.com/domchenn/breadcrumb/pull/92) merged as 640051a. The developer then authorized creating/protecting develop and disabling automatic Supabase production deployment. M01 recovery acceptance remains independent; M03 still needs accepted M01 and M02.
+Status: approved activation implemented, verified and accepted through merged PR #93 (04ef6b6). Bootstrap [PR #92](https://github.com/domchenn/breadcrumb/pull/92) merged as 640051a. The developer then authorized creating/protecting develop and disabling automatic Supabase production deployment. M01 recovery acceptance remains independent; M03 still needs accepted M01 and M02.
 
 ## Active branches and rules
 
@@ -43,7 +43,7 @@ Do not assume Vercel's Git setting controls Supabase deployments: these are sepa
 
 ## Acceptance and next task
 
-Verified: develop source SHA, effective protections/no bypass, unchanged main/default, successful develop push CI, persisted Supabase automatic-deploy disablement and unchanged Vercel production deployment. The real evidence PR checks the develop PR path; its final CI/merge state is recorded in the handoff. M02 stays in review until that evidence is accepted; this is not an authorization to merge as an agent.
+Verified: develop source SHA, effective protections/no bypass, unchanged main/default, successful develop push CI, persisted Supabase automatic-deploy disablement and unchanged Vercel production deployment. The real evidence PR checks the develop PR path; its final CI/merge state is recorded in the handoff. M02 was accepted when the developer merged PR #93.
 
 Next unblocked work is M01 recovery acceptance (isolated restore test, off-site custody/retention, objectives and configuration coverage). M03 remains gated; no staging provisioning, workspace move or production release was started by M02.
 

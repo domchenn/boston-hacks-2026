@@ -39,3 +39,7 @@ M02 clarification: the developer explicitly requires Vercel manual deployment. P
 ## M02 — approved integration activation
 
 Status: implemented with live evidence; follow-up evidence PR in review. After merging #92, the developer authorized creating develop at 640051a, installing the reviewed protection policy and turning off Supabase automatic production deployment. Applied ruleset 28048159 without bypass actors; kept main/default and its rules unchanged. The alternative of leaving Supabase deploy-to-production enabled was rejected because merges to main could apply database changes independently of Vercel's manual web deployment. Both deployment paths now require manual action. Supabase automatic preview branching stays disabled; no paid resource was created. See [INTEGRATION.md](INTEGRATION.md) for push CI, effective rules and persisted UI verification. No production SQL or release occurred.
+
+## 2026-11-25 — M01 local-only backups and restore drill
+
+Status: local-only storage chosen by the owner; remaining limits proposed. The first archive can no longer be opened, so a replacement was exported and restored in an isolated container. Paid Supabase backups were declined because of cost. Storing the image in the checkout under gitignore was considered and rejected: the repository is public, a forced add would publish it and `git clean -fdx` would delete it. Consequence: losing this computer loses the backup. M01 stays open until the owner accepts the limits in [RECOVERY.md](RECOVERY.md). M02 was accepted through merged PR #93.
