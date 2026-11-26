@@ -29,7 +29,7 @@ The activation-evidence branch starts from develop and [PR #93](https://github.c
 
 **Vercel:** Dom's Team / breadcrumb serves breadcrumb.boston. Production tracks main, no deploy hooks are configured, and git.deploymentEnabled=false remains unchanged. Browser inspection after develop creation confirms the production deployment is still `DWbj1qNsYUmWf7RyTZ9tMD37rqgo`, source **badd951** (PR #89). No production web deployment was triggered or promoted. Environment isolation is not established: the Maps key is scoped to Production and Preview. M03 must verify isolated credentials/data before deploying staging.
 
-**Supabase:** production project gekcvmzpahocsxnvsdyy connects to domchenn/breadcrumb with working directory `.`. The GitHub integration previously had Deploy to production on for main. Following explicit approval, it was switched **off**, saved, and verified **off after a full page reload**. Automatic branching remains off/disabled on the Free plan (limit 0), so no paid preview branch was enabled or created. The Vercel project connection was retained. No SQL, migration, credential, billing or project-data change was performed.
+**Supabase:** production project gekcvmzpahocsxnvsdyy connects to domchenn/breadcrumb with working directory `.`. The GitHub integration previously had Deploy to production on for main. Following explicit approval, it was switched **off**, saved, and verified **off after a full page reload**. Automatic branching remains off/disabled on the Free plan (limit 0), so no paid preview branch was enabled or created. The Vercel project connection was retained. On 2026-11-25 the GitHub integration was disconnected for the organization transfer (see STAGING.md). No SQL, migration, credential, billing or project-data change was performed.
 
 Do not assume Vercel's Git setting controls Supabase deployments: these are separate integrations. Existing manual provider actions remain available and require target-specific approval. A skipped Supabase Preview check is not a substitute for verified settings. Provider references: [Vercel Git controls](https://vercel.com/docs/project-configuration/git-configuration#git.deploymentenabled), [Supabase GitHub integration](https://supabase.com/docs/guides/deployment/branching/github-integration).
 
@@ -45,7 +45,7 @@ Do not assume Vercel's Git setting controls Supabase deployments: these are sepa
 
 Verified: develop source SHA, effective protections/no bypass, unchanged main/default, successful develop push CI, persisted Supabase automatic-deploy disablement and unchanged Vercel production deployment. The real evidence PR checks the develop PR path; its final CI/merge state is recorded in the handoff. M02 was accepted when the developer merged PR #93.
 
-M01 was accepted on 2026-11-25 (see RECOVERY.md). Next is M03; no staging provisioning, workspace move or production release was started by M02.
+M01 was accepted on 2026-11-25 (see RECOVERY.md). M03 evidence is in STAGING.md; no staging provisioning, workspace move or production release was started by M02.
 
 ## Validation scope
 

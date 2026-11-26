@@ -43,3 +43,15 @@ Status: implemented with live evidence; follow-up evidence PR in review. After m
 ## 2026-11-25 — M01 local-only backups and restore drill
 
 Status: accepted by the owner 2026-11-25 (local-only storage and the remaining limits). The first archive can no longer be opened, so a replacement was exported and restored in an isolated container. Paid Supabase backups were declined because of cost. Storing the image in the checkout under gitignore was considered and rejected: the repository is public, a forced add would publish it and `git clean -fdx` would delete it. Consequence: losing this computer loses the backup. M01 is accepted with the limits in [RECOVERY.md](RECOVERY.md). M02 was accepted through merged PR #93.
+
+## 2026-11-25 — M03 staging setup
+
+Status: implemented by the owner. Staging is a separate free Supabase project in its own organization and a separate Vercel project, because Vercel custom environments need a paid plan. GitHub stays unconnected to the staging database so migrations remain a deliberate manual step. Alternatives considered: staging inside the existing organization, or Vercel previews in the production project (rejected because its keys are shared with previews). Production was later moved into the same organization with both developers' agreement (recorded in STAGING.md); GitHub stays disconnected. See [STAGING.md](STAGING.md).
+
+## 2026-11-25 — M04 accepted, M05 deferred
+
+M04 merged in PR #98: the web app is in `apps/web`, and both Vercel projects need Root Directory `apps/web` (staging done; production at the next release). A root `vercel.json` keeps Git deploys off for any project still pointed at the repo root. M05 (Turborepo) is **deferred**: with one app, npm workspace scripts already run lint, typecheck and build, so Turborepo would add configuration without saving time. Revisit when `apps/api` or `apps/mobile` exists. Staging is tested on its stable domain, because the restricted Maps key rejects Vercel's per-deployment addresses by design.
+
+## 2026-11-26 — API hosting: Google Cloud Run (replaces Railway in D08)
+
+Status: accepted by the owner. Alternatives compared: Railway (simplest, no meaningful free tier), Render (free tier sleeps after 15 minutes and takes about a minute to wake), Fly.io (no ongoing free tier for new accounts), Cloudflare Workers (cannot run NestJS/Fastify without a rewrite). Cloud Run runs the same Docker image, scales to zero with an always-free monthly allowance and supports startup credits, at the cost of more setup. One Google Cloud project per environment: `breadcrumb-staging-515905` (new) and the existing `breadcrumb` project (which already holds the Maps keys) for production. Both have alert-only budgets ($5 staging, $10 production) that ignore credits, so they report real usage during the free trial. Spend-cap enforcement was rejected because it could pause Maps on the live site. The billing account is on the free trial and must be upgraded before the trial ends or the live site loses Maps. The image stays host-neutral, so moving later needs no code change.

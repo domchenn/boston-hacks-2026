@@ -1,9 +1,13 @@
 # CI: runs on every pull request and on pushes to main and develop.
 #
-# - app:      clean install, lint, typecheck and production build of the Vite app.
-# - database: starts a throwaway local Supabase database in Docker, applies every
-#             migration in supabase/migrations/ plus seed.sql, then runs the pgTAP
-#             security tests in supabase/tests/. Never touches the real project.
+# - app:      clean install, then lint, typecheck, unit tests and build for every
+#             workspace app (apps/web, apps/api).
+# - database: starts a throwaway local Supabase (database, auth, PostgREST and the
+#             API gateway only) in Docker, applies every migration in supabase/migrations/
+#             plus seed.sql, runs the pgTAP security tests in supabase/tests/, then the
+#             API's RLS integration tests against it. Never touches the real project.
+# - api-image: builds the API container (apps/api/Dockerfile) and checks it starts,
+#             answers /health and exits cleanly. Nothing is pushed or deployed.
 #
 # Both jobs must pass before a PR is merged.
 name: CI
@@ -34,6 +38,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
 
   database:
@@ -47,9 +52,44 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Start local Supabase database
-        run: npx supabase db start
+      - name: Start local Supabase (database, auth, PostgREST, gateway)
+        run: >-
+          npx supabase start
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Apply all migrations and seed.sql
         run: npx supabase db reset --yes
       - name: Run database tests
         run: npx supabase test db
+      - name: Run API integration tests (RLS equivalence)
+        run: |
+          echo "status provides: $(npx supabase status -o env | cut -d= -f1 | tr '\n' ' ')"
+          eval "$(npx supabase status -o env | grep -E '^(API_URL|PUBLISHABLE_KEY|JWT_SECRET|DB_URL)=')"
+          SUPABASE_TEST_URL="$API_URL" \
+          SUPABASE_TEST_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" \
+          SUPABASE_TEST_JWT_SECRET="$JWT_SECRET" \
+          SUPABASE_TEST_DB_URL="$DB_URL" \
+          npm run test:integration -w @breadcrumb/api
+
+  api-image:
+    name: API image (build + smoke test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the API image
+        run: docker build -f apps/api/Dockerfile -t breadcrumb-api:ci .
+      - name: Start it with placeholder settings and check /health
+        run: |
+          docker run -d --name api -p 8080:8080 \
+            -e SUPABASE_URL=https://example.supabase.co \
+            -e SUPABASE_PUBLISHABLE_KEY=sb_publishable_placeholder_key \
+            breadcrumb-api:ci
+          for _ in $(seq 1 30); do curl -fsS localhost:8080/health && break; sleep 1; done
+          curl -fsS localhost:8080/health | grep -q '"ok"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/v1/me)" = 401
+      - name: Stop it and check for a clean shutdown
+        if: always()
+        run: |
+          docker stop -t 10 api
+          docker logs api | tail -5
+          test "$(docker inspect api --format '{{.State.ExitCode}}')" = 0
