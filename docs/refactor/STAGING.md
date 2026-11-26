@@ -46,11 +46,13 @@ To redeploy from an up-to-date `develop` (replace nothing; the tag is the commit
 ```sh
 TAG=$(git rev-parse --short HEAD)
 IMG=us-east5-docker.pkg.dev/breadcrumb-staging-515905/breadcrumb/api:$TAG
-docker buildx build --platform linux/amd64 -f apps/api/Dockerfile -t "$IMG" --push .
+docker buildx build --platform linux/amd64 --provenance=false --sbom=false -f apps/api/Dockerfile -t "$IMG" --push .
 gcloud run deploy breadcrumb-api --project breadcrumb-staging-515905 --region us-east5 --image "$IMG"
 ```
 
-Settings and limits carry over between deploys. Build with `--platform linux/amd64`, because Cloud Run doesn't run Apple Silicon (arm64) images. An unused third Google Cloud project, `breadcrumb-515501`, has no Maps APIs or keys; the owner may shut it down.
+Settings and limits carry over between deploys. Build with `--platform linux/amd64`, because Cloud Run doesn't run Apple Silicon (arm64) images. `--provenance=false --sbom=false` stores one image per deploy, so the tag points at exactly the digest Cloud Run runs. (Docker's default adds an image index and an attestation, and Cloud Run then runs an untagged child manifest that cleanup rules could otherwise target.)
+
+**Registry cleanup policy** (repository `breadcrumb`, active since 2026-11-26): keep the 5 most recent `api` images and delete anything else older than 14 days. The live image is always the newest, so it is never removed, and the 4 before it remain for rollback. Change it with `gcloud artifacts repositories set-cleanup-policies breadcrumb --location=us-east5 --project=breadcrumb-staging-515905 --policy=<file>.json`. An unused third Google Cloud project, `breadcrumb-515501` (under "No organization"), has no Maps APIs or keys; the owner may shut it down.
 
 ## Production organization transfer — 2026-11-25
 
