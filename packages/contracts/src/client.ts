@@ -13,7 +13,7 @@ import {
   SavedTrailList,
   type MyTrailsQuery,
 } from './profiles.js'
-import { TrailProgress } from './progress.js'
+import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
 import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
@@ -138,6 +138,26 @@ export function createApiClient(options: ApiClientOptions) {
     /** Replace one of your trails (stops included) through save_trail(); returns its id. Requires sign-in. */
     async updateTrail(id: string, body: SaveTrailBody) {
       return (await send('PUT', `/v1/trails/${encodeURIComponent(id)}`, TrailSaved, false, body))!
+    },
+
+    /** The caller's status on a trail (null = none). Requires sign-in. */
+    getMyProgress(trailId: string) {
+      return send('GET', `/v1/me/trails/${encodeURIComponent(trailId)}/progress`, TrailProgress) as Promise<TrailProgress>
+    },
+
+    /** Start, finish or abort a trail; returns the new status. Requires sign-in. */
+    async trailAction(trailId: string, action: TrailAction) {
+      return (await send('POST', `/v1/me/trails/${encodeURIComponent(trailId)}/${action}`, TrailProgress))!
+    },
+
+    /** Ids of the crumbs the caller has ticked on a trail. Requires sign-in. */
+    async getTickedCrumbs(trailId: string) {
+      return (await send('GET', `/v1/me/trails/${encodeURIComponent(trailId)}/crumbs`, TickedCrumbs))!.crumbIds
+    },
+
+    /** Tick (done = true) or untick a crumb during an active trail. Requires sign-in. */
+    async setCrumb(crumbId: string, done: boolean) {
+      return (await send(done ? 'PUT' : 'DELETE', `/v1/me/crumbs/${encodeURIComponent(crumbId)}`, CrumbState))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */

@@ -29,9 +29,10 @@
  * whose `message` is ready to show and whose `code` says what to do (e.g.
  * `not_signed_in` → send to /login?next=…).
  *
- * With VITE_API_URL set, saveTrail and unsaveTrail go through the API
- * (PUT / DELETE /v1/me/saved-trails/:id), which applies the same table server-side
- * under the same RLS; their errors map to the same ProgressError codes.
+ * With VITE_API_URL set, every function here goes through the API
+ * (/v1/me/saved-trails/:id, /v1/me/trails/:id/{progress,start,finish,abort,crumbs},
+ * /v1/me/crumbs/:id), which applies the same table server-side under the same RLS;
+ * errors map to the same ProgressError codes.
  */
 
 import { getApi } from '@/lib/apiClient'
@@ -94,24 +95,28 @@ function toProgressError(error: DbError, context: 'trail' | 'crumb'): ProgressEr
 }
 
 /** Turns an API failure into a ProgressError (API errors carry an HTTP status). */
-function apiProgressError(error: unknown): ProgressError {
+function apiProgressError(error: unknown, context: 'trail' | 'crumb' = 'trail'): ProgressError {
   const status = error instanceof Error && 'status' in error ? Number((error as { status: unknown }).status) : 0
   const code: ProgressErrorCode = !status
     ? 'network'
     : status === 401
       ? 'not_signed_in'
-      : status === 404
-        ? 'unavailable'
-        : 'unknown'
+      : status === 403 && context === 'crumb'
+        ? 'not_started'
+        : status === 404 || status === 403
+          ? 'unavailable'
+          : 'unknown'
   return new ProgressError(code, MESSAGES[code])
 }
 
-/** Runs an API action, translating its failures; callers already checked sign-in. */
-async function viaApi(action: (api: NonNullable<Awaited<ReturnType<typeof getApi>>>) => Promise<unknown>): Promise<void> {
+type Api = NonNullable<Awaited<ReturnType<typeof getApi>>>
+
+/** Runs an API call, translating its failures; callers already checked sign-in. */
+async function viaApi<T>(action: (api: Api) => Promise<T>, context: 'trail' | 'crumb' = 'trail'): Promise<T> {
   try {
-    await action((await getApi())!)
+    return await action((await getApi())!)
   } catch (error) {
-    throw apiProgressError(error)
+    throw apiProgressError(error, context)
   }
 }
 
@@ -185,14 +190,22 @@ export async function getMyStatus(trailId: string): Promise<UserSidequestStatus 
   const { data } = await supabase.auth.getSession()
   const userId = data.session?.user.id
   if (!userId) return null
+  if (getApi()) return (await viaApi((api) => api.getMyProgress(trailId))).status
   return (await readRow(userId, trailId, true))?.status ?? null
+}
+
+/** Start / finish / abort through the API when VITE_API_URL is set. */
+async function apiAction(trailId: string, action: 'start' | 'finish' | 'abort'): Promise<void> {
+  await requireUserId()
+  await viaApi((api) => api.trailAction(trailId, action))
 }
 
 /** Bookmark a trail (status 'saved'). On an in-progress trail this is "save for later". */
 export async function saveTrail(trailId: string): Promise<void> {
   if (getApi()) {
     await requireUserId()
-    return viaApi((api) => api.saveTrail(trailId))
+    await viaApi((api) => api.saveTrail(trailId))
+    return
   }
   return transition(trailId, 'saved', [null, 'in_progress', 'aborted'])
 }
@@ -200,7 +213,10 @@ export async function saveTrail(trailId: string): Promise<void> {
 /** Remove the bookmark (deletes the row if the trail wasn't started). */
 export async function unsaveTrail(trailId: string): Promise<void> {
   const userId = await requireUserId()
-  if (getApi()) return viaApi((api) => api.unsaveTrail(trailId))
+  if (getApi()) {
+    await viaApi((api) => api.unsaveTrail(trailId))
+    return
+  }
   const row = await readRow(userId, trailId, false)
   if (row?.status !== 'saved') return
   // Paused mid-trail: keep the history (and ticked crumbs) but take it off Saved.
@@ -219,16 +235,19 @@ export async function unsaveTrail(trailId: string): Promise<void> {
 
 /** Start the trail (status 'in_progress'). Resumes if already started. */
 export function startTrail(trailId: string): Promise<void> {
+  if (getApi()) return apiAction(trailId, 'start')
   return transition(trailId, 'in_progress', [null, 'saved', 'signed_up', 'aborted'])
 }
 
 /** Finish the trail (status 'completed'). Unlocks rating. */
 export function finishTrail(trailId: string): Promise<void> {
+  if (getApi()) return apiAction(trailId, 'finish')
   return transition(trailId, 'completed', [null, 'saved', 'signed_up', 'in_progress', 'aborted'])
 }
 
 /** Stop the attempt (status 'aborted'). Doesn't count as finished. */
 export function abortTrail(trailId: string): Promise<void> {
+  if (getApi()) return apiAction(trailId, 'abort')
   return transition(trailId, 'aborted', ['saved', 'signed_up', 'in_progress'])
 }
 
@@ -240,6 +259,7 @@ export async function getMyTickedCrumbs(trailId: string): Promise<Set<string>> {
   const { data: auth } = await supabase.auth.getSession()
   const userId = auth.session?.user.id
   if (!userId) return new Set()
+  if (getApi()) return new Set(await viaApi((api) => api.getTickedCrumbs(trailId), 'crumb'))
   try {
     const { data, error } = await supabase
       .from('checklist_completions')
@@ -256,6 +276,10 @@ export async function getMyTickedCrumbs(trailId: string): Promise<Set<string>> {
 /** Tick or untick a crumb (checklist_items row) during an active trail. */
 export async function toggleCrumb(crumbId: string, done: boolean): Promise<void> {
   const userId = await requireUserId()
+  if (getApi()) {
+    await viaApi((api) => api.setCrumb(crumbId, done), 'crumb')
+    return
+  }
   try {
     const { error } = done
       ? // Already ticked is fine: ignore the duplicate instead of failing.

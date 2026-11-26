@@ -110,4 +110,29 @@ describe('createApiClient', () => {
       message: 'Add at least 2 stops before publishing',
     })
   })
+
+  it('reads progress and runs trail actions and crumb ticks with the right routes', async () => {
+    const calls: [string, string | undefined][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      calls.push([String(url), init?.method])
+      const path = String(url)
+      const body = path.endsWith('/crumbs') ? { crumbIds: [] } : path.includes('/me/crumbs/') ? { done: init?.method === 'PUT' } : { status: 'in_progress' }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    const id = trailDetail.id
+    expect(await client.getMyProgress(id)).toEqual({ status: 'in_progress' })
+    expect(await client.trailAction(id, 'start')).toEqual({ status: 'in_progress' })
+    expect(await client.getTickedCrumbs(id)).toEqual([])
+    expect(await client.setCrumb(id, true)).toEqual({ done: true })
+    expect(await client.setCrumb(id, false)).toEqual({ done: false })
+    expect(calls).toEqual([
+      [`https://api.example/v1/me/trails/${id}/progress`, 'GET'],
+      [`https://api.example/v1/me/trails/${id}/start`, 'POST'],
+      [`https://api.example/v1/me/trails/${id}/crumbs`, 'GET'],
+      [`https://api.example/v1/me/crumbs/${id}`, 'PUT'],
+      [`https://api.example/v1/me/crumbs/${id}`, 'DELETE'],
+    ])
+  })
 })
+
