@@ -1,6 +1,7 @@
 # CI: runs on every pull request and on pushes to main and develop.
 #
-# - app:      clean install, lint, typecheck and production build of the Vite app.
+# - app:      clean install, then lint, typecheck, unit tests and build for every
+#             workspace app (apps/web, apps/api).
 # - database: starts a throwaway local Supabase database in Docker, applies every
 #             migration in supabase/migrations/ plus seed.sql, then runs the pgTAP
 #             security tests in supabase/tests/. Never touches the real project.
@@ -34,6 +35,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
 
   database:

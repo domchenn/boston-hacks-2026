@@ -1,0 +1,8 @@
+/**
+ * Build settings for the API: compiles only src/ into dist/ (run by `npm run build`).
+ */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+  "include": ["src"]
+}

@@ -11,7 +11,7 @@ Target implementation progress is tracked below; baseline evidence is in [BASELI
 - [ ] M05 — Decide/add Turborepo tasks and shared config without breaking existing commands. Depends M04. **Deferred** 2026-11-25: one app only; revisit when `apps/api` or `apps/mobile` exists (see DECISIONS.md).
 
 ## Backend
-- [ ] M06 — NestJS/Fastify scaffold, health/config/logging/OpenAPI and tests. Depends M04.
+- [ ] M06 — NestJS/Fastify scaffold, health/config/logging/OpenAPI and tests. Depends M04. Skeleton in `apps/api` in review ([PR #100](https://github.com/domchenn/breadcrumb/pull/100)); not deployed.
 - [ ] M07 — Dockerfile, local services, Railway staging API, health checks and isolated env. Depends M06.
 - [ ] M08 — JWT verification, resource authorization, CORS, request validation and negative tests. Depends M06.
 - [ ] M09 — Shared DTOs/typed API client and trail read contract. Depends M06.
@@ -49,5 +49,6 @@ Target implementation progress is tracked below; baseline evidence is in [BASELI
 | M03 | Done | [evidence PR #97](https://github.com/domchenn/breadcrumb/pull/97) | 2026-11-25: 21 migrations applied by owner; app and storage schema identical to production; deployed site isolated; owner tested with two accounts; details in STAGING.md | Google sign-in, signup email and Realtime untested. Next: M04. | Solo developer / Claude |
 | M04 | Done | [PR #98](https://github.com/domchenn/breadcrumb/pull/98) (7bd8f56) | 2026-11-25: lint, typecheck, build PASS; local pgTAP PASS; lockfile versions unchanged; JS identical apart from the CSS file name; CSS drops 20 classes found only in docs/; root `.env` still read; root vercel.json keeps Git deploys off. Staging (Root Directory `apps/web`) serves the develop build (CSS hash matches a local build); pages, deep links, link previews, login and maps checked by the owner on the stable staging domain; develop push CI PASS | At the next develop → main release, set the live breadcrumb project's Root Directory to `apps/web` before deploying. Next: M06. | Solo developer / Claude |
 | M05 | Deferred | — | 2026-11-25: single workspace app; npm workspace scripts are enough for now | Revisit when a second app (API or mobile) exists. | — |
+| M06 | In review | [PR #100](https://github.com/domchenn/breadcrumb/pull/100) | 2026-11-25: clean `npm ci`; lint, typecheck, 16 Vitest tests and build PASS for both apps; built server checked by hand (health, meta, request IDs, CORS, error shape, OpenAPI, docs page, JSON logs, bad-config exit); web build unchanged; `npm audit` 0 | Human review/merge. Next: M07 (Docker + Railway staging) or M08 (JWT/authorization). | Solo developer / Claude |
 
 Append new rows or update relevant rows; statuses: Pending, In progress, In review, Blocked, Done, Deferred. Never record secrets or pretend a check ran. If a task becomes unnecessary, explain in DECISIONS.md and mark Deferred rather than silently deleting it.
