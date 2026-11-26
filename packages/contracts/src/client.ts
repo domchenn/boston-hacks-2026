@@ -6,6 +6,13 @@
  */
 import type { z } from 'zod'
 import { ApiErrorBody } from './errors.js'
+import {
+  ProfileStats,
+  ProfileTrailList,
+  PublicProfile,
+  SavedTrailList,
+  type MyTrailsQuery,
+} from './profiles.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
 export class ApiError extends Error {
@@ -74,6 +81,31 @@ export function createApiClient(options: ApiClientOptions) {
     /** One trail, or null if it doesn't exist or the caller may not see it. */
     getTrail(id: string) {
       return get(`/v1/trails/${encodeURIComponent(id)}`, TrailDetail, true)
+    },
+
+    /** A profile by id or username, or null if there's no such person. */
+    getProfile(handle: string) {
+      return get(`/v1/profiles/${encodeURIComponent(handle)}`, PublicProfile, true)
+    },
+
+    /** Rating, made count and (for your own profile) finished count. */
+    getProfileStats(profileId: string) {
+      return get(`/v1/profiles/${encodeURIComponent(profileId)}/stats`, ProfileStats)
+    },
+
+    /** Trails a person made that the caller can see, newest first. */
+    async getMadeTrails(profileId: string) {
+      return (await get(`/v1/profiles/${encodeURIComponent(profileId)}/made-trails`, ProfileTrailList)).trails
+    },
+
+    /** The caller's own trails with a progress status (requires sign-in). */
+    async getMyTrails(status: MyTrailsQuery['status']) {
+      return (await get(`/v1/me/trails?status=${encodeURIComponent(status)}`, ProfileTrailList)).trails
+    },
+
+    /** The caller's Saved page: saved and in-progress trails (requires sign-in). */
+    async getSavedTrails() {
+      return (await get('/v1/me/saved-trails', SavedTrailList)).trails
     },
   }
 }

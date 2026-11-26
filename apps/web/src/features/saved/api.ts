@@ -2,8 +2,10 @@
  * Data for the Saved page: the signed-in user's trails with status saved or
  * in_progress (old signed_up rows from before Join was removed count as saved),
  * shaped for <TrailCard> (stop names, rating) and tagged with that status. user_sidequests rows are private to their owner
- * (RLS). Used by SavedPage.tsx.
+ * (RLS). Used by SavedPage.tsx. With VITE_API_URL set it goes through the API
+ * (GET /v1/me/saved-trails), which runs the same query under the same RLS.
  */
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 import type { TrailCardData } from '@/components/TrailCard'
 import type { Category, UserSidequestStatus } from '@/types/db-values'
@@ -25,6 +27,15 @@ const fail = (error: { code?: string } | null): SavedResult => ({
 const num = (v: number | string | null | undefined) => (v === null || v === undefined || v === '' ? null : Number(v))
 
 export async function getSavedTrails(userId: string): Promise<SavedResult> {
+  const api = getApi()
+  if (api) {
+    // The API answers for the signed-in caller, which is who this is called for.
+    try {
+      return { ok: true, trails: await (await api).getSavedTrails() }
+    } catch (error) {
+      return { ok: false, message: error instanceof Error && 'status' in error ? GENERIC_ERROR : NETWORK_ERROR }
+    }
+  }
   try {
     const { data, error } = await supabase
       .from('user_sidequests')
