@@ -1,0 +1,17 @@
+# Keeps Docker build contexts small and free of secrets. Images built from the repo
+# root (apps/api/Dockerfile) only need package manifests and source.
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+.claude
+docs
+supabase
+apps/web/src
+apps/web/public
+apps/web/api
+**/*.log
+**/.DS_Store
