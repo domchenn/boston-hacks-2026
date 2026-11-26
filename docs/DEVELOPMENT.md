@@ -33,7 +33,7 @@ npm run dev
 | `npm run build` | Type-check and build every app (`apps/web/dist/`, `apps/api/dist/`) |
 | `npm run typecheck` | Type-check every app |
 | `npm run lint` | Run ESLint in every app |
-| `npm test` | Run unit tests (the API's Vitest suite) |
+| `npm test` | Run unit tests (Vitest in `packages/contracts` and `apps/api`) |
 | `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](../supabase/README.md)) |
 | `npm run test:db` | Run pgTAP against local Supabase (Docker) |
 | `npm run preview` | Serve the production build locally |
@@ -83,7 +83,8 @@ Migrations run in timestamp order; [`supabase/README.md`](../supabase/README.md)
 package.json            npm workspaces root: app scripts forward to apps/web; db:* scripts
 package-lock.json       the one lockfile
 .env                    local env for the web app (Vite reads it from the repo root)
-apps/api/               NestJS + Fastify API (M06 skeleton; not deployed yet), see below
+packages/contracts/     @breadcrumb/contracts: API schemas (Zod), types and typed client, see below
+apps/api/               NestJS + Fastify API (not deployed yet), see below
 apps/web/               the Vite web app (Vercel Root Directory)
 ├── src/
 │   ├── components/     shared components; ui/ = shadcn primitives, layout/ = app shell
@@ -114,6 +115,14 @@ A NestJS 12 app on Fastify. It verifies Supabase logins (M08) but has no databas
 - **Auth is deny-by-default.** A global guard requires `Authorization: Bearer <Supabase access token>` on every route unless it is marked `@Public()` (no token read) or `@OptionalAuth()` (no token is fine, a bad one is still rejected). Tokens are verified against the project's public keys at `SUPABASE_URL/auth/v1/.well-known/jwks.json`: ES256/RS256 only, issuer, audience `authenticated`, expiry (30 s tolerance) and role `authenticated`, so anon/publishable keys and service-role tokens are refused. Bad tokens get 401 with no details (the reason is logged at debug level); if the keys can't be fetched the API answers 503 instead of letting the request through. The API needs no Supabase secret. Use `@CurrentUser()` to read the user; it carries the access token so later data access can run as that user under RLS.
 - Validate inputs with `new ZodValidationPipe(schema)` on `@Body`, `@Query` or `@Param`; failures are 400s listing each field.
 - Tests in `apps/api/test/` use Fastify's in-memory `inject` and a local fake Supabase key server (`test/support/fake-supabase.ts`), so they need no network.
+
+## Shared contracts (`packages/contracts`)
+
+`@breadcrumb/contracts` defines what the API sends and accepts, in one place for the API, the web app and later mobile:
+
+- Zod schemas with matching TypeScript types: allowed values (`Category`, `TransitLine`, …), the trail read contract (`FeedTrail`, `TrailList`, `TrailDetail`, `TrailListQuery`, `TrailIdParams`) and `ApiErrorBody`. Trail shapes match the web's `FeedTrail`/`TrailDetail` in `apps/web/src/lib/api/trails.ts` field for field.
+- `createApiClient({ baseUrl, getAccessToken })`: `getTrails(filters)` and `getTrail(id)` send the Supabase token, validate every response and throw `ApiError` (status, code, requestId) on failures; `getTrail` returns null on 404.
+- It is an ESM package built with `tsc -b` into `dist/`. The API references it as a TypeScript project, so its `build`, `typecheck` and `test` build the contracts first; the root `build` runs packages before apps. Change a schema here first, then the API and clients.
 
 ## Deploying (Vercel)
 
