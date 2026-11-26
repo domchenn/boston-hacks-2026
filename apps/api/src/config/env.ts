@@ -1,6 +1,7 @@
 /**
  * API configuration: reads process.env once, validates it with Zod and fails fast
- * with a readable message. Every other file gets settings through the APP_CONFIG
+ * with a readable message. SUPABASE_URL is required; locally it comes from
+ * apps/api/.env (see .env.example). Every other file gets settings through the APP_CONFIG
  * token instead of reading process.env directly.
  */
 import { z } from 'zod'
@@ -29,6 +30,10 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** Comma-separated browser origins allowed to call the API. */
   CORS_ORIGINS: originList.default(['http://localhost:5173']),
+  /** The Supabase project whose login tokens the API accepts, e.g. https://<ref>.supabase.co */
+  SUPABASE_URL: z.string().refine(isBareOrigin, {
+    message: 'must be the project URL, such as https://<ref>.supabase.co (no path or trailing slash)',
+  }),
 })
 
 function isBareOrigin(value: string): boolean {

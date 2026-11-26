@@ -1,6 +1,6 @@
 /**
  * Turns every error into one JSON shape: { error, message, requestId }. Known HTTP
- * errors keep their status and message; anything unexpected becomes a 500 with a
+ * errors keep their status and message (401s also get WWW-Authenticate: Bearer); anything unexpected becomes a 500 with a
  * generic message and is logged with its stack (never sent to the client).
  */
 import { ArgumentsHost, Catch, HttpException, HttpStatus, type ExceptionFilter } from '@nestjs/common'
@@ -19,6 +19,7 @@ const STATUS_CODES: Record<number, string> = {
   415: 'unsupported_media_type',
   422: 'unprocessable_entity',
   429: 'too_many_requests',
+  503: 'service_unavailable',
 }
 
 @Catch()
@@ -40,11 +41,12 @@ export class ErrorFilter implements ExceptionFilter {
       message = exception.message
     }
 
-    if (status >= 500) request.log.error({ err: exception }, 'request failed')
+    if (status >= 500 && status !== 503) request.log.error({ err: exception }, 'request failed')
+    if (status === 401) void reply.header('www-authenticate', 'Bearer')
 
     const body: ErrorBody = {
       error: STATUS_CODES[status] ?? (status >= 500 ? 'internal_error' : 'error'),
-      message: status >= 500 ? 'Something went wrong.' : message,
+      message: status >= 500 && status !== 503 ? 'Something went wrong.' : message,
       requestId: String(request.id),
     }
     void reply.status(status).send(body)

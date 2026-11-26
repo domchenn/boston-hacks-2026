@@ -4,17 +4,17 @@
  */
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { loadConfig } from '../src/config/env.js'
-import { createApp } from '../src/create-app.js'
+import { startTestApp } from './support/test-app.js'
 
 let app: NestFastifyApplication
 
 beforeAll(async () => {
-  app = await createApp(
-    loadConfig({ NODE_ENV: 'production', APP_ENV: 'production', LOG_LEVEL: 'silent', CORS_ORIGINS: 'https://breadcrumb.boston' }),
-  )
-  await app.init()
-  await app.getHttpAdapter().getInstance().ready()
+  app = await startTestApp({
+    NODE_ENV: 'production',
+    APP_ENV: 'production',
+    CORS_ORIGINS: 'https://breadcrumb.boston',
+    SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co',
+  })
 })
 
 afterAll(async () => {

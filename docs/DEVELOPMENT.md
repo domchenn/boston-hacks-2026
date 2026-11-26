@@ -29,7 +29,7 @@ npm run dev
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the web dev server at http://localhost:5173 |
-| `npm run dev:api` | Build and start the API at http://localhost:3001 (`/health`, `/v1/meta`, docs at `/docs`) |
+| `npm run dev:api` | Build and start the API at http://localhost:3001 (`/health`, `/v1/meta`, `/v1/me`, docs at `/docs`). Needs `apps/api/.env` (copy `apps/api/.env.example`) |
 | `npm run build` | Type-check and build every app (`apps/web/dist/`, `apps/api/dist/`) |
 | `npm run typecheck` | Type-check every app |
 | `npm run lint` | Run ESLint in every app |
@@ -106,12 +106,14 @@ Run npm commands from the repo root; app commands forward to `apps/web` (for exa
 
 ## API (`apps/api`)
 
-A NestJS 12 app on Fastify. It is a skeleton: no database access, no login checks and no deployment yet (those are M07, M08 and later).
+A NestJS 12 app on Fastify. It verifies Supabase logins (M08) but has no database access and no deployment yet (M07, M10 and later). Requires Node 22.12+.
 
 - `src/create-app.ts` builds the app for both `main.ts` and the tests: Pino JSON logs, `x-request-id` on every response (a safe caller value is reused), the CORS allow-list, one error shape `{ error, message, requestId }`, and the OpenAPI document at `/v1/openapi.json` (interactive docs at `/docs` outside production).
 - `src/config/env.ts` validates settings at startup and exits with a readable list of problems. Settings: `NODE_ENV`, `APP_ENV` (`local`/`staging`/`production`), `HOST`, `PORT` (default 3001), `LOG_LEVEL`, `CORS_ORIGINS` (comma-separated origins, default `http://localhost:5173`). Read config through the `APP_CONFIG` token, never `process.env` directly.
 - `GET /health` is outside `/v1` for host health checks; product endpoints live under `/v1`.
-- Tests in `apps/api/test/` use Fastify's in-memory `inject`, so they need no port or network.
+- **Auth is deny-by-default.** A global guard requires `Authorization: Bearer <Supabase access token>` on every route unless it is marked `@Public()` (no token read) or `@OptionalAuth()` (no token is fine, a bad one is still rejected). Tokens are verified against the project's public keys at `SUPABASE_URL/auth/v1/.well-known/jwks.json`: ES256/RS256 only, issuer, audience `authenticated`, expiry (30 s tolerance) and role `authenticated`, so anon/publishable keys and service-role tokens are refused. Bad tokens get 401 with no details (the reason is logged at debug level); if the keys can't be fetched the API answers 503 instead of letting the request through. The API needs no Supabase secret. Use `@CurrentUser()` to read the user; it carries the access token so later data access can run as that user under RLS.
+- Validate inputs with `new ZodValidationPipe(schema)` on `@Body`, `@Query` or `@Param`; failures are 400s listing each field.
+- Tests in `apps/api/test/` use Fastify's in-memory `inject` and a local fake Supabase key server (`test/support/fake-supabase.ts`), so they need no network.
 
 ## Deploying (Vercel)
 

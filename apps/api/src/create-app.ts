@@ -66,6 +66,7 @@ export async function createApp(config: AppConfig): Promise<NestFastifyApplicati
       .setTitle('Breadcrumb API')
       .setDescription('REST API for Breadcrumb clients.')
       .setVersion(API_VERSION)
+      .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Supabase access token' })
       .build(),
   )
   fastify.get('/v1/openapi.json', async () => document)
