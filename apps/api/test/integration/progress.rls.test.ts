@@ -2,9 +2,9 @@
  * Progress against a real local Supabase: every starting status gives exactly the
  * web's transition table for save, unsave, start, finish and abort; started trails
  * keep their history; a finished trail never moves; a trail hidden by RLS can't be
- * saved or started (404); crumbs can be ticked only on a started, not aborted trail
- * (403); and one user's actions never touch another user's rows. Throwaway data,
- * localhost only.
+ * saved or started (404); crumbs can be ticked only while the trail is in progress
+ * (403 otherwise), stopping keeps earlier ticks and resuming continues with them; and
+ * one user's actions never touch another user's rows. Throwaway data, localhost only.
  */
 import { randomUUID } from 'node:crypto'
 import { ForbiddenException, NotFoundException } from '@nestjs/common'
@@ -192,11 +192,12 @@ describe('actions and crumbs: safety', () => {
     expect(rowCount).toBe(0)
   })
 
-  it('a crumb can be ticked only on a started trail, and ticking twice is fine', async () => {
-    await setState('user', null)
-    await expect(service.setCrumb(crumb, true, users.user)).rejects.toBeInstanceOf(ForbiddenException)
-    await setState('user', { status: 'saved', started: false })
-    await expect(service.setCrumb(crumb, true, users.user)).resolves.toEqual({ done: true })
+  it('a crumb can be ticked only while the trail is in progress, and ticking twice is fine', async () => {
+    await sql(`delete from public.checklist_completions where checklist_item_id = $1`, [crumb])
+    for (const state of [null, { status: 'saved', started: false }, { status: 'completed', started: true }] as State[]) {
+      await setState('user', state)
+      await expect(service.setCrumb(crumb, true, users.user)).rejects.toBeInstanceOf(ForbiddenException)
+    }
     await setState('user', { status: 'in_progress', started: true })
     await expect(service.setCrumb(crumb, true, users.user)).resolves.toEqual({ done: true })
     await expect(service.setCrumb(crumb, true, users.user)).resolves.toEqual({ done: true })
@@ -205,9 +206,19 @@ describe('actions and crumbs: safety', () => {
     expect(await service.tickedCrumbs(trail, users.user)).toEqual([])
   })
 
-  it('an aborted trail refuses new ticks', async () => {
-    await setState('user', { status: 'aborted', started: true })
+  it('stopping keeps earlier ticks and refuses new ones; resuming continues with them', async () => {
+    await sql(`delete from public.checklist_completions where checklist_item_id = $1`, [crumb])
+    await setState('user', { status: 'in_progress', started: true })
+    await service.setCrumb(crumb, true, users.user)
+    await service.act(trail, 'abort', users.user)
+    expect(await service.tickedCrumbs(trail, users.user)).toEqual([crumb])
+    await service.act(trail, 'start', users.user)
+    expect(await service.tickedCrumbs(trail, users.user)).toEqual([crumb])
+    await service.act(trail, 'abort', users.user)
+    await expect(service.setCrumb(crumb, false, users.user)).resolves.toEqual({ done: false })
     await expect(service.setCrumb(crumb, true, users.user)).rejects.toBeInstanceOf(ForbiddenException)
+    await service.act(trail, 'start', users.user)
+    await expect(service.setCrumb(crumb, true, users.user)).resolves.toEqual({ done: true })
   })
 
   it("ticks are private: another user neither sees nor removes them", async () => {
