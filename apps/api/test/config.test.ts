@@ -5,7 +5,10 @@
 import { describe, expect, it } from 'vitest'
 import { ConfigError, loadConfig } from '../src/config/env.js'
 
-const SUPABASE = { SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co' }
+const SUPABASE = {
+  SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test_key_000000',
+}
 
 describe('loadConfig', () => {
   it('uses safe local defaults', () => {
@@ -44,6 +47,10 @@ describe('loadConfig', () => {
 
   it('requires SUPABASE_URL as a bare project URL', () => {
     expect(() => loadConfig({})).toThrow(/SUPABASE_URL/)
-    expect(() => loadConfig({ SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co/' })).toThrow(/SUPABASE_URL/)
+    expect(() => loadConfig({ ...SUPABASE, SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co/' })).toThrow(/SUPABASE_URL/)
+  })
+
+  it('requires the publishable key', () => {
+    expect(() => loadConfig({ SUPABASE_URL: SUPABASE.SUPABASE_URL })).toThrow(/SUPABASE_PUBLISHABLE_KEY/)
   })
 })
