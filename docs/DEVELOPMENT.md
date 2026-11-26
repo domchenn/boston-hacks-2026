@@ -29,7 +29,7 @@ npm run dev
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the dev server at http://localhost:5173 |
-| `npm run build` | Type-check, then build for production into `dist/` |
+| `npm run build` | Type-check, then build for production into `apps/web/dist/` |
 | `npm run typecheck` | Type-check only (`tsc -b --noEmit`) |
 | `npm run lint` | Run ESLint |
 | `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](../supabase/README.md)) |
@@ -49,7 +49,7 @@ Set these in `.env`. That file is gitignored, so never commit it.
 
 Anything prefixed with `VITE_` is shipped to the browser. **Never** put the `service_role` or secret key in this app. Security is enforced by Row Level Security in the database, not by the frontend.
 
-If the variables are missing, `src/lib/supabase.ts` throws a clear error the first time the client is imported.
+If the variables are missing, `apps/web/src/lib/supabase.ts` throws a clear error the first time the client is imported.
 
 ## Supabase database setup
 
@@ -73,40 +73,39 @@ Migrations run in timestamp order; [`supabase/README.md`](../supabase/README.md)
 
 ### Database types
 
-`src/types/database.types.ts` gives TypeScript types for every table, generated from the live project. After any migration is pushed, regenerate it with `npm run db:types` and commit the result. Don't edit it by hand. Allowed values for restricted text columns (statuses, categories, T lines…) live in `src/types/db-values.ts`.
+`apps/web/src/types/database.types.ts` gives TypeScript types for every table, generated from the live project. After any migration is pushed, regenerate it with `npm run db:types` and commit the result. Don't edit it by hand. Allowed values for restricted text columns (statuses, categories, T lines…) live in `apps/web/src/types/db-values.ts`.
 
 ## Folder structure
 
 ```text
-src/
-├── assets/             static images/fonts imported by code
-├── components/
-│   ├── ui/             shadcn/ui primitives (generated: `npx shadcn@latest add <name>`)
-│   └── layout/         app shell (AppLayout: header + <Outlet/>)
-├── pages/              fallback page (NotFoundPage); screens live in features/
-├── features/           implemented feature screens, hooks and adapters
-├── lib/
-│   ├── api/             shared trail, progress, rating and photo adapters
-│   ├── supabase.ts     the ONE shared Supabase client
-│   └── utils.ts        cn() class helper
-├── types/
-│   └── database.types.ts
-├── App.tsx             route table
-├── main.tsx            entry point
-└── index.css           Tailwind + theme tokens
-supabase/
-├── config.toml        Supabase CLI config
-├── migrations/        one SQL file per schema change (CLI-managed)
-└── seed.sql
+package.json            npm workspaces root: app scripts forward to apps/web; db:* scripts
+package-lock.json       the one lockfile
+.env                    local env for the web app (Vite reads it from the repo root)
+apps/web/               the Vite web app (Vercel Root Directory)
+├── src/
+│   ├── components/     shared components; ui/ = shadcn primitives, layout/ = app shell
+│   ├── pages/          fallback page (NotFoundPage); screens live in features/
+│   ├── features/       feature screens, hooks and adapters
+│   ├── lib/            api/ adapters, supabase.ts (the ONE client), maps/transit clients
+│   ├── types/          database.types.ts (generated) and db-values.ts
+│   ├── App.tsx         route table
+│   ├── main.tsx        entry point
+│   └── index.css       Tailwind + theme tokens (imports docs/styles/)
+├── api/og.ts           Vercel Edge Function for link previews
+├── public/             favicon and other static files
+├── index.html, vite.config.ts, vercel.json, tsconfig*.json, eslint.config.js, components.json
+└── package.json        app dependencies and scripts
+docs/                   specs, style guide; docs/styles and docs/assets are imported by the app
+supabase/               CLI config, migrations, seed.sql and pgTAP tests (run from the repo root)
 ```
 
-Implemented features already live under `src/features/`; shared data adapters are in `src/lib/api/`, with maps/transit clients in `src/lib/`. `api/og.ts` is the Vercel Edge Function at repository root, outside the app TypeScript project. See [M00 baseline](refactor/BASELINE.md) for the current inventory.
+Run npm commands from the repo root; app commands forward to `apps/web` (for example `npm run dev -- --host`). Add app dependencies with `npm install <pkg> -w @breadcrumb/web`. `apps/web/api/og.ts` is the Vercel Edge Function, outside the app TypeScript project. See [M00 baseline](refactor/BASELINE.md) for the current inventory.
 
 ## Deploying (Vercel)
 
-The app is a static Vite site. `vercel.json` builds it and sends regular SPA URLs (e.g. `/trails/123`) to `index.html` so React Router handles refreshes; crawler/API requests have separate handling.
+The app is a static Vite site in `apps/web`, so each Vercel project's **Root Directory** is `apps/web`. `apps/web/vercel.json` builds it and sends regular SPA URLs (e.g. `/trails/123`) to `index.html` so React Router handles refreshes; crawler/API requests have separate handling.
 
-Vercel deployment is intentionally manual, as confirmed by the active developer. Keep `vercel.json` Git deployments disabled (`git.deploymentEnabled: false`). Do not assume merges or PRs deploy anything. The crawler rewrite for `/trails/:id` goes to `api/og.ts`; regular SPA routes fall back to `index.html`. Preserve both during file moves.
+Vercel deployment is intentionally manual, as confirmed by the active developer. Keep Git deployments disabled (`git.deploymentEnabled: false`) in **both** `apps/web/vercel.json` and the small root `vercel.json`. Vercel reads the file in each project's Root Directory, so the root copy keeps Git deploys off for any project still pointed at the repo root. Do not assume merges or PRs deploy anything. The crawler rewrite for `/trails/:id` goes to `apps/web/api/og.ts`; regular SPA routes fall back to `index.html`. Preserve both during file moves.
 
 Before configuring staging (M03), verify the existing Vercel project, production branch, manual deployment method, domain, environment scopes, Supabase auth redirects and restricted browser keys. Never reuse production credentials/data in previews by assumption. New services, secrets and deployments require human configuration/authorization. The target integration/release workflow is in [REFACTOR.md](refactor/REFACTOR.md).
 
@@ -117,20 +116,20 @@ Integration is active: start feature branches from updated `develop` and target 
 **Feature folders.** Claim one task at a time; folders organize code rather than permanent developer ownership. Current examples:
 
 ```text
-src/features/
+apps/web/src/features/
 ├── auth/         sign-in and onboarding
 ├── explore/      feed, filters and discovery tabs
 ├── trail/        detail, active trail, photos and reviews
 ├── make/         create, edit and remix
 ├── profile/      public/private profile screens
-└── map/          map screen (shared clients in src/lib/)
+└── map/          map screen (shared clients in lib/)
 ```
 
-- Put Supabase queries in `src/features/<feature>/api.ts`, not inside components.
-- Don't import another feature's internals. If two features need something, move it to `src/components/`, `src/lib/`, or `src/hooks/`.
+- Put Supabase queries in `apps/web/src/features/<feature>/api.ts`, not inside components.
+- Don't import another feature's internals. If two features need something, move it to `components/`, `lib/` or `hooks/` under `apps/web/src/`.
 - Use the row types: `import type { Tables } from '@/types/database.types'` → `Tables<'sidequests'>`.
-- Add your routes to `src/App.tsx` as children of `AppLayout`. Keep that diff small to avoid conflicts.
-- Use the `@/` alias for imports from `src`.
-- Add UI primitives with `npx shadcn@latest add button card ...` (they land in `src/components/ui/`). Use theme tokens (`bg-primary`, `text-muted-foreground`), not hard-coded colors. Design mobile-first: base styles target phones, and `sm:`/`md:` add larger layouts.
+- Add your routes to `apps/web/src/App.tsx` as children of `AppLayout`. Keep that diff small to avoid conflicts.
+- Use the `@/` alias for imports from `apps/web/src`.
+- Add UI primitives from `apps/web` with `npx shadcn@latest add button card ...` (they land in `apps/web/src/components/ui/`). Use theme tokens (`bg-primary`, `text-muted-foreground`), not hard-coded colors. Design mobile-first: base styles target phones, and `sm:`/`md:` add larger layouts.
 - Follow [AGENTS.md](../AGENTS.md) for branch bases: baseline/bootstrap against verified main until M02; features against develop after integration is verified. Run lint, typecheck, build and relevant local database tests. Never merge automatically.
 - Never commit `.env` or any secret key.

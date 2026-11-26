@@ -5,7 +5,7 @@
  */
 
 import { Link } from 'react-router'
-import logoMark from '../../docs/assets/svg/logo-mark.svg'
+import logoMark from '../../../../docs/assets/svg/logo-mark.svg'
 
 export function BrandLogo() {
   return (

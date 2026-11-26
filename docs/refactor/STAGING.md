@@ -32,7 +32,7 @@ Status: set up and verified 2026-11-25, with the limits below. Staging has its o
 
 ## Production organization transfer — 2026-11-25
 
-Both developers agreed to move production into the breadcrumb organization. Before the move, the owner made a new encrypted backup (`breadcrumb-backup-3`: 51 tables, 6 of 6 photos matching, image checksum stored beside it) and disconnected the Supabase GitHub integration. The owner, an Owner of both organizations, then transferred the project. Afterward, the project ref, region, health, migrations (21 of 21), public row counts, photo access, sign-in providers, website bundle and publishable key all matched a snapshot taken before the move. The Vercel project connection remained. Members of the old organization only regain access through the new one. A full Google sign-in after the move is pending the owner's test.
+Both developers agreed to move production into the breadcrumb organization. Before the move, the owner made a new encrypted backup (`breadcrumb-backup-3`: 51 tables, 6 of 6 photos matching, image checksum stored beside it) and disconnected the Supabase GitHub integration. The owner, an Owner of both organizations, then transferred the project. Afterward, the project ref, region, health, migrations (21 of 21), public row counts, photo access, sign-in providers, website bundle and publishable key all matched a snapshot taken before the move. The Vercel project connection remained. Members of the old organization only regain access through the new one. Gio later joined the breadcrumb organization and was made an Owner, so both developers are Owners. A full Google sign-in after the move is pending the owner's test.
 
 ## Not covered
 

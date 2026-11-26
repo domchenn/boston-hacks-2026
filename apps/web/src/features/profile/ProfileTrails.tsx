@@ -11,7 +11,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { CircleAlert, Pencil } from 'lucide-react'
-import emptyTrail from '../../../docs/assets/svg/empty-trail.svg'
+import emptyTrail from '../../../../../docs/assets/svg/empty-trail.svg'
 import { ProfileBadges } from '@/features/badges/ProfileBadges'
 import { PersonActivity } from '@/features/friends/FriendsActivity'
 import { getMadeTrails, getMyTrails, type ProfileTrail, type ProgressTab, type Result } from './api'

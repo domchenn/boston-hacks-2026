@@ -6,7 +6,7 @@
  * - googleTravelMode(): our travel modes → Google's (never driving).
  */
 
-import mapStyleJson from '../../docs/styles/map-style.json'
+import mapStyleJson from '../../../../docs/styles/map-style.json'
 import type { TravelMode } from '@/types/db-values'
 
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
