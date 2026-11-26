@@ -5,7 +5,7 @@
  * point to; see docs/TASKS.md for who owns which route.
  */
 
-import { createBrowserRouter, RouterProvider } from 'react-router'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AuthPage } from '@/features/auth/AuthPage'
 import { SessionProvider } from '@/lib/SessionProvider'
@@ -34,7 +34,9 @@ const router = createBrowserRouter([
     children: [
       // Every screen's route already exists and points at its owner's page, so
       // nobody needs to edit this file to start a feature. Owners: docs/TASKS.md.
-      { index: true, element: <ExplorePage /> }, // Jason
+      { index: true, element: <ExplorePage /> }, // Jason (signed-out visitors get the landing page here)
+      // The landing page's "Start a trail": signed-out visitors log in first (AppLayout), then land on Explore.
+      { path: 'explore', element: <Navigate to="/" replace /> },
       { path: 'trails/:id', element: <TrailDetailPage /> }, // Jason
       { path: 'trails/:id/go', element: <ActiveTrailPage /> }, // Gio
       { path: 'trails/:id/rate', element: <RateTrailPage /> }, // Jason
