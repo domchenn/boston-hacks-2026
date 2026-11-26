@@ -3,18 +3,24 @@
  * which signs visitors in first) and How it works buttons, with the tilted phone and a
  * dotted trail behind it on the right. From 960 px wide (two columns) the hero fills
  * exactly one screen under the header (--lp-header-h), and the headline and phone scale
- * with the screen height so nothing is cut off on load (.lp-phone-stage). Used by LandingPage.
+ * with the screen height so nothing is cut off on load (.lp-phone-stage, sized from the
+ * real window height by useFitPhoneToScreen). Used by LandingPage.
  */
 
+import { useRef } from 'react'
 import { Link } from 'react-router'
 import { HeroPhone } from './HeroPhone'
+import { useFitPhoneToScreen } from './useFitPhoneToScreen'
 
 export function LandingHero() {
+  const stageRef = useRef<HTMLDivElement>(null)
+  useFitPhoneToScreen(stageRef)
+
   return (
-    <section className="relative mx-auto max-w-[1264px] px-5 pt-12 pb-24 sm:px-8 sm:max-[959px]:pt-[72px] sm:max-[959px]:pb-[140px] min-[960px]:grid min-[960px]:min-h-[calc(100svh-var(--lp-header-h))] min-[960px]:content-center min-[960px]:pt-[clamp(16px,4svh,56px)] min-[960px]:pb-[clamp(16px,4svh,56px)]">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,400px),1fr))] items-center gap-20">
+    <section className="relative mx-auto max-w-[1264px] px-5 pt-12 pb-24 sm:px-8 sm:max-[959px]:pt-[72px] sm:max-[959px]:pb-[140px] min-[960px]:grid min-[960px]:min-h-[calc(100svh-var(--lp-header-h))] min-[960px]:content-center min-[960px]:py-0">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,400px),1fr))] items-center gap-20 pb-[80px]">
         <div className="flex flex-col gap-8">
-          <h1 className="m-0 text-[clamp(52px,min(8vw,14svh),104px)] leading-[0.95] font-extrabold tracking-[-0.055em]">
+          <h1 className="m-0 text-[clamp(48px,min(6.5vw,12svh),78px)] leading-[0.95] font-extrabold tracking-[-0.055em]">
             Follow
             <br />
             the crumbs.
@@ -33,7 +39,7 @@ export function LandingHero() {
           </div>
         </div>
 
-        <div className="lp-phone-stage">
+        <div ref={stageRef} className="lp-phone-stage">
           <svg viewBox="0 0 560 720" aria-hidden className="lp-phone-stage__trail">
             <path
               d="M20 640 C 120 560, 40 420, 160 360 S 420 300, 400 160 S 500 40, 540 30"

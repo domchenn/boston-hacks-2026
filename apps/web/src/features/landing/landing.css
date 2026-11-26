@@ -23,7 +23,14 @@
   /* ---------- Hero phone ----------------------------------------------------- */
   .lp-phone-stage { position: relative; display: flex; justify-content: center; padding: 8px 0; }
   .lp-phone-stage__trail { position: absolute; top: 0; left: 50%; margin-left: -280px; width: 560px; height: 720px; }
-  .lp-phone-scale { --lp-phone-scale: 1; scale: var(--lp-phone-scale); }
+  /* Stacked layout (under 960 px): the phone sits below the text at a modest size.
+     The negative margins give back the space scale leaves (388 px = half the 776 px
+     phone box including its margins). */
+  .lp-phone-scale {
+    --lp-phone-scale: 0.86;
+    scale: var(--lp-phone-scale);
+    margin-block: calc((var(--lp-phone-scale) - 1) * 388px);
+  }
   .lp-phone {
     --lp-tilt: perspective(1600px) rotateX(16deg) rotateY(-24deg) rotateZ(6deg);
     --lp-body: var(--color-ink);
@@ -60,25 +67,28 @@
   }
   .lp-phone__island { position: absolute; top: 11px; left: 50%; z-index: 3; width: 96px; height: 28px; margin-left: -48px; border-radius: 20px; background: #000; }
 
-  /* Two-column hero (960 px and up): shrink the phone and its dotted trail together,
-     just enough to fit the screen height under the header. --lp-fit is that factor:
-     tan(atan2(a, b)) is a / b as a plain number. 860 px ≈ the stage's natural height
-     plus the phone's shadow; 20 px = a little air below (the shadow already counts toward 860).
-     It uses scale (not zoom: zoom misaligned the tilted screen inside the frame), and
-     the negative margins give back the space scale leaves behind (396 px = half the
-     stage's 792 px height). Under ~600 px tall the floor kicks in and the hero scrolls. */
+  /* Two-column hero (960 px and up): the phone (and its dotted trail) fills the
+     screen height under the header. useFitPhoneToScreen sets --lp-fit inline from the
+     real window height; the CSS value below is only the fallback before/without JS. --lp-fit = (screen − header − 40 px of air) ÷
+     722 px, the tilted phone's visible height at full size (tan(atan2(a, b)) is a / b as
+     a plain number). It can grow to 120% on tall screens and stops at 60% on very short
+     ones (the hero then scrolls). The hero has no vertical padding here, so this is the
+     only spacing. It uses scale (not zoom: zoom misaligned the tilted screen inside the
+     frame); the stage resets the stacked layout's scale, and its negative margins shrink
+     its layout box (792 px natural, including empty margins) to the phone's visible
+     height so the hero never grows past the first screen. */
   @media (min-width: 960px) {
+    .lp-phone-scale { --lp-phone-scale: 1; }
     .lp-phone-stage {
-      --lp-fit: clamp(0.6, tan(atan2(100svh - var(--lp-header-h) - 20px, 860px)), 1);
+      --lp-fit: clamp(0.6, tan(atan2(100svh - var(--lp-header-h) - 40px, 722px)), 1.2);
       scale: var(--lp-fit);
-      margin-block: calc((var(--lp-fit) - 1) * 396px);
+      margin-block: calc((var(--lp-fit) * 722px - 792px) / 2);
     }
   }
 
-  /* Polish: at phone width the tilted phone ran past the right edge. Shrink it and
-     ease the tilt; negative margins take back the space scale() leaves behind. */
+  /* Phones: smaller still, with an easier tilt so it doesn't run past the right edge. */
   @media (max-width: 479.98px) {
-    .lp-phone-scale { --lp-phone-scale: 0.82; margin-block: -64px; }
+    .lp-phone-scale { --lp-phone-scale: 0.72; }
     .lp-phone { --lp-tilt: perspective(1600px) rotateX(12deg) rotateY(-14deg) rotateZ(4deg); }
   }
 
