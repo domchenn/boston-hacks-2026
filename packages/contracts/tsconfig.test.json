@@ -1,0 +1,8 @@
+/**
+ * Type-checks the tests and the Vitest config against the source (no emit).
+ */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "composite": false, "noEmit": true, "rootDir": ".", "types": ["node"] },
+  "include": ["src", "test", "vitest.config.ts"]
+}

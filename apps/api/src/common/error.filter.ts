@@ -1,12 +1,12 @@
 /**
- * Turns every error into one JSON shape: { error, message, requestId }. Known HTTP
+ * Turns every error into one JSON shape, ApiErrorBody from @breadcrumb/contracts:
+ * { error, message, requestId }. Known HTTP
  * errors keep their status and message (401s also get WWW-Authenticate: Bearer); anything unexpected becomes a 500 with a
  * generic message and is logged with its stack (never sent to the client).
  */
 import { ArgumentsHost, Catch, HttpException, HttpStatus, type ExceptionFilter } from '@nestjs/common'
+import type { ApiErrorBody } from '@breadcrumb/contracts'
 import type { FastifyReply, FastifyRequest } from 'fastify'
-
-export type ErrorBody = { error: string; message: string; requestId: string }
 
 const STATUS_CODES: Record<number, string> = {
   400: 'bad_request',
@@ -44,7 +44,7 @@ export class ErrorFilter implements ExceptionFilter {
     if (status >= 500 && status !== 503) request.log.error({ err: exception }, 'request failed')
     if (status === 401) void reply.header('www-authenticate', 'Bearer')
 
-    const body: ErrorBody = {
+    const body: ApiErrorBody = {
       error: STATUS_CODES[status] ?? (status >= 500 ? 'internal_error' : 'error'),
       message: status >= 500 && status !== 503 ? 'Something went wrong.' : message,
       requestId: String(request.id),

@@ -20,5 +20,6 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["src", "test", "vitest.config.mts"]
+  "include": ["src", "test", "vitest.config.mts"],
+  "references": [{ "path": "../../packages/contracts" }]
 }
