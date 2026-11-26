@@ -79,7 +79,8 @@ export function page({ title, description, url, image }: { title: string; descri
 
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url)
-  const id = url.searchParams.get('id') ?? ''
+  // Some apps stick the share text onto the link (/trails/<id>%20Come%20on…): use the id at the start.
+  const id = (url.searchParams.get('id') ?? '').slice(0, 36)
   const canonical = `${url.origin}/trails/${id}`
   const fallback = page({ title: SITE, description: TAGLINE, url: url.origin, image: `${url.origin}/api/og-image` })
   const html = (body: string, maxAge: number) =>
