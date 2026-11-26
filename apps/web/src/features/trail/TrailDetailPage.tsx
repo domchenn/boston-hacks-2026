@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react'
 import { Check, Star } from 'lucide-react'
-import { Link, useLocation, useParams } from 'react-router'
+import { Link, Navigate, useLocation, useParams } from 'react-router'
 import { RouteMap } from '@/components/RouteMap'
 import { ReportButton } from '@/features/reports/ReportButton'
 import { TransitAlerts } from '@/components/TransitAlerts'
@@ -24,7 +24,7 @@ import { BackLink, TrailMessage } from './TrailPageMessage'
 import { TrailPhotos } from './TrailPhotos'
 import { TrailReviews } from './TrailReviews'
 import { TrailStops } from './TrailStops'
-import { isTrailId, type TrailNotice } from './trailLinks'
+import { isTrailId, leadingTrailId, type TrailNotice } from './trailLinks'
 import { useTrailActions } from './useTrailActions'
 
 type LoadResult = { key: string; trail?: TrailDetail | null; error?: string }
@@ -59,7 +59,8 @@ export function TrailDetailPage() {
   const { id = '' } = useParams()
   const valid = isTrailId(id)
   // "Thanks! Your rating is posted." etc., handed over by the Rate page.
-  const notice = (useLocation().state as TrailNotice | null)?.notice
+  const location = useLocation()
+  const notice = (location.state as TrailNotice | null)?.notice
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<LoadResult | null>(null)
   const actions = useTrailActions(id)
@@ -90,6 +91,10 @@ export function TrailDetailPage() {
       document.title = previous
     }
   }, [trail])
+
+  // A shared link with the message stuck to the id: go to the trail itself.
+  const repaired = valid ? null : leadingTrailId(id)
+  if (repaired) return <Navigate replace to={`/trails/${repaired}${location.search}`} state={location.state} />
 
   if (loading) return <TrailSkeleton />
 
