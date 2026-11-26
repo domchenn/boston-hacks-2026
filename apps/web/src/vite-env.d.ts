@@ -12,6 +12,11 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_MAPS_API_KEY?: string
   /** Optional MBTA V3 API key (raises the rate limit from 20 to 1000 requests/min). */
   readonly VITE_MBTA_API_KEY?: string
+  /**
+   * Breadcrumb API base URL (e.g. the staging Cloud Run URL). When set, the trail feed and
+   * detail load through the API; when unset they query Supabase directly as before.
+   */
+  readonly VITE_API_URL?: string
 }
 
 interface ImportMeta {

@@ -1,10 +1,15 @@
 /**
- * Root TypeScript config. Just points at the app config (tsconfig.app.json)
- * and the build-tools config (tsconfig.node.json).
+ * Root TypeScript config. Points at the app config (tsconfig.app.json), the
+ * build-tools config (tsconfig.node.json) and @breadcrumb/contracts, which `tsc -b`
+ * builds first so the app can import it (also on Vercel).
  */
 {
   "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
   "compilerOptions": {
     "paths": { "@/*": ["./src/*"] }
   }
