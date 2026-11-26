@@ -12,8 +12,10 @@
  *
  *   (1) aborted if it was started, which keeps the history and ticked crumbs.
  *
- * A finished trail never moves. Crumbs can be ticked only on a trail you started and
- * haven't aborted (RLS: private.can_complete_item); that refusal is a 403.
+ * A finished trail never moves. Crumbs can be ticked only while the trail is in
+ * progress (RLS: private.can_complete_item, migration
+ * restrict_crumb_ticks_to_trails_in_progress); that refusal is a 403. Stopping keeps
+ * earlier ticks, and starting again continues with them.
  * Runs as the caller, so RLS enforces the rest: you can only write your own row,
  * and only add one for a trail you can see. Database refusals become a 404 "not
  * available"; anything unexpected is a 500.
