@@ -23,6 +23,9 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
+      // Resolve TypeScript configs from apps/web, not the repo root, so editors that
+      // run ESLint from the root don't find two candidate tsconfig folders.
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
     },
   },
   {
