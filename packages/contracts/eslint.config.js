@@ -11,6 +11,12 @@ export default defineConfig([
   {
     files: ['**/*.ts'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
-    languageOptions: { ecmaVersion: 2022, globals: { ...globals.node, ...globals.browser } },
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: { ...globals.node, ...globals.browser },
+      // Resolve TypeScript configs from this package, not the repo root, so editors that
+      // run ESLint from the root don't find several candidate tsconfig folders.
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
+    },
   },
 ])
