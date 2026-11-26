@@ -28,10 +28,12 @@ npm run dev
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Start the dev server at http://localhost:5173 |
-| `npm run build` | Type-check, then build for production into `apps/web/dist/` |
-| `npm run typecheck` | Type-check only (`tsc -b --noEmit`) |
-| `npm run lint` | Run ESLint |
+| `npm run dev` | Start the web dev server at http://localhost:5173 |
+| `npm run dev:api` | Build and start the API at http://localhost:3001 (`/health`, `/v1/meta`, docs at `/docs`) |
+| `npm run build` | Type-check and build every app (`apps/web/dist/`, `apps/api/dist/`) |
+| `npm run typecheck` | Type-check every app |
+| `npm run lint` | Run ESLint in every app |
+| `npm test` | Run unit tests (the API's Vitest suite) |
 | `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](../supabase/README.md)) |
 | `npm run test:db` | Run pgTAP against local Supabase (Docker) |
 | `npm run preview` | Serve the production build locally |
@@ -81,6 +83,7 @@ Migrations run in timestamp order; [`supabase/README.md`](../supabase/README.md)
 package.json            npm workspaces root: app scripts forward to apps/web; db:* scripts
 package-lock.json       the one lockfile
 .env                    local env for the web app (Vite reads it from the repo root)
+apps/api/               NestJS + Fastify API (M06 skeleton; not deployed yet), see below
 apps/web/               the Vite web app (Vercel Root Directory)
 ├── src/
 │   ├── components/     shared components; ui/ = shadcn primitives, layout/ = app shell
@@ -100,6 +103,15 @@ supabase/               CLI config, migrations, seed.sql and pgTAP tests (run fr
 ```
 
 Run npm commands from the repo root; app commands forward to `apps/web` (for example `npm run dev -- --host`). Add app dependencies with `npm install <pkg> -w @breadcrumb/web`. `apps/web/api/og.ts` is the Vercel Edge Function, outside the app TypeScript project. See [M00 baseline](refactor/BASELINE.md) for the current inventory.
+
+## API (`apps/api`)
+
+A NestJS 12 app on Fastify. It is a skeleton: no database access, no login checks and no deployment yet (those are M07, M08 and later).
+
+- `src/create-app.ts` builds the app for both `main.ts` and the tests: Pino JSON logs, `x-request-id` on every response (a safe caller value is reused), the CORS allow-list, one error shape `{ error, message, requestId }`, and the OpenAPI document at `/v1/openapi.json` (interactive docs at `/docs` outside production).
+- `src/config/env.ts` validates settings at startup and exits with a readable list of problems. Settings: `NODE_ENV`, `APP_ENV` (`local`/`staging`/`production`), `HOST`, `PORT` (default 3001), `LOG_LEVEL`, `CORS_ORIGINS` (comma-separated origins, default `http://localhost:5173`). Read config through the `APP_CONFIG` token, never `process.env` directly.
+- `GET /health` is outside `/v1` for host health checks; product endpoints live under `/v1`.
+- Tests in `apps/api/test/` use Fastify's in-memory `inject`, so they need no port or network.
 
 ## Deploying (Vercel)
 
