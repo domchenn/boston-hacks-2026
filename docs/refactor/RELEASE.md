@@ -24,6 +24,10 @@ How `develop` reaches production (`main` → breadcrumb.boston). Releases are ma
 
 Agents verify the live bundle (production Supabase only, no API address), `/api/og` and `/api/og-image`, and record the result here and in the migration checklist.
 
+### Result (2026-11-26)
+
+Released: owner merged #123 (merge commit), set the live project's Root Directory to `apps/web` and deployed `main`. The live site serves `index-BQO7Nml0.js`, byte-identical to a local production build of develop: production Supabase only, Maps key present, no API address or client. Owner checked the landing page, Explore and map, trail pages, email and Google sign-in, saving, making a trail, the profile and a shared-link preview card. One finding: trails whose stops were typed in by hand have no coordinates, so their detail map shows the stop list with a Google Maps link instead (by design). Two public trails are affected; re-picking those stops from place search fixes them. Geocoding typed addresses on save is a possible later improvement.
+
 ## Later releases
 
 Turning the API on in production is its own release: deploy the API to a production Cloud Run service in the production Google Cloud project, verify it, then set `VITE_API_URL` on the production Vercel project and redeploy the website. Database changes, if any, go first, after a fresh backup (see RECOVERY.md).
