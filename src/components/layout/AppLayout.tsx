@@ -6,7 +6,8 @@
  * header (logo, search toggle) plus the bottom tab bar: Explore · Map · + · Saved ·
  * You (your picture; log out is in your profile's settings). The tab bar is hidden
  * on /trails/:id pages, which have their own sticky Start trail bar.
- * Sign-in gate: signed-out visitors only get /login, /signup, /privacy, /terms and
+ * Sign-in gate: signed-out visitors at / get the landing page (features/landing,
+ * no shell); otherwise they only get /login, /signup, /privacy, /terms and
  * a shared trail (/trails/:id, read-only with a "Sign up" banner); every other
  * page sends them to /login?next=…, and the header shows just the logo. On
  * /map the shell is exactly one screen tall and <main> has no padding, so the map
@@ -18,6 +19,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Bookmark, Compass, LogIn, LogOut, MapIcon, Plus, Search, User, X } from 'lucide-react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useMatch, useNavigate, useSearchParams } from 'react-router'
 import { BrandLogo } from '@/components/BrandLogo'
+import { LandingPage } from '@/features/landing/LandingPage'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/lib/useSession'
 
@@ -263,6 +265,9 @@ export function AppLayout() {
   const onMakePage = useMatch('/make') !== null
   // Hide the app's navigation until we know who's here, and for signed-out visitors.
   const showNav = !loading && !signedOut
+
+  // Signed-out visitors at / get the marketing landing page, without the app shell.
+  if (signedOut && pathname === '/') return <LandingPage />
 
   if (signedOut && !isSignedOutPath(pathname)) {
     const next = pathname + search
