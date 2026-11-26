@@ -82,4 +82,32 @@ describe('createApiClient', () => {
     })
     await expect(client.saveTrail(trailDetail.id)).rejects.toMatchObject({ status: 404, code: 'not_found' })
   })
+
+  it('creates and updates trails with a JSON body', async () => {
+    const fetch = stubFetch(201, { id: trailDetail.id })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    const body = { title: 'Walk', status: 'draft' as const, stops: [] }
+    expect(await client.createTrail(body)).toEqual({ id: trailDetail.id })
+    const [url, init] = fetch.mock.calls[0]
+    expect(url).toBe('https://api.example/v1/trails')
+    expect(init?.method).toBe('POST')
+    expect((init?.headers as Record<string, string>)['content-type']).toBe('application/json')
+    expect(JSON.parse(String(init?.body))).toEqual(body)
+
+    const put = stubFetch(200, { id: trailDetail.id })
+    await createApiClient({ baseUrl: 'https://api.example', fetch: put }).updateTrail(trailDetail.id, body)
+    expect(put.mock.calls[0][0]).toBe(`https://api.example/v1/trails/${trailDetail.id}`)
+    expect(put.mock.calls[0][1]?.method).toBe('PUT')
+  })
+
+  it('passes save_trail messages through as ApiError', async () => {
+    const client = createApiClient({
+      baseUrl: 'https://api.example',
+      fetch: stubFetch(422, { error: 'unprocessable_entity', message: 'Add at least 2 stops before publishing', requestId: 'r5' }),
+    })
+    await expect(client.createTrail({ title: 'x', status: 'published', stops: [] })).rejects.toMatchObject({
+      status: 422,
+      message: 'Add at least 2 stops before publishing',
+    })
+  })
 })
