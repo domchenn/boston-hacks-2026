@@ -219,4 +219,3 @@ describe('actions and crumbs: safety', () => {
     expect(await service.tickedCrumbs(trail, users.user)).toEqual([crumb])
   })
 })
-
