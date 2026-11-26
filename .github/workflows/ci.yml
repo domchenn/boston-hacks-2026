@@ -2,9 +2,10 @@
 #
 # - app:      clean install, then lint, typecheck, unit tests and build for every
 #             workspace app (apps/web, apps/api).
-# - database: starts a throwaway local Supabase database in Docker, applies every
-#             migration in supabase/migrations/ plus seed.sql, then runs the pgTAP
-#             security tests in supabase/tests/. Never touches the real project.
+# - database: starts a throwaway local Supabase (database, auth, PostgREST and the
+#             API gateway only) in Docker, applies every migration in supabase/migrations/
+#             plus seed.sql, runs the pgTAP security tests in supabase/tests/, then the
+#             API's RLS integration tests against it. Never touches the real project.
 #
 # Both jobs must pass before a PR is merged.
 name: CI
@@ -49,9 +50,20 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Start local Supabase database
-        run: npx supabase db start
+      - name: Start local Supabase (database, auth, PostgREST, gateway)
+        run: >-
+          npx supabase start
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Apply all migrations and seed.sql
         run: npx supabase db reset --yes
       - name: Run database tests
         run: npx supabase test db
+      - name: Run API integration tests (RLS equivalence)
+        run: |
+          echo "status provides: $(npx supabase status -o env | cut -d= -f1 | tr '\n' ' ')"
+          eval "$(npx supabase status -o env | grep -E '^(API_URL|PUBLISHABLE_KEY|JWT_SECRET|DB_URL)=')"
+          SUPABASE_TEST_URL="$API_URL" \
+          SUPABASE_TEST_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" \
+          SUPABASE_TEST_JWT_SECRET="$JWT_SECRET" \
+          SUPABASE_TEST_DB_URL="$DB_URL" \
+          npm run test:integration -w @breadcrumb/api

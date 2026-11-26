@@ -11,7 +11,11 @@
  * Runs as a Vercel Edge Function. Reads only public data with the publishable
  * key (RLS: published trails only). Env: VITE_SUPABASE_URL,
  * VITE_SUPABASE_PUBLISHABLE_KEY (already set in Vercel for the app).
+ *
+ * The triple-slash reference below gives Vercel's separate type-check of this
+ * function the Node types it needs for process.env.
  */
+/// <reference types="node" />
 
 export const config = { runtime: 'edge' }
 

@@ -4,20 +4,21 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { loadConfig } from '../src/config/env.js'
-import { createApp } from '../src/create-app.js'
+import { startFakeSupabase, type FakeSupabase } from './support/fake-supabase.js'
+import { startTestApp } from './support/test-app.js'
 
 const ALLOWED = 'https://breadcrumb-staging-seven.vercel.app'
 let app: NestFastifyApplication
+let supabase: FakeSupabase
 
 beforeAll(async () => {
-  app = await createApp(loadConfig({ NODE_ENV: 'test', APP_ENV: 'staging', LOG_LEVEL: 'silent', CORS_ORIGINS: ALLOWED }))
-  await app.init()
-  await app.getHttpAdapter().getInstance().ready()
+  supabase = await startFakeSupabase()
+  app = await startTestApp({ APP_ENV: 'staging', CORS_ORIGINS: ALLOWED, SUPABASE_URL: supabase.url })
 })
 
 afterAll(async () => {
   await app.close()
+  await supabase.close()
 })
 
 describe('GET /health', () => {
@@ -96,6 +97,7 @@ describe('OpenAPI', () => {
     expect(res.statusCode).toBe(200)
     const doc = res.json()
     expect(doc.info).toMatchObject({ title: 'Breadcrumb API', version: '0.1.0' })
-    expect(Object.keys(doc.paths)).toEqual(expect.arrayContaining(['/health', '/v1/meta']))
+    expect(Object.keys(doc.paths)).toEqual(expect.arrayContaining(['/health', '/v1/meta', '/v1/me']))
+    expect(doc.components.securitySchemes.bearer).toMatchObject({ type: 'http', scheme: 'bearer' })
   })
 })

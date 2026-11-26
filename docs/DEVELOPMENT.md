@@ -29,11 +29,12 @@ npm run dev
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the web dev server at http://localhost:5173 |
-| `npm run dev:api` | Build and start the API at http://localhost:3001 (`/health`, `/v1/meta`, docs at `/docs`) |
+| `npm run dev:api` | Build and start the API at http://localhost:3001 (`/health`, `/v1/meta`, `/v1/me`, docs at `/docs`). Needs `apps/api/.env` (copy `apps/api/.env.example`) |
 | `npm run build` | Type-check and build every app (`apps/web/dist/`, `apps/api/dist/`) |
 | `npm run typecheck` | Type-check every app |
 | `npm run lint` | Run ESLint in every app |
-| `npm test` | Run unit tests (the API's Vitest suite) |
+| `npm test` | Run unit tests (Vitest in `packages/contracts` and `apps/api`) |
+| `npm run test:integration -w @breadcrumb/api` | API RLS integration tests against a running local Supabase (env vars in `apps/api/test/integration/local-supabase.ts`; CI runs them) |
 | `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](../supabase/README.md)) |
 | `npm run test:db` | Run pgTAP against local Supabase (Docker) |
 | `npm run preview` | Serve the production build locally |
@@ -83,7 +84,8 @@ Migrations run in timestamp order; [`supabase/README.md`](../supabase/README.md)
 package.json            npm workspaces root: app scripts forward to apps/web; db:* scripts
 package-lock.json       the one lockfile
 .env                    local env for the web app (Vite reads it from the repo root)
-apps/api/               NestJS + Fastify API (M06 skeleton; not deployed yet), see below
+packages/contracts/     @breadcrumb/contracts: API schemas (Zod), types and typed client, see below
+apps/api/               NestJS + Fastify API (not deployed yet), see below
 apps/web/               the Vite web app (Vercel Root Directory)
 ├── src/
 │   ├── components/     shared components; ui/ = shadcn primitives, layout/ = app shell
@@ -106,12 +108,25 @@ Run npm commands from the repo root; app commands forward to `apps/web` (for exa
 
 ## API (`apps/api`)
 
-A NestJS 12 app on Fastify. It is a skeleton: no database access, no login checks and no deployment yet (those are M07, M08 and later).
+A NestJS 12 app on Fastify. It verifies Supabase logins (M08) and serves the trail reads `GET /v1/trails` and `GET /v1/trails/:id` (M10). Not deployed yet (M07). Requires Node 22.12+.
 
 - `src/create-app.ts` builds the app for both `main.ts` and the tests: Pino JSON logs, `x-request-id` on every response (a safe caller value is reused), the CORS allow-list, one error shape `{ error, message, requestId }`, and the OpenAPI document at `/v1/openapi.json` (interactive docs at `/docs` outside production).
 - `src/config/env.ts` validates settings at startup and exits with a readable list of problems. Settings: `NODE_ENV`, `APP_ENV` (`local`/`staging`/`production`), `HOST`, `PORT` (default 3001), `LOG_LEVEL`, `CORS_ORIGINS` (comma-separated origins, default `http://localhost:5173`). Read config through the `APP_CONFIG` token, never `process.env` directly.
 - `GET /health` is outside `/v1` for host health checks; product endpoints live under `/v1`.
-- Tests in `apps/api/test/` use Fastify's in-memory `inject`, so they need no port or network.
+- **Auth is deny-by-default.** A global guard requires `Authorization: Bearer <Supabase access token>` on every route unless it is marked `@Public()` (no token read) or `@OptionalAuth()` (no token is fine, a bad one is still rejected). Tokens are verified against the project's public keys at `SUPABASE_URL/auth/v1/.well-known/jwks.json`: ES256/RS256 only, issuer, audience `authenticated`, expiry (30 s tolerance) and role `authenticated`, so anon/publishable keys and service-role tokens are refused. Bad tokens get 401 with no details (the reason is logged at debug level); if the keys can't be fetched the API answers 503 instead of letting the request through. The API needs no Supabase secret. Use `@CurrentUser()` to read the user; it carries the access token so later data access can run as that user under RLS.
+- Validate inputs with `new ZodValidationPipe(schema)` on `@Body`, `@Query` or `@Param`; failures are 400s listing each field. Annotate those parameters with a plain type alias (`type ListQuery = z.infer<typeof Schema>`), not the schema's own name, or Swagger mistakes the schema for a class.
+- **Data access runs as the caller.** `SupabaseClients.forUser(user)` gives a Supabase client with the publishable key plus the caller's own token (or none when signed out), so Postgres RLS decides what every query returns, exactly as for the web app. The API holds no secret or service-role key. Settings: `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
+- **Trails:** `GET /v1/trails` (filters from `TrailListQuery`) and `GET /v1/trails/:id` (404 when missing or hidden) return the `@breadcrumb/contracts` shapes, with the same queries as the web's `getFeed`/`getTrail`. Sign-in is optional on both.
+- **RLS equivalence tests** (`test/integration/trails.rls.test.ts`) create throwaway users, follows, close friends, a community and trails of every visibility in a local Supabase, then check for each kind of viewer that the API returns exactly what Supabase returns for the same token. They refuse non-localhost targets and delete their fixtures.
+- Tests in `apps/api/test/` use Fastify's in-memory `inject` and a local fake Supabase key server (`test/support/fake-supabase.ts`), so they need no network.
+
+## Shared contracts (`packages/contracts`)
+
+`@breadcrumb/contracts` defines what the API sends and accepts, in one place for the API, the web app and later mobile:
+
+- Zod schemas with matching TypeScript types: allowed values (`Category`, `TransitLine`, …), the trail read contract (`FeedTrail`, `TrailList`, `TrailDetail`, `TrailListQuery`, `TrailIdParams`) and `ApiErrorBody`. Trail shapes match the web's `FeedTrail`/`TrailDetail` in `apps/web/src/lib/api/trails.ts` field for field.
+- `createApiClient({ baseUrl, getAccessToken })`: `getTrails(filters)` and `getTrail(id)` send the Supabase token, validate every response and throw `ApiError` (status, code, requestId) on failures; `getTrail` returns null on 404.
+- It is an ESM package built with `tsc -b` into `dist/`. The API references it as a TypeScript project, so its `build`, `typecheck` and `test` build the contracts first; the root `build` runs packages before apps. Change a schema here first, then the API and clients.
 
 ## Deploying (Vercel)
 

@@ -1,8 +1,10 @@
 /**
  * Build settings for the API: compiles only src/ into dist/ (run by `npm run build`).
+ * `tsc -b` builds the referenced @breadcrumb/contracts package first.
  */
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
-  "include": ["src"]
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "tsBuildInfoFile": "dist/.tsbuildinfo" },
+  "include": ["src"],
+  "references": [{ "path": "../../packages/contracts" }]
 }
