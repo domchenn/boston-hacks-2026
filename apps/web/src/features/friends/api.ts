@@ -17,10 +17,16 @@
  *
  * Used by FollowBar (profiles), PrivacySettings and FriendsActivity (You page) and the Explore
  * Friends tab (src/features/explore/FriendsPanel.tsx).
+ *
+ * With VITE_API_URL set, follows, follow lists, relationships, friends, close friends
+ * and the private switch go through the API (M15b). The API always acts as the
+ * signed-in user, so `viewerId` is only used without it (callers pass the session
+ * user). Activity and cards still query Supabase directly (M15c).
  */
 
 import type { TrailCardData } from '@/components/TrailCard'
 import type { TrailCreator } from '@/lib/api/trails'
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 import type { Category } from '@/types/db-values'
 
@@ -48,6 +54,27 @@ function friendlyError(error: { code?: string; message?: string } | null) {
   return new Error('Something went wrong loading this. Please try again.')
 }
 
+const CLOSE_FRIENDS_ONLY = 'Only friends (people who follow you back) can be close friends.'
+
+type Api = NonNullable<Awaited<ReturnType<typeof getApi>>>
+
+/**
+ * Runs `call` through the API when VITE_API_URL is set (else returns undefined),
+ * with the same messages as friendlyError: API errors carry an HTTP status, network
+ * failures don't.
+ */
+async function viaApi<T>(call: (api: Api) => Promise<T>): Promise<{ value: T } | undefined> {
+  const api = getApi()
+  if (!api) return undefined
+  try {
+    return { value: await call(await api) }
+  } catch (error) {
+    const status = error instanceof Error && 'status' in error ? Number((error as { status: unknown }).status) : 0
+    if (status === 403) throw new Error(CLOSE_FRIENDS_ONLY, { cause: error })
+    throw friendlyError(status ? { code: String(status) } : { message: 'network' })
+  }
+}
+
 /** Numeric columns can arrive as strings; normalise to number | null. */
 const num = (v: number | string | null | undefined) => (v === null || v === undefined || v === '' ? null : Number(v))
 
@@ -57,6 +84,8 @@ const num = (v: number | string | null | undefined) => (v === null || v === unde
 
 /** How many people follow this user, and how many they follow. */
 export async function getFollowCounts(userId: string) {
+  const fromApi = await viaApi((api) => api.getFollowCounts(userId))
+  if (fromApi) return fromApi.value
   const [followers, following] = await Promise.all([
     supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('following_id', userId),
     supabase.from('follows').select('following_id', { count: 'exact', head: true }).eq('follower_id', userId),
@@ -67,6 +96,8 @@ export async function getFollowCounts(userId: string) {
 
 /** Whether `viewerId` follows `userId`. */
 export async function isFollowing(viewerId: string, userId: string) {
+  const fromApi = await viaApi((api) => api.getRelationship(userId))
+  if (fromApi) return fromApi.value.following
   const { count, error } = await supabase
     .from('follows')
     .select('following_id', { count: 'exact', head: true })
@@ -77,12 +108,14 @@ export async function isFollowing(viewerId: string, userId: string) {
 }
 
 export async function follow(viewerId: string, userId: string) {
+  if (await viaApi((api) => api.setFollowing(userId, true))) return
   const { error } = await supabase.from('follows').insert({ follower_id: viewerId, following_id: userId })
   // Already following (e.g. a second tab) counts as done.
   if (error && error.code !== '23505') throw friendlyError(error)
 }
 
 export async function unfollow(viewerId: string, userId: string) {
+  if (await viaApi((api) => api.setFollowing(userId, false))) return
   const { error } = await supabase.from('follows').delete().eq('follower_id', viewerId).eq('following_id', userId)
   if (error) throw friendlyError(error)
 }
@@ -153,6 +186,8 @@ export type FollowListKind = 'followers' | 'following'
 
 /** Who follows `userId` ('followers') or whom they follow ('following'), newest first. Follows are public. */
 export async function getFollowList(userId: string, kind: FollowListKind): Promise<TrailCreator[]> {
+  const fromApi = await viaApi((api) => api.getFollowList(userId, kind))
+  if (fromApi) return fromApi.value
   const query =
     kind === 'followers'
       ? supabase
@@ -170,6 +205,8 @@ export async function getFollowList(userId: string, kind: FollowListKind): Promi
 
 /** Ids of everyone `viewerId` follows (for Follow / Following buttons in lists). */
 export async function getFollowingIds(viewerId: string): Promise<Set<string>> {
+  const fromApi = await viaApi((api) => api.getFollowingIds())
+  if (fromApi) return new Set(fromApi.value)
   const { data, error } = await supabase.from('follows').select('following_id').eq('follower_id', viewerId)
   if (error) throw friendlyError(error)
   return new Set((data ?? []).map((r) => r.following_id))
@@ -183,6 +220,8 @@ export async function getFollowingIds(viewerId: string): Promise<Set<string>> {
 export type Relationship = { following: boolean; followsYou: boolean }
 
 export async function getRelationship(viewerId: string, userId: string): Promise<Relationship> {
+  const fromApi = await viaApi((api) => api.getRelationship(userId))
+  if (fromApi) return fromApi.value
   const { data, error } = await supabase
     .from('follows')
     .select('follower_id, following_id')
@@ -199,6 +238,8 @@ export async function getRelationship(viewerId: string, userId: string): Promise
 
 /** Your friends (people you follow who follow you back), A to Z by name. */
 export async function getFriends(viewerId: string): Promise<TrailCreator[]> {
+  const fromApi = await viaApi((api) => api.getFriends())
+  if (fromApi) return fromApi.value
   const [mine, theirs] = await Promise.all([
     supabase
       .from('follows')
@@ -216,22 +257,26 @@ export async function getFriends(viewerId: string): Promise<TrailCreator[]> {
 
 /** Ids on your close friends list (only you can read it). */
 export async function getCloseFriendIds(viewerId: string): Promise<Set<string>> {
+  const fromApi = await viaApi((api) => api.getCloseFriendIds())
+  if (fromApi) return new Set(fromApi.value)
   const { data, error } = await supabase.from('close_friends').select('friend_id').eq('owner_id', viewerId)
   if (error) throw friendlyError(error)
   return new Set((data ?? []).map((r) => r.friend_id))
 }
 
 export async function setCloseFriend(viewerId: string, friendId: string, on: boolean) {
+  if (await viaApi((api) => api.setCloseFriend(friendId, on))) return
   const { error } = on
     ? await supabase.from('close_friends').insert({ owner_id: viewerId, friend_id: friendId })
     : await supabase.from('close_friends').delete().eq('owner_id', viewerId).eq('friend_id', friendId)
   // Already on the list counts as done; 42501 = they aren't a friend (anymore).
-  if (error?.code === '42501') throw new Error('Only friends (people who follow you back) can be close friends.')
+  if (error?.code === '42501') throw new Error(CLOSE_FRIENDS_ONLY)
   if (error && error.code !== '23505') throw friendlyError(error)
 }
 
 /** Make your account private (trails only visible to friends) or public. */
 export async function setPrivateAccount(viewerId: string, isPrivate: boolean) {
+  if (await viaApi((api) => api.setPrivateAccount(isPrivate))) return
   const { error } = await supabase.from('profiles').update({ is_private: isPrivate }).eq('id', viewerId)
   if (error) throw friendlyError(error)
 }

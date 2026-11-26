@@ -16,6 +16,7 @@ import {
 import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
 import { MyRatingResponse, type RatingBody } from './ratings.js'
 import { FinishedTrailList } from './badges.js'
+import { CloseFriendState, FollowCounts, FollowState, PersonIdList, PersonList, Privacy, Relationship } from './friends.js'
 import { CommunityList, MyCommunity } from './communities.js'
 import { NeighborhoodList, TrendingList, type TrendingQuery } from './explore.js'
 import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
@@ -205,6 +206,51 @@ export function createApiClient(options: ApiClientOptions) {
     /** The caller's finished trails with line and neighborhood, for badges. Requires sign-in. */
     async getFinishedTrails() {
       return (await get('/v1/me/finished-trails', FinishedTrailList)).trails
+    },
+
+    /** How many people follow this person, and how many they follow. */
+    getFollowCounts(userId: string) {
+      return get(`/v1/profiles/${encodeURIComponent(userId)}/follow-counts`, FollowCounts)
+    },
+
+    /** Who follows this person ('followers') or whom they follow ('following'), newest first. */
+    async getFollowList(userId: string, kind: 'followers' | 'following') {
+      return (await get(`/v1/profiles/${encodeURIComponent(userId)}/${kind}`, PersonList)).people
+    },
+
+    /** Ids of everyone the caller follows. Requires sign-in. */
+    async getFollowingIds() {
+      return (await get('/v1/me/following-ids', PersonIdList)).ids
+    },
+
+    /** Follow (true) or unfollow (false) someone; repeating either is fine. Requires sign-in. */
+    async setFollowing(userId: string, following: boolean) {
+      return (await send(following ? 'PUT' : 'DELETE', `/v1/me/following/${encodeURIComponent(userId)}`, FollowState))!
+    },
+
+    /** Whether the caller follows this person and whether they follow back. Requires sign-in. */
+    getRelationship(userId: string) {
+      return get(`/v1/me/relationships/${encodeURIComponent(userId)}`, Relationship)
+    },
+
+    /** The caller's friends (mutual follows), A to Z. Requires sign-in. */
+    async getFriends() {
+      return (await get('/v1/me/friends', PersonList)).people
+    },
+
+    /** Ids on the caller's close friends list. Requires sign-in. */
+    async getCloseFriendIds() {
+      return (await get('/v1/me/close-friends', PersonIdList)).ids
+    },
+
+    /** Add (true) or remove (false) a friend from the close friends list. Requires sign-in. */
+    async setCloseFriend(userId: string, on: boolean) {
+      return (await send(on ? 'PUT' : 'DELETE', `/v1/me/close-friends/${encodeURIComponent(userId)}`, CloseFriendState))!
+    },
+
+    /** Make the caller's account private (trails visible to friends only) or public. Requires sign-in. */
+    async setPrivateAccount(isPrivate: boolean) {
+      return (await send('PUT', '/v1/me/privacy', Privacy, false, { isPrivate }))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */

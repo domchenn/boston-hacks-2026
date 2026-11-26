@@ -9,6 +9,7 @@ import { CommunitiesModule } from './communities/communities.module.js'
 import { ConfigModule } from './config/config.module.js'
 import type { AppConfig } from './config/env.js'
 import { ExploreModule } from './explore/explore.module.js'
+import { FriendsModule } from './friends/friends.module.js'
 import { HealthController } from './health/health.controller.js'
 import { MeController } from './me/me.controller.js'
 import { MetaController } from './meta/meta.controller.js'
@@ -22,7 +23,7 @@ export class AppModule {
   static forRoot(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      imports: [ConfigModule.forRoot(config), AuthModule, TrailsModule, ProfilesModule, ProgressModule, RatingsModule, ExploreModule, CommunitiesModule],
+      imports: [ConfigModule.forRoot(config), AuthModule, TrailsModule, ProfilesModule, ProgressModule, RatingsModule, ExploreModule, CommunitiesModule, FriendsModule],
       controllers: [HealthController, MetaController, MeController],
     }
   }
