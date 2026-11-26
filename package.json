@@ -19,7 +19,8 @@
     "db:push": "supabase db push --remote",
     "db:status": "supabase migration list --remote",
     "db:types": "supabase gen types typescript --remote > apps/web/src/types/database.types.tmp && mv apps/web/src/types/database.types.tmp apps/web/src/types/database.types.ts",
-    "test:db": "supabase test db"
+    "test:db": "supabase test db",
+    "branches:prune": "bash scripts/prune-merged-branches.sh"
   },
   "devDependencies": {
     "supabase": "^3.2.0"
