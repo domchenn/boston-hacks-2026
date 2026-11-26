@@ -111,7 +111,7 @@ function direct(user: AuthUser | null) {
   })
 }
 
-const viewers: Viewer[] = ['anon', 'owner', 'friend', 'stranger']
+const viewers = ['anon', 'owner', 'friend', 'stranger'] as const
 const sorted = (ids: string[]) => [...ids].sort()
 
 describe('profiles are public', () => {
