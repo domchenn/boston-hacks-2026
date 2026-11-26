@@ -37,6 +37,7 @@ npm run dev
 | `npm run test:integration -w @breadcrumb/api` | API RLS integration tests against a running local Supabase (env vars in `apps/api/test/integration/local-supabase.ts`; CI runs them) |
 | `npm run db:new -- <name>` / `db:push` / `db:status` / `db:types` | Database migrations (see [`supabase/README.md`](../supabase/README.md)) |
 | `npm run test:db` | Run pgTAP against local Supabase (Docker) |
+| `npm run branches:prune` | List local branches already merged into main/develop (`-- --delete` removes them; never touches main, develop, the current branch or unmerged work) |
 | `npm run preview` | Serve the production build locally |
 
 ### Environment variables
