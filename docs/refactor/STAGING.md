@@ -10,6 +10,7 @@ Status: set up and verified 2026-11-25, with the limits below. Staging has its o
 | Deploys | Manual (`git.deploymentEnabled: false`) | Manual |
 | Supabase GitHub integration | Not connected | Disconnected for the transfer; Deploy to production was off |
 | Maps key | Separate browser key | Own key |
+| API | Cloud Run `breadcrumb-api`, project `breadcrumb-staging-515905`, `us-east5`: https://breadcrumb-api-778707046180.us-east5.run.app | Not deployed yet (project `project-647004cf-4bb8-4512-9bb`, which also owns the Maps keys) |
 
 ## Evidence
 
@@ -29,6 +30,27 @@ Status: set up and verified 2026-11-25, with the limits below. Staging has its o
 - Deploy `develop` by hand in the breadcrumb-staging Vercel project (Root Directory `apps/web`), and test on https://breadcrumb-staging-seven.vercel.app. Vercel's per-deployment addresses (`…-dom-s-team3.vercel.app`) need a Vercel login and are rejected by the Maps key by design. Variable changes need a new build.
 - Use only made-up test accounts and data. Never copy production data or keys here.
 - Free projects pause after about a week of low activity.
+
+## Staging API (Cloud Run) — 2026-11-26
+
+Deployed by hand from `develop` at `2f2defe`. Setup (owner ran steps 1–3; the deploy was run with the owner's approval):
+
+- Enabled `run.googleapis.com` and `artifactregistry.googleapis.com`; Docker registry `breadcrumb` in `us-east5`.
+- Service identity `breadcrumb-api@breadcrumb-staging-515905.iam.gserviceaccount.com` with **no roles** (the API needs no Google Cloud permissions), instead of the default compute account.
+- Service `breadcrumb-api`: public endpoint (the API's own guard handles sign-in), 1 CPU, 512 MiB, **0–2 instances**, concurrency 80, 30 s timeout. Settings: `APP_ENV=staging`, staging `SUPABASE_URL` and publishable key, `CORS_ORIGINS` = staging site + localhost. No secrets.
+
+Verified live: `/health` 200 (~0.15–0.3 s), `/v1/meta` reports staging, `/v1/trails` returned the same 12 trails as staging Supabase directly and is contract-valid, detail correct, 404/400/401 cases, forged token 401, CORS allows only the staging site and localhost, request IDs present, JSON logs in Cloud Logging. The publishable key appears only in Cloud Run's deployment audit record (it stores service settings), never in application logs.
+
+To redeploy from an up-to-date `develop` (replace nothing; the tag is the commit):
+
+```sh
+TAG=$(git rev-parse --short HEAD)
+IMG=us-east5-docker.pkg.dev/breadcrumb-staging-515905/breadcrumb/api:$TAG
+docker buildx build --platform linux/amd64 -f apps/api/Dockerfile -t "$IMG" --push .
+gcloud run deploy breadcrumb-api --project breadcrumb-staging-515905 --region us-east5 --image "$IMG"
+```
+
+Settings and limits carry over between deploys. Build with `--platform linux/amd64`, because Cloud Run doesn't run Apple Silicon (arm64) images. An unused third Google Cloud project, `breadcrumb-515501`, has no Maps APIs or keys; the owner may shut it down.
 
 ## Production organization transfer — 2026-11-25
 
