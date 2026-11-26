@@ -9,6 +9,7 @@ import { TrailDetail, TrailIdParams, TrailList, TrailListQuery } from '@breadcru
 import { z } from 'zod'
 import type { AuthUser } from '../auth/auth-user.js'
 import { CurrentUser, OptionalAuth } from '../auth/decorators.js'
+import { openApiSchema as schema } from '../common/openapi-schema.js'
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js'
 import { TrailsService } from './trails.service.js'
 
@@ -16,8 +17,6 @@ import { TrailsService } from './trails.service.js'
 type ListQuery = z.infer<typeof TrailListQuery>
 type IdParams = z.infer<typeof TrailIdParams>
 
-/** OpenAPI schema objects generated from the shared Zod contract. */
-const schema = (type: z.ZodType) => z.toJSONSchema(type, { target: 'openapi-3.0', io: 'output' }) as Record<string, unknown>
 
 @ApiTags('trails')
 @ApiBearerAuth()

@@ -3,7 +3,13 @@
  * and the trail lists behind the Finished / Saved / Signed up / Made tabs.
  * Privacy comes from RLS: user_sidequests rows are only readable by their owner,
  * and other people's drafts never come back. Used by ProfilePage.tsx.
+ *
+ * With VITE_API_URL set, each function goes through the Breadcrumb API instead
+ * (GET /v1/profiles/…, /v1/me/trails), which runs the same queries under the same RLS;
+ * the three counts share one /stats request per profile.
  */
+import type { ProfileStats } from '@breadcrumb/contracts'
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 import type { Tables } from '@/types/database.types'
 import type { UserSidequestStatus } from '@/types/db-values'
@@ -53,6 +59,33 @@ function failure(error: { code?: string } | null): { ok: false; message: string 
   return { ok: false, message: error?.code ? GENERIC_ERROR : NETWORK_ERROR }
 }
 
+/** API errors carry an HTTP status; a fetch that never got an answer doesn't. */
+function apiFailure(error: unknown): { ok: false; message: string } {
+  return { ok: false, message: error instanceof Error && 'status' in error ? GENERIC_ERROR : NETWORK_ERROR }
+}
+
+/** Runs an API call as a Result, mapping failures to the same messages as the Supabase path. */
+async function viaApi<T>(call: () => Promise<T>): Promise<Result<T>> {
+  try {
+    return { ok: true, data: await call() }
+  } catch (error) {
+    return apiFailure(error)
+  }
+}
+
+/** One /stats request per profile, shared by the rating and the two counts. */
+const statsInFlight = new Map<string, Promise<ProfileStats>>()
+function profileStats(userId: string): Promise<ProfileStats> {
+  let pending = statsInFlight.get(userId)
+  if (!pending) {
+    pending = getApi()!
+      .then((api) => api.getProfileStats(userId))
+      .finally(() => setTimeout(() => statsInFlight.delete(userId), 1000))
+    statsInFlight.set(userId, pending)
+  }
+  return pending
+}
+
 type TrailRow = Pick<
   Tables<'sidequests'>,
   | 'id'
@@ -85,6 +118,8 @@ function toTrail(row: TrailRow, extra: Partial<ProfileTrail> = {}): ProfileTrail
 
 /** A profile by id or username. `data` is null when no one matches. */
 export async function getProfile(by: { id: string } | { username: string }): Promise<Result<PublicProfile | null>> {
+  const api = getApi()
+  if (api) return viaApi(async () => (await api).getProfile('id' in by ? by.id : by.username))
   try {
     const query = supabase.from('profiles').select(PROFILE_COLUMNS)
     const { data, error } = await ('id' in by ? query.eq('id', by.id) : query.eq('username', by.username)).maybeSingle()
@@ -97,6 +132,7 @@ export async function getProfile(by: { id: string } | { username: string }): Pro
 
 /** Average overall rating across the user's trails, or null if nobody has rated one yet. */
 export async function getQuestgiverRating(userId: string): Promise<Result<QuestgiverRating | null>> {
+  if (getApi()) return viaApi(async () => (await profileStats(userId)).questgiverRating)
   try {
     const { data, error } = await supabase
       .from('questgiver_ratings')
@@ -113,6 +149,7 @@ export async function getQuestgiverRating(userId: string): Promise<Result<Questg
 
 /** How many trails a user has finished (yours only: other people's progress is private). */
 export async function countMyFinished(userId: string): Promise<Result<number>> {
+  if (getApi()) return viaApi(async () => (await profileStats(userId)).finishedCount ?? 0)
   try {
     const { count, error } = await supabase
       .from('user_sidequests')
@@ -128,6 +165,7 @@ export async function countMyFinished(userId: string): Promise<Result<number>> {
 
 /** How many trails a user made that the viewer can see (yours include drafts). */
 export async function countMade(userId: string): Promise<Result<number>> {
+  if (getApi()) return viaApi(async () => (await profileStats(userId)).madeCount)
   try {
     const { count, error } = await supabase
       .from('sidequests')
@@ -143,6 +181,9 @@ export async function countMade(userId: string): Promise<Result<number>> {
 
 /** Your trails with a given progress status, most recent first. */
 export async function getMyTrails(userId: string, status: ProgressTab): Promise<Result<ProfileTrail[]>> {
+  // The API always answers for the signed-in caller, which is who this is called for.
+  const api = getApi()
+  if (api) return viaApi(async () => (await api).getMyTrails(status))
   try {
     const { data, error } = await supabase
       .from('user_sidequests')
@@ -182,6 +223,8 @@ export async function getMyTrails(userId: string, status: ProgressTab): Promise<
 
 /** Trails a user made, newest first. Others see only what's published; you also see drafts. */
 export async function getMadeTrails(userId: string): Promise<Result<ProfileTrail[]>> {
+  const api = getApi()
+  if (api) return viaApi(async () => (await api).getMadeTrails(userId))
   try {
     const { data, error } = await supabase
       .from('sidequests')

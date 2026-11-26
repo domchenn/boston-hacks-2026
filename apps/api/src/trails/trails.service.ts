@@ -24,6 +24,7 @@ import type {
   TravelMode,
 } from '@breadcrumb/contracts'
 import type { AuthUser } from '../auth/auth-user.js'
+import { num, type Numeric } from '../common/numeric.js'
 import { SupabaseClients } from '../supabase/supabase-clients.js'
 
 const CREATOR_FIELDS = 'id, username, display_name, avatar_url'
@@ -45,7 +46,6 @@ const DETAIL_SELECT = `id, title, description, category, custom_category, neighb
                     review_text, created_at,
                     reviewer:profiles!sidequest_ratings_user_id_fkey(${CREATOR_FIELDS}))`
 
-type Numeric = number | string | null
 
 type SummaryRow = {
   id: string
@@ -118,12 +118,6 @@ type RatingStatsRow = {
   avg_memorability: Numeric
 }
 
-/** Postgres numeric columns can arrive as strings; normalise to number | null. */
-function num(value: Numeric | undefined): number | null {
-  if (value === null || value === undefined) return null
-  const n = typeof value === 'number' ? value : Number(value)
-  return Number.isFinite(n) ? n : null
-}
 
 function toCrumb(row: CrumbRow): TrailCrumb {
   return { id: row.id, label: row.label, type: row.item_type as ChecklistItemType, order: row.item_order, stopId: row.stop_id }
