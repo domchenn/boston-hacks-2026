@@ -5,11 +5,16 @@
  *                                     neighborhood, cost, length, late-night filters)
  *   getTrail(id)     → TrailDetail   one trail with stops, crumbs and reviews
  *
+ * With VITE_API_URL set, both go through the Breadcrumb API (GET /v1/trails and
+ * /v1/trails/:id) via src/lib/apiClient.ts, which returns these same shapes and applies
+ * the same RLS as the caller; without it they query Supabase directly, as below.
+ *
  * Words: a "trail" is a row in `sidequests`, its stops are `sidequest_stops`
  * and its "crumbs" are `checklist_items`. Visibility (drafts, community-only
  * trails) is enforced by RLS, so these only ever return what the user may see.
  */
 
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 import type { Tables } from '@/types/database.types'
 import type { Category, SidequestStatus, TransitLine, TravelMode, ChecklistItemType, TrailVisibility } from '@/types/db-values'
@@ -181,6 +186,9 @@ function toCrumb(row: Pick<Tables<'checklist_items'>, 'id' | 'label' | 'item_typ
 
 /** Published trails the user can see, newest first, with card details. */
 export async function getFeed(filters: FeedFilters = {}): Promise<FeedTrail[]> {
+  const api = getApi()
+  if (api) return (await api).getTrails(filters)
+
   let query = supabase
     .from('sidequests')
     .select(
@@ -260,6 +268,9 @@ async function fetchRemixSource(id: string): Promise<TrailRemixSource | null> {
 
 /** One trail with everything the detail page needs, or null if it doesn't exist or isn't visible. */
 export async function getTrail(id: string): Promise<TrailDetail | null> {
+  const api = getApi()
+  if (api) return (await api).getTrail(id)
+
   const { data: row, error } = await supabase
     .from('sidequests')
     .select(
