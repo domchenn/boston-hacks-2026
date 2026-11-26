@@ -3,7 +3,7 @@
  * malformed data; list query parameters parse from strings and reject bad input.
  */
 import { describe, expect, it } from 'vitest'
-import { FeedTrail, TrailDetail, TrailIdParams, TrailList, TrailListQuery } from '../src/index.js'
+import { FeedTrail, SaveTrailBody, TrailDetail, TrailIdParams, TrailList, TrailListQuery } from '../src/index.js'
 import { feedTrail, trailDetail } from './fixtures.js'
 
 describe('response schemas', () => {
@@ -63,5 +63,30 @@ describe('TrailIdParams', () => {
   it('requires a uuid', () => {
     expect(TrailIdParams.safeParse({ id: trailDetail.id }).success).toBe(true)
     expect(TrailIdParams.safeParse({ id: 'abc' }).success).toBe(false)
+  })
+})
+
+describe('SaveTrailBody', () => {
+  const base = { title: 'Walk', status: 'draft', stops: [] }
+  it('accepts the web payload and keeps absent keys absent', () => {
+    const parsed = SaveTrailBody.parse({
+      ...base,
+      category: 'outdoors',
+      visibility: 'friends',
+      stops: [{ place_name: 'A', latitude: 42.3, longitude: -71.1, crumb: '' }],
+    })
+    expect(parsed).not.toHaveProperty('community_id')
+    expect(parsed.visibility).toBe('friends')
+  })
+
+  it.each([
+    ['an unknown key', { ...base, owner: 'me' }],
+    ['a bad status', { ...base, status: 'archived' }],
+    ['a bad travel mode', { ...base, stops: [{ place_name: 'A', travel_mode_to_stop: 'ferry' }] }],
+    ['an out-of-range latitude', { ...base, stops: [{ place_name: 'A', latitude: 120 }] }],
+    ['a non-uuid community', { ...base, community_id: 'bu' }],
+    ['a too-long title', { ...base, title: 'x'.repeat(121) }],
+  ])('rejects %s', (_label, value) => {
+    expect(SaveTrailBody.safeParse(value).success).toBe(false)
   })
 })

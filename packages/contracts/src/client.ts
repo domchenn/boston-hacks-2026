@@ -14,6 +14,7 @@ import {
   type MyTrailsQuery,
 } from './profiles.js'
 import { TrailProgress } from './progress.js'
+import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
 export class ApiError extends Error {
@@ -49,16 +50,22 @@ export function createApiClient(options: ApiClientOptions) {
   }
 
   async function send<T extends z.ZodType>(
-    method: 'GET' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
     schema: T,
     allowNotFound = false,
+    payload?: unknown,
   ): Promise<z.infer<T> | null> {
     const headers: Record<string, string> = { accept: 'application/json' }
     const token = await options.getAccessToken?.()
     if (token) headers.authorization = `Bearer ${token}`
+    if (payload !== undefined) headers['content-type'] = 'application/json'
 
-    const response = await doFetch(`${baseUrl}${path}`, { method, headers })
+    const response = await doFetch(`${baseUrl}${path}`, {
+      method,
+      headers,
+      ...(payload !== undefined ? { body: JSON.stringify(payload) } : {}),
+    })
     const requestId = response.headers.get('x-request-id')
     if (allowNotFound && response.status === 404) return null
 
@@ -121,6 +128,16 @@ export function createApiClient(options: ApiClientOptions) {
     /** Remove a saved trail (aborted if it was started, else deleted); returns the new status. Requires sign-in. */
     async unsaveTrail(trailId: string) {
       return (await send('DELETE', `/v1/me/saved-trails/${encodeURIComponent(trailId)}`, TrailProgress))!
+    },
+
+    /** Create a trail (draft or published) through save_trail(); returns its id. Requires sign-in. */
+    async createTrail(body: SaveTrailBody) {
+      return (await send('POST', '/v1/trails', TrailSaved, false, body))!
+    },
+
+    /** Replace one of your trails (stops included) through save_trail(); returns its id. Requires sign-in. */
+    async updateTrail(id: string, body: SaveTrailBody) {
+      return (await send('PUT', `/v1/trails/${encodeURIComponent(id)}`, TrailSaved, false, body))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */
