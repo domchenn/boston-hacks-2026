@@ -6,7 +6,8 @@
  * vercel.json sends those bots here instead (matched by user agent); people
  * still get the normal app. This returns a tiny HTML page with Open Graph tags:
  * the trail's title, a one-line summary (stops · cost · time · neighborhood +
- * description) and a photo if the trail has one.
+ * description) and a large preview image drawn by api/og-image.ts (the trail card,
+ * or the branded default card for the home page and unknown or private trails).
  *
  * Runs as a Vercel Edge Function. Reads only public data with the publishable
  * key (RLS: published trails only). Env: VITE_SUPABASE_URL,
@@ -29,7 +30,6 @@ type Trail = {
   neighborhood: string | null
   estimated_cost: number | null
   estimated_duration_minutes: number | null
-  cover_image_url: string | null
   sidequest_stops: { place_name: string; stop_order: number }[]
 }
 
@@ -49,11 +49,11 @@ export function summary(trail: Trail): string {
   return `${bits.join(' · ')}.${description}`.slice(0, 280)
 }
 
-export function page({ title, description, url, image }: { title: string; description: string; url: string; image: string | null }) {
+export function page({ title, description, url, image }: { title: string; description: string; url: string; image: string }) {
   const t = escapeHtml(title)
   const d = escapeHtml(description)
   const u = escapeHtml(url)
-  const img = image ? escapeHtml(image) : null
+  const img = escapeHtml(image)
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
@@ -64,11 +64,15 @@ export function page({ title, description, url, image }: { title: string; descri
 <meta property="og:title" content="${t}">
 <meta property="og:description" content="${d}">
 <meta property="og:url" content="${u}">
-${img ? `<meta property="og:image" content="${img}">` : ''}
-<meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}">
+<meta property="og:image" content="${img}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${t}">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${t}">
 <meta name="twitter:description" content="${d}">
-${img ? `<meta name="twitter:image" content="${img}">` : ''}
+<meta name="twitter:image" content="${img}">
 <link rel="canonical" href="${u}">
 </head><body><p><a href="${u}">${t}</a></p><p>${d}</p></body></html>`
 }
@@ -77,7 +81,7 @@ export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const id = url.searchParams.get('id') ?? ''
   const canonical = `${url.origin}/trails/${id}`
-  const fallback = page({ title: SITE, description: TAGLINE, url: url.origin, image: null })
+  const fallback = page({ title: SITE, description: TAGLINE, url: url.origin, image: `${url.origin}/api/og-image` })
   const html = (body: string, maxAge: number) =>
     new Response(body, {
       headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': `public, max-age=0, s-maxage=${maxAge}` },
@@ -89,21 +93,16 @@ export default async function handler(request: Request): Promise<Response> {
 
   const headers = { apikey: key, Authorization: `Bearer ${key}` }
   try {
-    const select =
-      'title,description,neighborhood,estimated_cost,estimated_duration_minutes,cover_image_url,sidequest_stops(place_name,stop_order)'
-    const [trailRes, photoRes] = await Promise.all([
-      fetch(`${base}/rest/v1/sidequests?id=eq.${id}&select=${encodeURIComponent(select)}`, { headers }),
-      fetch(`${base}/rest/v1/quest_photos?sidequest_id=eq.${id}&select=photo_url&order=created_at.desc&limit=1`, { headers }),
-    ])
+    const select = 'title,description,neighborhood,estimated_cost,estimated_duration_minutes,sidequest_stops(place_name,stop_order)'
+    const trailRes = await fetch(`${base}/rest/v1/sidequests?id=eq.${id}&select=${encodeURIComponent(select)}`, { headers })
     const [trail] = (await trailRes.json()) as Trail[]
     if (!trail) return html(fallback, 60)
-    const photos = photoRes.ok ? ((await photoRes.json()) as { photo_url: string }[]) : []
     return html(
       page({
         title: `${trail.title} · ${SITE}`,
         description: summary(trail),
         url: canonical,
-        image: trail.cover_image_url ?? photos[0]?.photo_url ?? null,
+        image: `${url.origin}/api/og-image?id=${id}`,
       }),
       600,
     )

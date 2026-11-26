@@ -97,7 +97,8 @@ apps/web/               the Vite web app (Vercel Root Directory)
 │   ├── App.tsx         route table
 │   ├── main.tsx        entry point
 │   └── index.css       Tailwind + theme tokens (imports docs/styles/)
-├── api/og.ts           Vercel Edge Function for link previews
+├── api/og.ts           Vercel Edge Function for link previews (Open Graph tags)
+├── api/og-image.ts     draws the 1200×630 preview image for a trail (or the default card)
 ├── public/             favicon and other static files
 ├── index.html, vite.config.ts, vercel.json, tsconfig*.json, eslint.config.js, components.json
 └── package.json        app dependencies and scripts
