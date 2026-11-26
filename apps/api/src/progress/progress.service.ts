@@ -79,7 +79,7 @@ export class ProgressService {
     return data.map((row) => row.checklist_item_id)
   }
 
-  /** Tick (idempotent) or untick a crumb. Ticking needs a started, not aborted, trail. */
+  /** Tick (idempotent) or untick a crumb. Ticking needs the trail in progress. */
   async setCrumb(crumbId: string, done: boolean, user: AuthUser): Promise<CrumbState> {
     const db = this.clients.forUser(user)
     const { error } = done
