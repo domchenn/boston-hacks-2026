@@ -2,8 +2,8 @@
 #
 # - app:      clean install, then lint, typecheck, unit tests and build for every
 #             workspace app (apps/web, apps/api).
-# - database: starts a throwaway local Supabase (database, PostgREST and the API
-#             gateway only) in Docker, applies every migration in supabase/migrations/
+# - database: starts a throwaway local Supabase (database, auth, PostgREST and the
+#             API gateway only) in Docker, applies every migration in supabase/migrations/
 #             plus seed.sql, runs the pgTAP security tests in supabase/tests/, then the
 #             API's RLS integration tests against it. Never touches the real project.
 #
@@ -50,16 +50,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Start local Supabase (database, PostgREST, gateway)
+      - name: Start local Supabase (database, auth, PostgREST, gateway)
         run: >-
           npx supabase start
-          -x gotrue,realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Apply all migrations and seed.sql
         run: npx supabase db reset --yes
       - name: Run database tests
         run: npx supabase test db
       - name: Run API integration tests (RLS equivalence)
         run: |
+          echo "status provides: $(npx supabase status -o env | cut -d= -f1 | tr '\n' ' ')"
           eval "$(npx supabase status -o env | grep -E '^(API_URL|PUBLISHABLE_KEY|JWT_SECRET|DB_URL)=')"
           SUPABASE_TEST_URL="$API_URL" \
           SUPABASE_TEST_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" \
