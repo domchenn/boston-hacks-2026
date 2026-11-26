@@ -5,16 +5,17 @@
  * draws the branded default card. api/og.ts points og:image here, so iMessage,
  * Slack, Discord and others show a large picture instead of a bare title.
  *
- * Runs as a Vercel Edge Function with @vercel/og. Reads only public data with the
+ * Runs as a Vercel Node.js function (GET handler) with @vercel/og: its Edge build
+ * imports WebAssembly in a way Vercel's Edge bundler rejects outside Next.js
+ * ("unsupported modules: @vercel: module"). Reads only public data with the
  * publishable key (RLS: published, public trails only), like api/og.ts. Colors are
  * copied from docs/styles/tokens.css because the image renderer can't read CSS
  * variables. Fonts: Inter (OFL, api/fonts/OFL.txt) from @fontsource/inter.
  */
 /// <reference types="node" />
 
+import { readFile } from 'node:fs/promises'
 import { ImageResponse } from '@vercel/og'
-
-export const config = { runtime: 'edge' }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const WIDTH = 1200
@@ -180,9 +181,10 @@ function defaultCard(logoUrl: string): Node {
 }
 
 async function loadFonts() {
+  // Literal new URL(…, import.meta.url) paths let Vercel include the font files in the function.
   const [regular, bold] = await Promise.all([
-    fetch(new URL('./fonts/inter-latin-400-normal.woff', import.meta.url)).then((r) => r.arrayBuffer()),
-    fetch(new URL('./fonts/inter-latin-700-normal.woff', import.meta.url)).then((r) => r.arrayBuffer()),
+    readFile(new URL('./fonts/inter-latin-400-normal.woff', import.meta.url)),
+    readFile(new URL('./fonts/inter-latin-700-normal.woff', import.meta.url)),
   ])
   return [
     { name: 'Inter', data: regular, weight: 400 as const, style: 'normal' as const },
@@ -208,7 +210,7 @@ async function fetchTrail(id: string): Promise<{ trail: Trail; rating: number | 
   return { trail, rating: rating !== null && Number.isFinite(rating) ? rating : null }
 }
 
-export default async function handler(request: Request): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const id = url.searchParams.get('id') ?? ''
   const logoUrl = `${url.origin}/favicon.svg`
