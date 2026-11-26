@@ -28,3 +28,7 @@ export type TravelMode = z.infer<typeof TravelMode>
 /** checklist_items.item_type */
 export const ChecklistItemType = z.enum(['see', 'do'])
 export type ChecklistItemType = z.infer<typeof ChecklistItemType>
+
+/** user_sidequests.status: a user's progress on one trail */
+export const UserSidequestStatus = z.enum(['saved', 'signed_up', 'in_progress', 'completed', 'aborted'])
+export type UserSidequestStatus = z.infer<typeof UserSidequestStatus>

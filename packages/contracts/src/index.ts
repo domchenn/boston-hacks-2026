@@ -5,5 +5,6 @@
 export * from './values.js'
 export * from './trails.js'
 export * from './profiles.js'
+export * from './progress.js'
 export * from './errors.js'
 export * from './client.js'

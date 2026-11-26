@@ -28,8 +28,13 @@
  * only on trails you've started, private rows). Failures throw a ProgressError
  * whose `message` is ready to show and whose `code` says what to do (e.g.
  * `not_signed_in` → send to /login?next=…).
+ *
+ * With VITE_API_URL set, saveTrail and unsaveTrail go through the API
+ * (PUT / DELETE /v1/me/saved-trails/:id), which applies the same table server-side
+ * under the same RLS; their errors map to the same ProgressError codes.
  */
 
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 import type { UserSidequestStatus } from '@/types/db-values'
 
@@ -86,6 +91,28 @@ function toProgressError(error: DbError, context: 'trail' | 'crumb'): ProgressEr
   // Expired or invalid login token.
   if (code === 'PGRST301' || code === 'PGRST303') return fail('not_signed_in')
   return fail('unknown')
+}
+
+/** Turns an API failure into a ProgressError (API errors carry an HTTP status). */
+function apiProgressError(error: unknown): ProgressError {
+  const status = error instanceof Error && 'status' in error ? Number((error as { status: unknown }).status) : 0
+  const code: ProgressErrorCode = !status
+    ? 'network'
+    : status === 401
+      ? 'not_signed_in'
+      : status === 404
+        ? 'unavailable'
+        : 'unknown'
+  return new ProgressError(code, MESSAGES[code])
+}
+
+/** Runs an API action, translating its failures; callers already checked sign-in. */
+async function viaApi(action: (api: NonNullable<Awaited<ReturnType<typeof getApi>>>) => Promise<unknown>): Promise<void> {
+  try {
+    await action((await getApi())!)
+  } catch (error) {
+    throw apiProgressError(error)
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -162,13 +189,18 @@ export async function getMyStatus(trailId: string): Promise<UserSidequestStatus 
 }
 
 /** Bookmark a trail (status 'saved'). On an in-progress trail this is "save for later". */
-export function saveTrail(trailId: string): Promise<void> {
+export async function saveTrail(trailId: string): Promise<void> {
+  if (getApi()) {
+    await requireUserId()
+    return viaApi((api) => api.saveTrail(trailId))
+  }
   return transition(trailId, 'saved', [null, 'in_progress', 'aborted'])
 }
 
 /** Remove the bookmark (deletes the row if the trail wasn't started). */
 export async function unsaveTrail(trailId: string): Promise<void> {
   const userId = await requireUserId()
+  if (getApi()) return viaApi((api) => api.unsaveTrail(trailId))
   const row = await readRow(userId, trailId, false)
   if (row?.status !== 'saved') return
   // Paused mid-trail: keep the history (and ticked crumbs) but take it off Saved.

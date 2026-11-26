@@ -13,6 +13,7 @@ import {
   SavedTrailList,
   type MyTrailsQuery,
 } from './profiles.js'
+import { TrailProgress } from './progress.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
 export class ApiError extends Error {
@@ -44,11 +45,20 @@ export function createApiClient(options: ApiClientOptions) {
   async function get<T extends z.ZodType>(path: string, schema: T, allowNotFound: true): Promise<z.infer<T> | null>
   async function get<T extends z.ZodType>(path: string, schema: T, allowNotFound?: false): Promise<z.infer<T>>
   async function get<T extends z.ZodType>(path: string, schema: T, allowNotFound = false): Promise<z.infer<T> | null> {
+    return send('GET', path, schema, allowNotFound)
+  }
+
+  async function send<T extends z.ZodType>(
+    method: 'GET' | 'PUT' | 'DELETE',
+    path: string,
+    schema: T,
+    allowNotFound = false,
+  ): Promise<z.infer<T> | null> {
     const headers: Record<string, string> = { accept: 'application/json' }
     const token = await options.getAccessToken?.()
     if (token) headers.authorization = `Bearer ${token}`
 
-    const response = await doFetch(`${baseUrl}${path}`, { headers })
+    const response = await doFetch(`${baseUrl}${path}`, { method, headers })
     const requestId = response.headers.get('x-request-id')
     if (allowNotFound && response.status === 404) return null
 
@@ -101,6 +111,16 @@ export function createApiClient(options: ApiClientOptions) {
     /** The caller's own trails with a progress status (requires sign-in). */
     async getMyTrails(status: MyTrailsQuery['status']) {
       return (await get(`/v1/me/trails?status=${encodeURIComponent(status)}`, ProfileTrailList)).trails
+    },
+
+    /** Save a trail (or "save for later" mid-trail); returns the caller's new status. Requires sign-in. */
+    async saveTrail(trailId: string) {
+      return (await send('PUT', `/v1/me/saved-trails/${encodeURIComponent(trailId)}`, TrailProgress))!
+    },
+
+    /** Remove a saved trail (aborted if it was started, else deleted); returns the new status. Requires sign-in. */
+    async unsaveTrail(trailId: string) {
+      return (await send('DELETE', `/v1/me/saved-trails/${encodeURIComponent(trailId)}`, TrailProgress))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */
