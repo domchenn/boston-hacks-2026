@@ -156,6 +156,37 @@ describe('createApiClient', () => {
       [url, 'DELETE', undefined],
     ])
   })
+
+  it('calls the Explore, badges and communities routes', async () => {
+    const calls: [string, string | undefined, string | undefined][] = []
+    const bodies: Record<string, unknown> = {
+      '/v1/trending': { trails: [{ trailId: trailDetail.id, score: 5, people: 2 }] },
+      '/v1/neighborhoods': { neighborhoods: ['Allston'] },
+      '/v1/communities': { communities: [{ id: trailDetail.id, name: 'Boston University', slug: 'bu' }] },
+      '/v1/me/community': { communityId: null },
+      '/v1/me/finished-trails': { trails: [{ completedAt: '2026-11-20T12:00:00Z', line: 'rl', neighborhood: null }] },
+    }
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      calls.push([String(url), init?.method, init?.body as string | undefined])
+      const body = bodies[new URL(String(url)).pathname]
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.getTrending({ days: 14, limit: 30 })).toEqual([{ trailId: trailDetail.id, score: 5, people: 2 }])
+    expect(await client.getTrending()).toHaveLength(1)
+    expect(await client.getNeighborhoods()).toEqual(['Allston'])
+    expect(await client.getCommunities()).toHaveLength(1)
+    expect(await client.setMyCommunity(null)).toEqual({ communityId: null })
+    expect(await client.getFinishedTrails()).toEqual([{ completedAt: '2026-11-20T12:00:00Z', line: 'rl', neighborhood: null }])
+    expect(calls).toEqual([
+      ['https://api.example/v1/trending?days=14&limit=30', 'GET', undefined],
+      ['https://api.example/v1/trending', 'GET', undefined],
+      ['https://api.example/v1/neighborhoods', 'GET', undefined],
+      ['https://api.example/v1/communities', 'GET', undefined],
+      ['https://api.example/v1/me/community', 'PUT', '{"communityId":null}'],
+      ['https://api.example/v1/me/finished-trails', 'GET', undefined],
+    ])
+  })
 })
 
 describe('RatingBody', () => {
