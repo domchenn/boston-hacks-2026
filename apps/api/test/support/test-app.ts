@@ -6,7 +6,9 @@ import { loadConfig } from '../../src/config/env.js'
 import { createApp } from '../../src/create-app.js'
 
 export async function startTestApp(env: Record<string, string>): Promise<NestFastifyApplication> {
-  const app = await createApp(loadConfig({ NODE_ENV: 'test', LOG_LEVEL: 'silent', ...env }))
+  const app = await createApp(
+    loadConfig({ NODE_ENV: 'test', LOG_LEVEL: 'silent', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test_key_000000', ...env }),
+  )
   await app.init()
   await app.getHttpAdapter().getInstance().ready()
   return app

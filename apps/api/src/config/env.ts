@@ -1,7 +1,7 @@
 /**
  * API configuration: reads process.env once, validates it with Zod and fails fast
- * with a readable message. SUPABASE_URL is required; locally it comes from
- * apps/api/.env (see .env.example). Every other file gets settings through the APP_CONFIG
+ * with a readable message. SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are required;
+ * locally they come from apps/api/.env (see .env.example). Every other file gets settings through the APP_CONFIG
  * token instead of reading process.env directly.
  */
 import { z } from 'zod'
@@ -34,6 +34,8 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().refine(isBareOrigin, {
     message: 'must be the project URL, such as https://<ref>.supabase.co (no path or trailing slash)',
   }),
+  /** The project's publishable (or legacy anon) key. Public; data access runs as the caller under RLS. */
+  SUPABASE_PUBLISHABLE_KEY: z.string().min(20, 'must be the project publishable key (sb_publishable_…)'),
 })
 
 function isBareOrigin(value: string): boolean {
