@@ -187,6 +187,55 @@ describe('createApiClient', () => {
       ['https://api.example/v1/me/finished-trails', 'GET', undefined],
     ])
   })
+
+  it('calls the follow and friends routes', async () => {
+    const other = trailDetail.id
+    const person = { id: other, username: 'sam', display_name: 'Sam', avatar_url: null }
+    const calls: [string, string | undefined, string | undefined][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      const path = new URL(String(url)).pathname
+      calls.push([path, init?.method, init?.body as string | undefined])
+      const body = path.endsWith('/follow-counts')
+        ? { followers: 1, following: 2 }
+        : /following-ids$|close-friends$/.test(path)
+          ? { ids: [other] }
+          : /followers$|following$|friends$/.test(path)
+            ? { people: [person] }
+            : path.includes('/relationships/')
+              ? { following: true, followsYou: true }
+              : path.includes('/me/following/')
+                ? { following: init?.method === 'PUT' }
+                : path.includes('/me/close-friends/')
+                  ? { closeFriend: init?.method === 'PUT' }
+                  : { isPrivate: true }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.getFollowCounts(other)).toEqual({ followers: 1, following: 2 })
+    expect(await client.getFollowList(other, 'followers')).toEqual([person])
+    expect(await client.getFollowList(other, 'following')).toEqual([person])
+    expect(await client.getFollowingIds()).toEqual([other])
+    expect(await client.setFollowing(other, true)).toEqual({ following: true })
+    expect(await client.setFollowing(other, false)).toEqual({ following: false })
+    expect(await client.getRelationship(other)).toEqual({ following: true, followsYou: true })
+    expect(await client.getFriends()).toEqual([person])
+    expect(await client.getCloseFriendIds()).toEqual([other])
+    expect(await client.setCloseFriend(other, true)).toEqual({ closeFriend: true })
+    expect(await client.setPrivateAccount(true)).toEqual({ isPrivate: true })
+    expect(calls).toEqual([
+      [`/v1/profiles/${other}/follow-counts`, 'GET', undefined],
+      [`/v1/profiles/${other}/followers`, 'GET', undefined],
+      [`/v1/profiles/${other}/following`, 'GET', undefined],
+      ['/v1/me/following-ids', 'GET', undefined],
+      [`/v1/me/following/${other}`, 'PUT', undefined],
+      [`/v1/me/following/${other}`, 'DELETE', undefined],
+      [`/v1/me/relationships/${other}`, 'GET', undefined],
+      ['/v1/me/friends', 'GET', undefined],
+      ['/v1/me/close-friends', 'GET', undefined],
+      [`/v1/me/close-friends/${other}`, 'PUT', undefined],
+      ['/v1/me/privacy', 'PUT', '{"isPrivate":true}'],
+    ])
+  })
 })
 
 describe('RatingBody', () => {
