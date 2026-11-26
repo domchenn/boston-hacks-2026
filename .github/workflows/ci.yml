@@ -6,6 +6,8 @@
 #             API gateway only) in Docker, applies every migration in supabase/migrations/
 #             plus seed.sql, runs the pgTAP security tests in supabase/tests/, then the
 #             API's RLS integration tests against it. Never touches the real project.
+# - api-image: builds the API container (apps/api/Dockerfile) and checks it starts,
+#             answers /health and exits cleanly. Nothing is pushed or deployed.
 #
 # Both jobs must pass before a PR is merged.
 name: CI
@@ -67,3 +69,27 @@ jobs:
           SUPABASE_TEST_JWT_SECRET="$JWT_SECRET" \
           SUPABASE_TEST_DB_URL="$DB_URL" \
           npm run test:integration -w @breadcrumb/api
+
+  api-image:
+    name: API image (build + smoke test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the API image
+        run: docker build -f apps/api/Dockerfile -t breadcrumb-api:ci .
+      - name: Start it with placeholder settings and check /health
+        run: |
+          docker run -d --name api -p 8080:8080 \
+            -e SUPABASE_URL=https://example.supabase.co \
+            -e SUPABASE_PUBLISHABLE_KEY=sb_publishable_placeholder_key \
+            breadcrumb-api:ci
+          for i in $(seq 1 30); do curl -fsS localhost:8080/health && break; sleep 1; done
+          curl -fsS localhost:8080/health | grep -q '"ok"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/v1/me)" = 401
+      - name: Stop it and check for a clean shutdown
+        if: always()
+        run: |
+          docker stop -t 10 api
+          docker logs api | tail -5
+          test "$(docker inspect api --format '{{.State.ExitCode}}')" = 0
