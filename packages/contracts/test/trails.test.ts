@@ -90,4 +90,3 @@ describe('SaveTrailBody', () => {
     expect(SaveTrailBody.safeParse(value).success).toBe(false)
   })
 })
-
