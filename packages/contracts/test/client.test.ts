@@ -62,4 +62,24 @@ describe('createApiClient', () => {
     const client = createApiClient({ baseUrl: 'https://api.example', fetch: stubFetch(200, { trails: [{ id: 'x' }] }) })
     await expect(client.getTrails()).rejects.toMatchObject({ code: 'invalid_response' })
   })
+
+  it('saves and unsaves with PUT and DELETE and returns the new status', async () => {
+    const fetch = stubFetch(200, { status: 'saved' })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.saveTrail(trailDetail.id)).toEqual({ status: 'saved' })
+    expect(fetch.mock.calls[0][0]).toBe(`https://api.example/v1/me/saved-trails/${trailDetail.id}`)
+    expect(fetch.mock.calls[0][1]?.method).toBe('PUT')
+
+    const del = stubFetch(200, { status: null })
+    await createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch: del }).unsaveTrail(trailDetail.id)
+    expect(del.mock.calls[0][1]?.method).toBe('DELETE')
+  })
+
+  it('reports a hidden trail on save as a 404 ApiError', async () => {
+    const client = createApiClient({
+      baseUrl: 'https://api.example',
+      fetch: stubFetch(404, { error: 'not_found', message: 'This trail isn’t available anymore.', requestId: 'r9' }),
+    })
+    await expect(client.saveTrail(trailDetail.id)).rejects.toMatchObject({ status: 404, code: 'not_found' })
+  })
 })
