@@ -49,7 +49,7 @@ export class TrailProgressController {
   @Put('crumbs/:crumbId')
   @HttpCode(200)
   @ApiOkResponse({ schema: openApiSchema(CrumbState) })
-  @ApiForbiddenResponse({ description: 'The trail isn’t started (or was aborted)' })
+  @ApiForbiddenResponse({ description: 'The trail isn’t in progress' })
   tick(@Param(new ZodValidationPipe(CrumbParams)) params: CrumbPathParams, @CurrentUser() user: AuthUser) {
     return this.progress.setCrumb(params.crumbId, true, user)
   }

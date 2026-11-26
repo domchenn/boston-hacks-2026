@@ -3,7 +3,7 @@
  * response validation, 404 → null for one trail, and typed ApiError on failures.
  */
 import { describe, expect, it, vi } from 'vitest'
-import { ApiError, createApiClient } from '../src/index.js'
+import { ApiError, createApiClient, RatingBody } from '../src/index.js'
 import { feedTrail, trailDetail } from './fixtures.js'
 
 function stubFetch(status: number, body: unknown, headers: Record<string, string> = {}) {
@@ -133,5 +133,46 @@ describe('createApiClient', () => {
       [`https://api.example/v1/me/crumbs/${id}`, 'PUT'],
       [`https://api.example/v1/me/crumbs/${id}`, 'DELETE'],
     ])
+  })
+
+  it('reads, saves and deletes your rating with the right routes and body', async () => {
+    const rating = { id: trailDetail.id, price: 4, time: 3, enjoyment: 5, memorability: 5, review: 'Great', createdAt: '2026-11-26T12:00:00Z' }
+    const calls: [string, string | undefined, string | undefined][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      calls.push([String(url), init?.method, init?.body as string | undefined])
+      const body = { rating: init?.method === 'DELETE' ? null : rating }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    const id = trailDetail.id
+    const input = { price: 4, time: 3, enjoyment: 5, memorability: 5, review: 'Great' }
+    expect(await client.getMyRating(id)).toEqual(rating)
+    expect(await client.rateTrail(id, input)).toEqual(rating)
+    await client.deleteMyRating(id)
+    const url = `https://api.example/v1/me/trails/${id}/rating`
+    expect(calls).toEqual([
+      [url, 'GET', undefined],
+      [url, 'PUT', JSON.stringify(input)],
+      [url, 'DELETE', undefined],
+    ])
+  })
+})
+
+describe('RatingBody', () => {
+  const ok = { price: 1, time: 2, enjoyment: 3, memorability: 5 }
+  it('accepts whole scores from 1 to 5 and an optional review', () => {
+    expect(RatingBody.safeParse(ok).success).toBe(true)
+    expect(RatingBody.safeParse({ ...ok, review: null }).success).toBe(true)
+    expect(RatingBody.safeParse({ ...ok, review: 'x'.repeat(2000) }).success).toBe(true)
+  })
+  it.each([
+    ['a zero', { ...ok, price: 0 }],
+    ['a six', { ...ok, time: 6 }],
+    ['a half star', { ...ok, enjoyment: 3.5 }],
+    ['a missing score', { price: 1, time: 2, enjoyment: 3 }],
+    ['a long review', { ...ok, review: 'x'.repeat(2001) }],
+    ['an unknown key', { ...ok, user_id: 'someone' }],
+  ])('rejects %s', (_label, body) => {
+    expect(RatingBody.safeParse(body).success).toBe(false)
   })
 })

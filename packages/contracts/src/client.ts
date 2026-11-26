@@ -14,6 +14,7 @@ import {
   type MyTrailsQuery,
 } from './profiles.js'
 import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
+import { MyRatingResponse, type RatingBody } from './ratings.js'
 import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
@@ -158,6 +159,21 @@ export function createApiClient(options: ApiClientOptions) {
     /** Tick (done = true) or untick a crumb during an active trail. Requires sign-in. */
     async setCrumb(crumbId: string, done: boolean) {
       return (await send(done ? 'PUT' : 'DELETE', `/v1/me/crumbs/${encodeURIComponent(crumbId)}`, CrumbState))!
+    },
+
+    /** The caller's rating of a trail, or null if they haven't rated it. Requires sign-in. */
+    async getMyRating(trailId: string) {
+      return (await send('GET', `/v1/me/trails/${encodeURIComponent(trailId)}/rating`, MyRatingResponse))!.rating
+    },
+
+    /** Rate a finished trail, or edit your rating; returns the stored rating. Requires sign-in. */
+    async rateTrail(trailId: string, body: RatingBody) {
+      return (await send('PUT', `/v1/me/trails/${encodeURIComponent(trailId)}/rating`, MyRatingResponse, false, body))!.rating
+    },
+
+    /** Delete your rating of a trail (nothing happens if there isn't one). Requires sign-in. */
+    async deleteMyRating(trailId: string) {
+      await send('DELETE', `/v1/me/trails/${encodeURIComponent(trailId)}/rating`, MyRatingResponse)
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */
