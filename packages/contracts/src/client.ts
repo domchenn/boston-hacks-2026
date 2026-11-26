@@ -15,6 +15,9 @@ import {
 } from './profiles.js'
 import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
 import { MyRatingResponse, type RatingBody } from './ratings.js'
+import { FinishedTrailList } from './badges.js'
+import { CommunityList, MyCommunity } from './communities.js'
+import { NeighborhoodList, TrendingList, type TrendingQuery } from './explore.js'
 import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
@@ -174,6 +177,34 @@ export function createApiClient(options: ApiClientOptions) {
     /** Delete your rating of a trail (nothing happens if there isn't one). Requires sign-in. */
     async deleteMyRating(trailId: string) {
       await send('DELETE', `/v1/me/trails/${encodeURIComponent(trailId)}/rating`, MyRatingResponse)
+    },
+
+    /** Trails with the most recent activity, busiest first (totals only). Requires sign-in. */
+    async getTrending(query: TrendingQuery = {}) {
+      const search = new URLSearchParams()
+      if (query.days !== undefined) search.set('days', String(query.days))
+      if (query.limit !== undefined) search.set('limit', String(query.limit))
+      return (await get(`/v1/trending${search.size > 0 ? `?${search}` : ''}`, TrendingList)).trails
+    },
+
+    /** Neighborhoods with published trails the caller can see, A to Z. */
+    async getNeighborhoods() {
+      return (await get('/v1/neighborhoods', NeighborhoodList)).neighborhoods
+    },
+
+    /** Every community, by name. */
+    async getCommunities() {
+      return (await get('/v1/communities', CommunityList)).communities
+    },
+
+    /** Join a community, or leave by passing null; returns the caller's community. Requires sign-in. */
+    async setMyCommunity(communityId: string | null) {
+      return (await send('PUT', '/v1/me/community', MyCommunity, false, { communityId }))!
+    },
+
+    /** The caller's finished trails with line and neighborhood, for badges. Requires sign-in. */
+    async getFinishedTrails() {
+      return (await get('/v1/me/finished-trails', FinishedTrailList)).trails
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */
