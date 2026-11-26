@@ -84,7 +84,7 @@ jobs:
             -e SUPABASE_URL=https://example.supabase.co \
             -e SUPABASE_PUBLISHABLE_KEY=sb_publishable_placeholder_key \
             breadcrumb-api:ci
-          for i in $(seq 1 30); do curl -fsS localhost:8080/health && break; sleep 1; done
+          for _ in $(seq 1 30); do curl -fsS localhost:8080/health && break; sleep 1; done
           curl -fsS localhost:8080/health | grep -q '"ok"'
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/v1/me)" = 401
       - name: Stop it and check for a clean shutdown
