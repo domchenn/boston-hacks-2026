@@ -26,7 +26,7 @@ Status: set up and verified 2026-11-25, with the limits below. Staging has its o
 ## Working with staging
 
 - `npm run db:push` targets the linked project, which is **production**. For staging, the human database owner runs `npx supabase db push --remote=amedzumavcsjcaueldzs --dry-run`, checks the target and list, then runs it without `--dry-run`.
-- Deploy `develop` by hand in the breadcrumb-staging Vercel project. Variable changes need a new build.
+- Deploy `develop` by hand in the breadcrumb-staging Vercel project (Root Directory `apps/web`), and test on https://breadcrumb-staging-seven.vercel.app. Vercel's per-deployment addresses (`…-dom-s-team3.vercel.app`) need a Vercel login and are rejected by the Maps key by design. Variable changes need a new build.
 - Use only made-up test accounts and data. Never copy production data or keys here.
 - Free projects pause after about a week of low activity.
 

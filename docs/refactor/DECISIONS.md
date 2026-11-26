@@ -47,3 +47,7 @@ Status: accepted by the owner 2026-11-25 (local-only storage and the remaining l
 ## 2026-11-25 — M03 staging setup
 
 Status: implemented by the owner. Staging is a separate free Supabase project in its own organization and a separate Vercel project, because Vercel custom environments need a paid plan. GitHub stays unconnected to the staging database so migrations remain a deliberate manual step. Alternatives considered: staging inside the existing organization, or Vercel previews in the production project (rejected because its keys are shared with previews). Production was later moved into the same organization with both developers' agreement (recorded in STAGING.md); GitHub stays disconnected. See [STAGING.md](STAGING.md).
+
+## 2026-11-25 — M04 accepted, M05 deferred
+
+M04 merged in PR #98: the web app is in `apps/web`, and both Vercel projects need Root Directory `apps/web` (staging done; production at the next release). A root `vercel.json` keeps Git deploys off for any project still pointed at the repo root. M05 (Turborepo) is **deferred**: with one app, npm workspace scripts already run lint, typecheck and build, so Turborepo would add configuration without saving time. Revisit when `apps/api` or `apps/mobile` exists. Staging is tested on its stable domain, because the restricted Maps key rejects Vercel's per-deployment addresses by design.
