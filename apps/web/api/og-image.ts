@@ -5,9 +5,10 @@
  * draws the branded default card. api/og.ts points og:image here, so iMessage,
  * Slack, Discord and others show a large picture instead of a bare title.
  *
- * Runs as a Vercel Node.js function (GET handler) with @vercel/og: its Edge build
- * imports WebAssembly in a way Vercel's Edge bundler rejects outside Next.js
- * ("unsupported modules: @vercel: module"). Reads only public data with the
+ * Runs as a Vercel Node.js function (GET handler). Layout → SVG with satori, SVG →
+ * PNG with @resvg/resvg-js (native). @vercel/og wraps the same two but its Edge build
+ * is rejected by Vercel outside Next.js and its Node build is missing hb.wasm, so the
+ * libraries are used directly. Reads only public data with the
  * publishable key (RLS: published, public trails only), like api/og.ts. Colors are
  * copied from docs/styles/tokens.css because the image renderer can't read CSS
  * variables. Fonts: Inter (OFL, api/fonts/OFL.txt) from @fontsource/inter.
@@ -15,7 +16,8 @@
 /// <reference types="node" />
 
 import { readFile } from 'node:fs/promises'
-import { ImageResponse } from '@vercel/og'
+import { Resvg } from '@resvg/resvg-js'
+import satori from 'satori'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const WIDTH = 1200
@@ -47,7 +49,8 @@ type Trail = {
 type Node = { type: string; props: Record<string, unknown> & { style?: Record<string, unknown>; children?: unknown } }
 const el = (type: string, style: Record<string, unknown>, children?: unknown, extra: Record<string, unknown> = {}): Node => ({
   type,
-  props: { style: { display: 'flex', ...style }, children, ...extra },
+  // border-box everywhere: satori 0.6x otherwise adds padding and borders outside the given sizes.
+  props: { style: { display: 'flex', boxSizing: 'border-box', ...style }, children, ...extra },
 })
 
 const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text)
@@ -229,12 +232,12 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const card = found ? trailCard(found.trail, found.rating, logoUrl) : defaultCard(logoUrl)
-  // ImageResponse expects a React element; this plain tree has the same shape.
-  return new ImageResponse(card as unknown as ConstructorParameters<typeof ImageResponse>[0], {
-    width: WIDTH,
-    height: HEIGHT,
-    fonts: await loadFonts(),
+  // satori expects a React element; this plain tree has the same shape.
+  const svg = await satori(card as unknown as Parameters<typeof satori>[0], { width: WIDTH, height: HEIGHT, fonts: await loadFonts() })
+  const png = new Resvg(svg, { fitTo: { mode: 'width', value: WIDTH } }).render().asPng()
+  return new Response(new Uint8Array(png), {
     headers: {
+      'content-type': 'image/png',
       // Trail cards: an hour on Vercel's CDN. The plain default card: a day. A trail link that fell back
       // (missing, private or a failed lookup): five minutes, so a real trail recovers quickly.
       'cache-control': `public, max-age=0, s-maxage=${found ? 3600 : id ? 300 : 86400}, stale-while-revalidate=86400`,
