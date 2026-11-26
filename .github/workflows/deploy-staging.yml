@@ -1,0 +1,92 @@
+# Deploy staging: a one-click, manual deploy of the current `develop` to staging.
+# Run it from GitHub → Actions → "Deploy staging" → Run workflow (branch: develop).
+#
+# 1. Builds the API image and deploys it to the staging Cloud Run service, then checks
+#    /health and /v1/meta. API first, so the new website never calls missing endpoints.
+# 2. Triggers one deploy of `develop` in the breadcrumb-staging Vercel project (deploy hook).
+#
+# Google login uses Workload Identity Federation: GitHub's short-lived OIDC token is
+# exchanged for access as the `github-deployer` service account, which Google only
+# allows for this repository on refs/heads/develop. No Google key is stored anywhere.
+# Nothing here can reach production; production deploys stay manual.
+#
+# Needs (see docs/refactor/STAGING.md): repository variables GCP_WIF_PROVIDER and
+# GCP_DEPLOY_SA, and the secret VERCEL_STAGING_DEPLOY_HOOK.
+name: Deploy staging
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+env:
+  PROJECT: breadcrumb-staging-515905
+  REGION: us-east5
+  SERVICE: breadcrumb-api
+  API_URL: https://breadcrumb-api-778707046180.us-east5.run.app
+
+jobs:
+  deploy:
+    name: Deploy develop to staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    steps:
+      - name: Only deploy develop
+        if: github.ref != 'refs/heads/develop'
+        run: |
+          echo "::error::Run this workflow on the develop branch (got ${{ github.ref }})."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - name: Sign in to Google Cloud (no stored keys)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push the API image
+        id: image
+        run: |
+          image="${REGION}-docker.pkg.dev/${PROJECT}/breadcrumb/api:${GITHUB_SHA::7}"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker buildx build --platform linux/amd64 --provenance=false --sbom=false \
+            -f apps/api/Dockerfile -t "$image" --push .
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy the API to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" \
+            --image "${{ steps.image.outputs.image }}" --quiet
+
+      - name: Check the API answers
+        run: |
+          for _ in $(seq 1 10); do curl -fsS "$API_URL/health" && break; sleep 3; done
+          curl -fsS "$API_URL/health" | grep -q '"ok"'
+          curl -fsS "$API_URL/v1/meta" | grep -q '"staging"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/v1/trails")" = 200
+
+      - name: Deploy the website (one Vercel deployment)
+        env:
+          HOOK: ${{ secrets.VERCEL_STAGING_DEPLOY_HOOK }}
+        run: |
+          test -n "$HOOK" || { echo "::error::VERCEL_STAGING_DEPLOY_HOOK is not set"; exit 1; }
+          curl -fsS -X POST "$HOOK" -o /dev/null
+          echo "Vercel is building develop for https://breadcrumb-staging-seven.vercel.app"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Staging deployed from \`${GITHUB_SHA::7}\`"
+            echo "- API: ${{ steps.image.outputs.image }} → $API_URL"
+            echo "- Website: Vercel deploy of \`develop\` triggered (check the breadcrumb-staging project)"
+          } >> "$GITHUB_STEP_SUMMARY"

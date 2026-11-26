@@ -41,7 +41,17 @@ Deployed by hand from `develop` at `2f2defe`. Setup (owner ran steps 1–3; the 
 
 Verified live: `/health` 200 (~0.15–0.3 s), `/v1/meta` reports staging, `/v1/trails` returned the same 12 trails as staging Supabase directly and is contract-valid, detail correct, 404/400/401 cases, forged token 401, CORS allows only the staging site and localhost, request IDs present, JSON logs in Cloud Logging. The publishable key appears only in Cloud Run's deployment audit record (it stores service settings), never in application logs.
 
-To redeploy from an up-to-date `develop` (replace nothing; the tag is the commit):
+### One-click staging deploy
+
+**GitHub → Actions → "Deploy staging" → Run workflow (branch `develop`)** deploys the current `develop`: the API to Cloud Run first (then checks `/health`, `/v1/meta` and `/v1/trails`), then one Vercel deploy of the website through a deploy hook. It only runs when clicked, and only on `develop` (`.github/workflows/deploy-staging.yml`). Production is never touched.
+
+How it signs in to Google, with no stored key: Workload Identity Federation. Pool `github`, provider `breadcrumb` in `breadcrumb-staging-515905`, accepting only GitHub OIDC tokens whose `repository_id` is this repository (1466641451) and whose ref is `refs/heads/develop`. Those may act as the `github-deployer` service account, which only has: `roles/run.developer` on the `breadcrumb-api` service, `roles/artifactregistry.writer` on the `breadcrumb` registry, and `roles/iam.serviceAccountUser` on the no-role `breadcrumb-api` runtime account. It cannot reach production, billing or other projects.
+
+GitHub settings: repository variables `GCP_WIF_PROVIDER` and `GCP_DEPLOY_SA` (identifiers, not secrets), the secret `VERCEL_STAGING_DEPLOY_HOOK` (the breadcrumb-staging deploy hook for `develop`), and an environment `staging` limited to `develop`.
+
+### Manual redeploy
+
+To redeploy by hand from an up-to-date `develop` (the tag is the commit):
 
 ```sh
 TAG=$(git rev-parse --short HEAD)
