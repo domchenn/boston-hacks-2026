@@ -30,7 +30,7 @@ export function PrivacyPage() {
       <ul>
         <li>
           <b>Your account:</b> your email, and your name and photo if you sign in with Google. Your username, display
-          name, university and bio if you add them.
+          name and bio if you add them.
         </li>
         <li>
           <b>What you make:</b> trails you create, ratings and reviews you write, and photos you add to trails. Trails,
