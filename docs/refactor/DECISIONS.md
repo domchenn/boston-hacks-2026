@@ -94,3 +94,7 @@ None of these needs a service-role key: each runs as the caller under storage an
 - **What's removed:** the account and everything linked to it, including photo files on the person's trails and their photos elsewhere.
 - **One thing kept, without the person's name:** reports they filed (`reports.reporter_id` is set to null instead of deleting the report). That's standard practice, so open safety reports about others aren't lost.
 - **Available with the API only.** Until the production API release, the production privacy page keeps saying "contact the team".
+
+**Older photos (owner decision 2026-11-26):** move into private storage during the production API release, so every photo is private. A moderator runs `POST /v1/admin/photos/move-older` (no service-role key). It cleans each file again, points the row at the private copy, makes the original uploader the owner and deletes the public file.
+
+**Also fixed:** uploaders can always see their own photo rows, which is standard (you can always delete your own content). Before, a photo on a trail you could no longer see was invisible to you, and account deletion missed its file.

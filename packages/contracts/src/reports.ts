@@ -63,3 +63,11 @@ export type ResolveReportBody = z.infer<typeof ResolveReportBody>
 /** Every open report on the same item gets this status. */
 export const ReportResolved = z.object({ id: Uuid, status: z.enum(['hidden', 'dismissed']) })
 export type ReportResolved = z.infer<typeof ReportResolved>
+
+/** POST /v1/admin/photos/move-older: older public photos moved into private storage (moderators only). */
+export const OlderPhotosMoved = z.object({
+  moved: z.number().int().min(0),
+  /** Photos that couldn't be moved, and why. Running it again retries them. */
+  skipped: z.array(z.object({ photoId: Uuid, reason: z.string() })),
+})
+export type OlderPhotosMoved = z.infer<typeof OlderPhotosMoved>

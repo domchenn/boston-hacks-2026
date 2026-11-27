@@ -19,7 +19,7 @@ import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './pro
 import { PhotoAdded, PhotoDeleted, TrailPhotoList, type AddPhotoQuery } from './photos.js'
 import { AccountDeleted } from './account.js'
 import { MyRatingResponse, type RatingBody } from './ratings.js'
-import { AdminStatus, OpenReportList, ReportResolved, ReportSent, type ReportBody } from './reports.js'
+import { AdminStatus, OlderPhotosMoved, OpenReportList, ReportResolved, ReportSent, type ReportBody } from './reports.js'
 import { FinishedTrailList } from './badges.js'
 import {
   AlsoSavedList,
@@ -366,6 +366,11 @@ export function createApiClient(options: ApiClientOptions) {
     /** Delete the caller's account and everything linked to it, for good. Requires sign-in. */
     async deleteMyAccount() {
       return (await send('DELETE', '/v1/me', AccountDeleted, false, { confirm: true }))!
+    },
+
+    /** Move every older public photo into private storage (moderators only; safe to repeat). */
+    async moveOlderPhotos() {
+      return (await send('POST', '/v1/admin/photos/move-older', OlderPhotosMoved))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */
