@@ -17,6 +17,7 @@ export const colors = {
   crumbStrong: '#C2410C',
   crumbDeep: '#9A3412',
   crumbTint: '#FDEDE6',
+  blue: '#1D4ED8',
   green: '#15803D',
 } as const
 
@@ -34,11 +35,21 @@ export const cssNames: Record<keyof typeof colors, string> = {
   crumbStrong: '--color-crumb-strong',
   crumbDeep: '--color-crumb-deep',
   crumbTint: '--color-crumb-tint',
+  blue: '--color-blue',
   green: '--color-green',
 }
 
 /** --text-* in tokens.css, in points. */
-export const text = { xs: 12, sm: 13, base: 15, md: 16, lg: 17, xl: 21, xxl: 28, xxxl: 32 } as const
+export const text = { xxs: 11, xs: 12, sm: 13, base: 15, md: 16, lg: 17, xl: 21, xxl: 28, xxxl: 32 } as const
 
 /** --radius-card in tokens.css, and a smaller radius for inputs and chips. */
 export const radius = { card: 20, small: 10 } as const
+
+/** Inter, the style guide's typeface (--font-sans), loaded in src/app/_layout.tsx. */
+export const fonts = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+  extrabold: 'Inter_800ExtraBold',
+} as const

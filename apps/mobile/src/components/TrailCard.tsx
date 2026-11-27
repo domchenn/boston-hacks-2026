@@ -1,13 +1,23 @@
 /**
- * One trail in a list: neighborhood, title, then stops, cost, time and rating, on a
- * white card with the style guide's border and radius. Same facts as the website's
- * trail card; data comes from the API's FeedTrail.
+ * One trail in a list, as in the style guide's trail card: the neighborhood as an
+ * orange eyebrow, an optional status on the right (blue "In progress"), the title, then
+ * stops, cost, time and rating, on a white card with the guide's border and radius.
+ * Works for any API list item with these fields (feed, saved, profile lists).
  */
-import { StyleSheet, Text, View } from 'react-native'
-import type { FeedTrail } from '@breadcrumb/contracts'
-import { colors, radius, text } from '@/theme/tokens'
+import { StyleSheet, View } from 'react-native'
+import { colors, fonts, radius } from '@/theme/tokens'
+import { AppText } from './AppText'
 
-function facts(trail: FeedTrail): string {
+export type CardTrail = {
+  title: string
+  neighborhood: string | null
+  stopCount: number
+  estimatedCost: number | null
+  estimatedMinutes: number | null
+  rating: { average: number | null; count: number }
+}
+
+function facts(trail: CardTrail): string {
   const parts = [`${trail.stopCount} ${trail.stopCount === 1 ? 'stop' : 'stops'}`]
   if (trail.estimatedCost !== null) parts.push(trail.estimatedCost === 0 ? 'Free' : `~$${Math.round(trail.estimatedCost)}`)
   if (trail.estimatedMinutes !== null) {
@@ -18,12 +28,15 @@ function facts(trail: FeedTrail): string {
   return parts.join('  ·  ')
 }
 
-export function TrailCard({ trail }: { trail: FeedTrail }) {
+export function TrailCard({ trail, badge }: { trail: CardTrail; badge?: string }) {
   return (
     <View style={styles.card}>
-      {trail.neighborhood ? <Text style={styles.eyebrow}>{trail.neighborhood}</Text> : null}
-      <Text style={styles.title}>{trail.title}</Text>
-      <Text style={styles.facts}>{facts(trail)}</Text>
+      <View style={styles.top}>
+        {trail.neighborhood ? <AppText variant="eyebrow">{trail.neighborhood}</AppText> : <View />}
+        {badge ? <AppText variant="meta" style={styles.badge}>{badge}</AppText> : null}
+      </View>
+      <AppText variant="cardTitle">{trail.title}</AppText>
+      <AppText variant="secondary">{facts(trail)}</AppText>
     </View>
   )
 }
@@ -37,7 +50,6 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 4,
   },
-  eyebrow: { color: colors.crumbStrong, fontSize: text.sm, fontWeight: '600' },
-  title: { color: colors.ink, fontSize: text.xl, fontWeight: '700' },
-  facts: { color: colors.ink2, fontSize: text.base },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  badge: { color: colors.blue, fontFamily: fonts.semibold },
 })
