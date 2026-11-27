@@ -24,7 +24,8 @@ import type { AuthUser } from '../auth/auth-user.js'
 import { SupabaseClients } from '../supabase/supabase-clients.js'
 import { cleanImage } from './image-cleaner.js'
 
-const BUCKET = 'trail-photos'
+export const PHOTO_BUCKET = 'trail-photos'
+const BUCKET = PHOTO_BUCKET
 const COLUMNS = 'id, photo_url, caption, created_at, stop_id, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)'
 /** Progress statuses that may add photos (the quest_photos insert policy). */
 const CAN_ADD = new Set(['saved', 'in_progress', 'completed'])
@@ -40,6 +41,13 @@ const toPhoto = (row: Row): TrailPhoto => ({
   stopId: row.stop_id,
   uploader: row.uploader,
 })
+
+/** The storage path inside the photo bucket for one of our public URLs, else null. */
+export function photoStoragePath(url: string): string | null {
+  const marker = `/object/public/${PHOTO_BUCKET}/`
+  const i = url.indexOf(marker)
+  return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length))
+}
 
 function fail(error: { code?: string; message?: string }): never {
   throw Object.assign(new Error(error.message ?? 'database error'), { code: error.code })
@@ -109,16 +117,9 @@ export class PhotosService {
     const { data, error } = await db.from('quest_photos').delete().eq('id', photoId).select('photo_url').returns<{ photo_url: string }[]>()
     if (error) fail(error)
     if (data.length === 0) throw new NotFoundException('You can only delete your own photos.')
-    const path = this.pathOf(data[0]!.photo_url)
+    const path = photoStoragePath(data[0]!.photo_url)
     if (path) await this.removeFile(db, path)
     return { id: photoId, deleted: true }
-  }
-
-  /** The storage path inside our bucket for one of our public URLs, else null. */
-  private pathOf(url: string): string | null {
-    const marker = `/object/public/${BUCKET}/`
-    const i = url.indexOf(marker)
-    return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length))
   }
 
   /** Best effort: a leftover file is harmless, so a failed removal is only logged. */
