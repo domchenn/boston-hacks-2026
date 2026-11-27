@@ -40,6 +40,7 @@ describe('sign-in', () => {
     ['GET', '/v1/me/admin'],
     ['GET', '/v1/admin/reports'],
     ['POST', `/v1/admin/reports/${REPORT}/resolve`],
+    ['POST', '/v1/admin/photos/move-older'],
   ] as const)('%s %s requires sign-in', async (method, url) => {
     expect((await call(method, url, { signedIn: false, payload: method === 'POST' ? {} : undefined })).statusCode).toBe(401)
   })
@@ -93,5 +94,13 @@ describe('moderation', () => {
     const res = await call('POST', `/v1/admin/reports/${REPORT}/resolve`, { payload: { action: 'dismiss' } })
     expect(res.statusCode).toBe(status)
     expect(res.json().message).toBe(error.message)
+  })
+
+  it('moves older photos for the verified user and passes the moderators-only refusal through', async () => {
+    const move = vi.spyOn(service, 'moveOlderPhotos').mockResolvedValueOnce({ moved: 2, skipped: [] })
+    expect((await call('POST', '/v1/admin/photos/move-older')).json()).toEqual({ moved: 2, skipped: [] })
+    expect(move).toHaveBeenCalledWith(me)
+    move.mockRejectedValueOnce(new ForbiddenException('Only the Breadcrumb team can do this.'))
+    expect((await call('POST', '/v1/admin/photos/move-older')).statusCode).toBe(403)
   })
 })

@@ -369,6 +369,13 @@ describe('createApiClient', () => {
     const [url, init] = fetch.mock.calls[0]!
     expect([String(url), init?.method, init?.body]).toEqual(['https://api.example/v1/me', 'DELETE', '{"confirm":true}'])
   })
+
+  it('asks the API to move older photos', async () => {
+    const fetch = stubFetch(200, { moved: 6, skipped: [] })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.moveOlderPhotos()).toEqual({ moved: 6, skipped: [] })
+    expect([String(fetch.mock.calls[0]![0]), fetch.mock.calls[0]![1]?.method]).toEqual(['https://api.example/v1/admin/photos/move-older', 'POST'])
+  })
 })
 
 describe('RatingBody', () => {
