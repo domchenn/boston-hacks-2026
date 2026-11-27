@@ -112,3 +112,12 @@ Status: accepted by the owner ("app first, M24 before the beta").
   - email and password first (M18b), with the session in the phone's secure storage (standard practice);
   - Google next, plus Sign in with Apple, which the App Store requires when Google sign-in is offered. Both need console setup.
 - **Native projects aren't committed:** EAS generates them.
+
+## 2026-11-27 — Apple's own tab bar in the app
+
+Status: accepted by the owner for now ("keep it for now"); whether Make a trail stays in the tab bar is decided later.
+
+- **The tab bar is Apple's** (UITabBarController through `expo-router/native-tabs`), replacing the hand-drawn one from M18b. It gets Liquid Glass on iOS 26, system animations and SF Symbols icons, and stays up to date with iOS.
+- **Cost:** the style guide's raised orange + circle can't be drawn in Apple's bar. The + is a plain tab icon; the tab is blocked from being selected and its press opens Make a trail as a modal.
+- **Each tab has its own stack** (`TabStack`) for its large title and any screens that belong to that tab. A trail's page opens full screen above the tabs, as in the mockups.
+
