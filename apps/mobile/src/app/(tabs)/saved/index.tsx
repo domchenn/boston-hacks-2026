@@ -58,7 +58,11 @@ export default function SavedScreen() {
       contentInsetAdjustmentBehavior="automatic"
       data={state.trails}
       keyExtractor={(trail) => trail.id}
-      renderItem={({ item }) => <TrailCard trail={item} badge={item.status === 'in_progress' ? 'In progress' : undefined} />}
+      renderItem={({ item }) => <TrailCard
+          trail={item}
+          badge={item.status === 'in_progress' ? 'In progress' : undefined}
+          onPress={() => router.push(`/trail/${item.id}`)}
+        />}
       contentContainerStyle={styles.list}
       refreshControl={
         <RefreshControl
