@@ -22,7 +22,7 @@ import { SupabaseClients } from '../supabase/supabase-clients.js'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const PROFILE_COLUMNS =
-  'id, username, display_name, avatar_url, university, bio, is_private, community:communities!profiles_community_id_fkey(name, slug)'
+  'id, username, display_name, avatar_url, bio, is_private, community:communities!profiles_community_id_fkey(name, slug)'
 const TRAIL_COLUMNS =
   'id, title, category, custom_category, scheduled_at, estimated_cost, estimated_duration_minutes, neighborhood, status'
 

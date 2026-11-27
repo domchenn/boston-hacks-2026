@@ -22,7 +22,6 @@ export const PublicProfile = z.object({
   username: z.string().nullable(),
   display_name: z.string().nullable(),
   avatar_url: z.string().nullable(),
-  university: z.string().nullable(),
   bio: z.string().nullable(),
   is_private: z.boolean(),
   /** The community they joined (e.g. BU, BC), if any. */
@@ -104,16 +103,14 @@ export type SavedTrailList = z.infer<typeof SavedTrailList>
 export const MyProfileFields = z.object({
   username: z.string().nullable(),
   displayName: z.string().nullable(),
-  university: z.string().nullable(),
 })
 export type MyProfileFields = z.infer<typeof MyProfileFields>
 
-/** PUT /v1/me/profile body. Blank display name / university are stored as none. */
+/** PUT /v1/me/profile body. A blank display name is stored as none. */
 export const MyProfileBody = z
   .object({
     username: Username,
     displayName: z.string().max(80),
-    university: z.string().max(120),
   })
   .strict()
 export type MyProfileBody = z.infer<typeof MyProfileBody>

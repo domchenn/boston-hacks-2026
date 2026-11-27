@@ -1,6 +1,6 @@
 /**
  * Profile page. /me is the signed-in user (sent to /login or /onboarding first if
- * needed); /u/:username is anyone. Kept short: avatar, name, university, bio, one
+ * needed); /u/:username is anyone. Kept short: avatar, name, bio, one
  * line of numbers (followers · following · finished · made, plus the maker rating
  * once there is one; FollowBar), a strip of your earned badges (BadgeStrip) and
  * the tabs (ProfileTrails: Finished / Made / Badges on
@@ -150,7 +150,7 @@ function ProfileView({ by, viewerId }: { by: { id: string } | { username: string
         <div className="profile-head__text">
           <h1 className="profile-name">{name}</h1>
           <p className="profile-sub">
-            {[profile.username && `@${profile.username}`, profile.university, profile.community?.slug?.toUpperCase()]
+            {[profile.username && `@${profile.username}`, profile.community?.slug?.toUpperCase()]
               .filter(Boolean)
               .join(' · ')}
           </p>

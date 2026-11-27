@@ -288,7 +288,7 @@ describe('createApiClient', () => {
 
   it('calls the profile and editor routes', async () => {
     const id = trailDetail.id
-    const fields = { username: 'sam_k', displayName: 'Sam', university: null }
+    const fields = { username: 'sam_k', displayName: 'Sam' }
     const calls: [string, string | undefined, string | undefined][] = []
     const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
       const path = new URL(String(url)).pathname
@@ -307,13 +307,13 @@ describe('createApiClient', () => {
     expect(await client.unpublishTrail(id)).toEqual({ id, status: 'draft' })
     expect(await client.deleteTrail(id)).toEqual({ id, deleted: true })
     expect(await client.getMyProfile()).toEqual(fields)
-    expect(await client.updateMyProfile({ username: 'sam_k', displayName: 'Sam', university: '' })).toEqual(fields)
+    expect(await client.updateMyProfile({ username: 'sam_k', displayName: 'Sam' })).toEqual(fields)
     expect(calls).toEqual([
       [`/v1/trails/${id}/stop-library`, 'GET', undefined],
       [`/v1/trails/${id}/unpublish`, 'POST', undefined],
       [`/v1/trails/${id}`, 'DELETE', undefined],
       ['/v1/me/profile', 'GET', undefined],
-      ['/v1/me/profile', 'PUT', '{"username":"sam_k","displayName":"Sam","university":""}'],
+      ['/v1/me/profile', 'PUT', '{"username":"sam_k","displayName":"Sam"}'],
     ])
   })
 })

@@ -1,6 +1,6 @@
 /**
- * GET and PUT /v1/me/profile (sign-in required): the caller's username, display name
- * and university, as on the onboarding page. A taken username is 409.
+ * GET and PUT /v1/me/profile (sign-in required): the caller's username and display
+ * name, as on the onboarding page. A taken username is 409.
  */
 import { Body, Controller, Get, HttpCode, Put } from '@nestjs/common'
 import {

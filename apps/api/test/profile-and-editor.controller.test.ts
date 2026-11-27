@@ -12,7 +12,7 @@ import { startFakeSupabase, USER_ID, type FakeSupabase } from './support/fake-su
 import { startTestApp } from './support/test-app.js'
 
 const TRAIL = '5eed0000-0000-4000-8000-000000000001'
-const BODY = { username: 'sam_k', displayName: 'Sam', university: 'BU' }
+const BODY = { username: 'sam_k', displayName: 'Sam' }
 let supabase: FakeSupabase
 let app: NestFastifyApplication
 let profile: MyProfileService
@@ -58,7 +58,7 @@ describe('sign-in', () => {
 
 describe('profile fields', () => {
   it('reads and saves for the verified user', async () => {
-    const fields = { username: 'sam_k', displayName: 'Sam', university: null }
+    const fields = { username: 'sam_k', displayName: null }
     vi.spyOn(profile, 'get').mockResolvedValue(fields)
     const update = vi.spyOn(profile, 'update').mockResolvedValue(fields)
     expect((await call('GET', '/v1/me/profile')).json()).toEqual(fields)
@@ -70,8 +70,8 @@ describe('profile fields', () => {
     ['a username with capitals', { ...BODY, username: 'Sam' }],
     ['a two-letter username', { ...BODY, username: 'ab' }],
     ['a long display name', { ...BODY, displayName: 'x'.repeat(81) }],
-    ['a long university', { ...BODY, university: 'x'.repeat(121) }],
-    ['a missing field', { username: 'sam_k', displayName: 'Sam' }],
+    ['a university (no longer a profile field)', { ...BODY, university: 'BU' }],
+    ['a missing field', { username: 'sam_k' }],
     ['an extra field', { ...BODY, is_admin: true }],
   ])('rejects %s with 400 before touching the database', async (_label, payload) => {
     const update = vi.spyOn(profile, 'update')

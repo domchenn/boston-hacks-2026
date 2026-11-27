@@ -313,7 +313,7 @@ export function createApiClient(options: ApiClientOptions) {
       return get('/v1/me/profile', MyProfileFields)
     },
 
-    /** Save the caller's username, display name and university. Requires sign-in. */
+    /** Save the caller's username and display name. Requires sign-in. */
     async updateMyProfile(body: MyProfileBody) {
       return (await send('PUT', '/v1/me/profile', MyProfileFields, false, body))!
     },

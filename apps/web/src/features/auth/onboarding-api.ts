@@ -1,6 +1,7 @@
 /**
- * Reads and saves the signed-in user's editable profile fields (username,
- * display name, university) for /onboarding. The profile row is created by the
+ * Reads and saves the signed-in user's editable profile fields (username and
+ * display name) for /onboarding. University was a hackathon-only field: it's no
+ * longer asked for or shown (existing values stay in the database). The profile row is created by the
  * signup trigger, so this only ever UPDATEs it (RLS: users edit only their own row).
  * Used by OnboardingPage.tsx. With VITE_API_URL set, both go through the API
  * (GET / PUT /v1/me/profile), which always acts as the signed-in user.
@@ -11,9 +12,8 @@ import { supabase } from '@/lib/supabase'
 /** Same rule as the profiles.username CHECK constraint. */
 export const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/
 export const DISPLAY_NAME_MAX = 80
-export const UNIVERSITY_MAX = 120
 
-export type ProfileFields = { username: string; displayName: string; university: string }
+export type ProfileFields = { username: string; displayName: string }
 
 export type LoadResult = { status: 'ok'; fields: ProfileFields } | { status: 'error'; message: string }
 export type SaveResult =
@@ -33,7 +33,7 @@ export async function loadProfileFields(userId: string): Promise<LoadResult> {
   if (api) {
     try {
       const fields = await (await api).getMyProfile()
-      return { status: 'ok', fields: { username: fields.username ?? '', displayName: fields.displayName ?? '', university: fields.university ?? '' } }
+      return { status: 'ok', fields: { username: fields.username ?? '', displayName: fields.displayName ?? '' } }
     } catch (error) {
       const status = statusOf(error)
       return { status: 'error', message: status === 404 ? MISSING_PROFILE : status ? GENERIC_ERROR : NETWORK_ERROR }
@@ -42,7 +42,7 @@ export async function loadProfileFields(userId: string): Promise<LoadResult> {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('username, display_name, university')
+      .select('username, display_name')
       .eq('id', userId)
       .maybeSingle()
     if (error) return { status: 'error', message: error.code ? GENERIC_ERROR : NETWORK_ERROR }
@@ -52,7 +52,6 @@ export async function loadProfileFields(userId: string): Promise<LoadResult> {
       fields: {
         username: data.username ?? '',
         displayName: data.display_name ?? '',
-        university: data.university ?? '',
       },
     }
   } catch {
@@ -62,12 +61,12 @@ export async function loadProfileFields(userId: string): Promise<LoadResult> {
 
 const MISSING_PROFILE = 'We couldn’t find your profile. Log out and back in, then try again.'
 
-/** Saves the fields. Empty display name / university are stored as null. */
+/** Saves the fields. An empty display name is stored as null. */
 export async function saveProfileFields(userId: string, fields: ProfileFields): Promise<SaveResult> {
   const api = getApi()
   if (api) {
     try {
-      await (await api).updateMyProfile({ username: fields.username, displayName: fields.displayName, university: fields.university })
+      await (await api).updateMyProfile({ username: fields.username, displayName: fields.displayName })
       return { status: 'saved' }
     } catch (error) {
       const status = statusOf(error)
@@ -83,7 +82,6 @@ export async function saveProfileFields(userId: string, fields: ProfileFields): 
       .update({
         username: fields.username,
         display_name: fields.displayName.trim() || null,
-        university: fields.university.trim() || null,
       })
       .eq('id', userId)
       .select('id')

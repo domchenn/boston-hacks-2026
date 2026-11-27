@@ -1,7 +1,8 @@
 /**
  * Profile fields and the trail editor's calls against a real local Supabase. Reading
  * and saving profile fields touches only your own row; a taken username is 409 and
- * changes nothing; blanks are stored as none. The stop library equals the web's query
+ * changes nothing; a blank display name is stored as none, and a university saved
+ * before it was dropped from the profile is left as it was. The stop library equals the web's query
  * for each viewer and is empty for a trail hidden from you. Only the creator can
  * unpublish or delete a trail (404 for anyone else, nothing changed); deleting takes
  * the stops with it. Throwaway data, localhost only.
@@ -91,17 +92,19 @@ afterAll(async () => {
 })
 
 describe('profile fields', () => {
-  it('saves your own fields, stores blanks as none and reads them back', async () => {
-    const saved = await profiles.update({ username: `rls_${tag}_me`, displayName: '  Sam  ', university: '   ' }, users.creator)
-    expect(saved).toEqual({ username: `rls_${tag}_me`, displayName: 'Sam', university: null })
+  it('saves your own fields, stores a blank name as none and reads them back', async () => {
+    await sql(`update public.profiles set university = 'Old U' where id = $1`, [id.creator])
+    const saved = await profiles.update({ username: `rls_${tag}_me`, displayName: '  Sam  ' }, users.creator)
+    expect(saved).toEqual({ username: `rls_${tag}_me`, displayName: 'Sam' })
     expect(await profiles.get(users.creator)).toEqual(saved)
-    expect(await profileRow('creator')).toEqual({ username: `rls_${tag}_me`, display_name: 'Sam', university: null })
+    expect(await profileRow('creator')).toEqual({ username: `rls_${tag}_me`, display_name: 'Sam', university: 'Old U' })
+    expect((await profiles.update({ username: `rls_${tag}_me`, displayName: '   ' }, users.creator)).displayName).toBeNull()
     expect((await profileRow('stranger')).username).toBe(`rls_${tag}_taken`)
   })
 
   it('a taken username is 409 and changes nothing', async () => {
     const before = await profileRow('creator')
-    await expect(profiles.update({ username: `rls_${tag}_taken`, displayName: 'X', university: 'Y' }, users.creator)).rejects.toBeInstanceOf(
+    await expect(profiles.update({ username: `rls_${tag}_taken`, displayName: 'X' }, users.creator)).rejects.toBeInstanceOf(
       ConflictException,
     )
     expect(await profileRow('creator')).toEqual(before)
