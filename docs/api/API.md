@@ -562,11 +562,11 @@ The summary fields plus:
 ```json
 {
   "rating": { "average": 4.5, "count": 8 },
-  "places": [{ "name": "Long Wharf", "latitude": 42.36, "longitude": -71.05, "openLate": false }]
+  "places": [{ "name": "Long Wharf", "latitude": 42.36, "longitude": -71.05, "openLate": false, "travelModeToStop": null }]
 }
 ```
 - `rating.average` is the average of the four scores (1–5), or `null` if the trail is unrated.
-- `places` lists every stop in order. `openLate` is `false` for places typed in by hand.
+- `places` lists every stop in order. `openLate` is `false` for places typed in by hand. `travelModeToStop` is how you get there from the previous stop (`walk`, `bike`, `bus`, `train`, or `null` for the first stop or when unknown); the app uses it to draw real walking routes on map thumbnails. Older API versions leave it out.
 
 ### TrailDetail
 The summary fields plus:

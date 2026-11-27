@@ -29,13 +29,18 @@ export const TrailRating = z.object({
 })
 export type TrailRating = z.infer<typeof TrailRating>
 
-/** A stop as the feed sees it: its name, where it is, and whether its place is open late. */
+/** A stop as the feed sees it: its name, where it is, whether its place is open late and how you get there. */
 export const FeedPlace = z.object({
   name: z.string(),
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
   /** The linked place is open late. False for places typed in by hand. */
   openLate: z.boolean(),
+  /**
+   * How to get here from the previous stop (null for the first stop or when unknown),
+   * for drawing real walking routes on map thumbnails. Missing from older API versions.
+   */
+  travelModeToStop: TravelMode.nullable().optional(),
 })
 export type FeedPlace = z.infer<typeof FeedPlace>
 
