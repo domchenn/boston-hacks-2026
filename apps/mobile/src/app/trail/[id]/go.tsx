@@ -4,7 +4,8 @@
  * the real route), your photos at the stop (Add photo: camera or library) and
  * "I'm here, next stop →" / "Finish trail", which leads to rating
  * the trail (RateTrail; not for your own trail). Pause closes it; the
- * trail stays in progress. Your location is never read here. The map comes later.
+ * trail stays in progress. The map shows the stops and your blue dot (read on the phone
+ * only, never stored or sent).
  */
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -13,6 +14,7 @@ import { Check, X } from 'lucide-react-native'
 import { useState, type ReactNode } from 'react'
 import type { TrailCrumb, TrailDetail, TrailStop, TravelMode } from '@breadcrumb/contracts'
 import { AppText } from '@/components/AppText'
+import { mappableStops, TrailMap } from '@/components/TrailMap'
 import { PhotoStrip } from '@/components/PhotoStrip'
 import { Button } from '@/components/Button'
 import { StateView } from '@/components/StateView'
@@ -22,7 +24,7 @@ import { useTrailPhotos } from '@/features/trail/useTrailPhotos'
 import { useSession } from '@/lib/session'
 import { TRAVEL_LABELS } from '@/lib/trailFormat'
 import { tapLight, tapSuccess } from '@/lib/haptics'
-import { colors, floatShadow, fonts, text } from '@/theme/tokens'
+import { colors, floatShadow, fonts, radius, text } from '@/theme/tokens'
 
 export default function ActiveTrailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -47,15 +49,34 @@ export default function ActiveTrailScreen() {
 }
 
 /** The screen with the Pause button in the top corner. */
-function Shell({ onClose, children, label = 'Pause' }: { onClose: () => void; children: ReactNode; label?: string }) {
+/**
+ * The screen with the Pause button in the top corner. With a `map`, the map fills the
+ * top and the content sits below it in a sheet with rounded corners, as in the mockup.
+ */
+function Shell({
+  onClose,
+  children,
+  label = 'Pause',
+  map,
+}: {
+  onClose: () => void
+  children: ReactNode
+  label?: string
+  map?: ReactNode
+}) {
   const insets = useSafeAreaInsets()
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
-      <Pressable accessibilityRole="button" onPress={onClose} style={({ pressed }) => [styles.pause, pressed && styles.pausePressed]}>
+    <View style={styles.screen}>
+      {map ? <View style={{ height: insets.top + 280 }}>{map}</View> : <View style={{ height: insets.top + 66 }} />}
+      <View style={[styles.flex, map ? styles.sheet : null]}>{children}</View>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onClose}
+        style={({ pressed }) => [styles.pause, { top: insets.top + 8 }, pressed && styles.pausePressed]}
+      >
         <X size={18} strokeWidth={2.5} color={colors.ink} />
         <AppText style={styles.pauseLabel}>{label}</AppText>
       </Pressable>
-      {children}
     </View>
   )
 }
@@ -175,9 +196,13 @@ function StopView({
   const how = index > 0 && stop.travelModeToStop ? TRAVEL_LABELS[stop.travelModeToStop] : null
   const what = stop.plannedActivity || stop.description
   const directions = directionsUrl(stop)
+  const hasMap = mappableStops(trail.stops).length > 0
 
   return (
-    <Shell onClose={onClose}>
+    <Shell
+      onClose={onClose}
+      map={hasMap ? <TrailMap stops={trail.stops} current={index} showsUser style={styles.flex} edgePadding={MAP_EDGE} /> : undefined}
+    >
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 + insets.bottom }]}>
         <View style={styles.progress} accessibilityLabel={`Stop ${index + 1} of ${trail.stops.length}`}>
           {trail.stops.map((s, i) => (
@@ -272,15 +297,26 @@ function CrumbRow({ crumb, done, onPress }: { crumb: TrailCrumb; done: boolean; 
   )
 }
 
+/** Room around the pins: the Pause button above, the sheet's rounded edge below. */
+const MAP_EDGE = { top: 110, right: 50, bottom: 60, left: 50 }
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
+  flex: { flex: 1 },
+  sheet: {
+    marginTop: -radius.sheet,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    backgroundColor: colors.white,
+    paddingTop: 18,
+    overflow: 'hidden',
+  },
   pause: {
+    position: 'absolute',
+    left: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     gap: 6,
-    marginLeft: 16,
-    marginBottom: 14,
     paddingHorizontal: 18,
     paddingVertical: 11,
     borderRadius: 999,

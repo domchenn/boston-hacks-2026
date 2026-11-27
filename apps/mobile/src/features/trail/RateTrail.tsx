@@ -2,10 +2,10 @@
  * Rate a finished trail (Mobile-Finished mockup): "Trail finished", the title, stops and
  * crumbs done, "How was it?" with four 1–5 star questions (same words as the website's
  * ratingQuestions.ts), an optional note, then Post review or Skip for now. An existing
- * rating pre-fills it. Used at the end of the active trail and by /trail/:id/rate.
+ * rating pre-fills it ("Update review"), and Delete review removes it after asking. Used at the end of the active trail and by /trail/:id/rate.
  */
 import { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Star } from 'lucide-react-native'
 import { MAX_REVIEW_LENGTH, type RatingBody, type TrailDetail } from '@breadcrumb/contracts'
@@ -86,6 +86,29 @@ export function RateTrail({
     }
   }
 
+  /** Asks first, then removes your rating and note from the trail. */
+  function confirmDelete() {
+    Alert.alert('Delete your review?', 'Your stars and note are removed from this trail.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          if (!api) return
+          setPosting(true)
+          setError(null)
+          try {
+            await api.deleteMyRating(trail.id)
+            onDone()
+          } catch {
+            setError('Couldn’t delete your review. Check your connection and try again.')
+            setPosting(false)
+          }
+        },
+      },
+    ])
+  }
+
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 32 + insets.bottom }]} keyboardShouldPersistTaps="handled">
@@ -141,7 +164,11 @@ export function RateTrail({
             onPress={() => void post()}
           />
           {!complete ? <AppText style={styles.hint}>Rate all four to post.</AppText> : null}
-          <Button variant="ghost" label="Skip for now" disabled={posting} onPress={onDone} />
+          {editing ? (
+            <Button variant="ghost" label="Delete review" disabled={posting} onPress={confirmDelete} />
+          ) : (
+            <Button variant="ghost" label="Skip for now" disabled={posting} onPress={onDone} />
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

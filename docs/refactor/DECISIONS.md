@@ -137,3 +137,15 @@ Status: accepted by the owner ("this is the design we're going to use").
   - walking times.
 - **Haptics** (expo-haptics): a light tap for crumbs, chips and tabs; a success buzz for finishing a trail.
 
+## 2026-11-27 — Maps in the app: Apple Maps, stops without fake routes
+
+Status: proposed in the PR; the owner asked for the map.
+
+- **Apple Maps on iOS** through `react-native-maps`: free, no API key, native look. Android (later) will need a Google Maps key.
+- **Same rules as the website:**
+  - pins mark stops and where trails start;
+  - **no lines are drawn between stops** until we have real routes (PRD §5.5: never straight lines as routes);
+  - Directions opens Apple Maps with the real route.
+- **Real route lines** need a directions service in the app (Apple MapKit directions in a small native module, or Google Routes through the API). That's left for later.
+- **Your location:** the blue dot shows on the Map tab and the active trail after iOS's "while using" permission prompt. It's read on the phone only and never stored or sent, which matches the existing privacy rule (live location is not stored).
+
