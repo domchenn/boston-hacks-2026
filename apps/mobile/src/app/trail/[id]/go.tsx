@@ -1,7 +1,8 @@
 /**
  * The active trail (Mobile-Run mockup), full screen: progress bar, "stop N of M", the
  * stop's name and what to do, its crumbs to tick, then Directions (Apple Maps, with
- * the real route) and "I'm here, next stop →" / "Finish trail". Pause closes it; the
+ * the real route) and "I'm here, next stop →" / "Finish trail", which leads to rating
+ * the trail (RateTrail; not for your own trail). Pause closes it; the
  * trail stays in progress. Your location is never read here. The map comes later.
  */
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
@@ -13,6 +14,7 @@ import type { TrailCrumb, TrailDetail, TrailStop, TravelMode } from '@breadcrumb
 import { AppText } from '@/components/AppText'
 import { Button } from '@/components/Button'
 import { StateView } from '@/components/StateView'
+import { RateTrail } from '@/features/trail/RateTrail'
 import { useActiveTrail } from '@/features/trail/useActiveTrail'
 import { useSession } from '@/lib/session'
 import { TRAVEL_LABELS } from '@/lib/trailFormat'
@@ -84,14 +86,15 @@ function ActiveTrail({ trailId, userId }: { trailId: string; userId: string }) {
 
   const { trail, stopIndex } = active.load
   if (finished) {
+    // You can't rate your own trail (the database refuses), so creators just get a well done.
+    const own = trail.creator?.id === userId
     return (
       <Shell onClose={close} label="Close">
-        <StateView
-          kind="message"
-          title="Trail finished!"
-          body={`Nice work on ${trail.title}.`}
-          action={{ label: 'Done', onPress: close }}
-        />
+        {own ? (
+          <StateView kind="message" title="Trail finished!" body={`Nice work on ${trail.title}.`} action={{ label: 'Done', onPress: close }} />
+        ) : (
+          <RateTrail trail={trail} crumbsDone={active.ticked.size} onDone={close} />
+        )}
       </Shell>
     )
   }

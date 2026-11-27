@@ -2,7 +2,8 @@
  * A trail's page (Mobile-Detail mockup), full screen above the tabs: round back and
  * bookmark buttons, the category in orange, title, facts, description, then the
  * numbered stops with what to do, how you get there and their crumbs. A bottom bar has
- * Start trail (Continue once started; opens go.tsx) and Save. The route map comes later.
+ * Start trail (Continue once started; opens go.tsx), or Rate this trail once you've
+ * finished it, and Save. The route map comes later.
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
@@ -16,6 +17,7 @@ import { IconButton } from '@/components/IconButton'
 import { StateView } from '@/components/StateView'
 import { useTrailActions } from '@/features/trail/useTrailActions'
 import { api } from '@/lib/api'
+import { useSession } from '@/lib/session'
 import { categoryLabel, formatCost, formatMinutes, stopCount, TRAVEL_LABELS } from '@/lib/trailFormat'
 import { colors, fonts, text } from '@/theme/tokens'
 
@@ -84,6 +86,8 @@ function TopBar({ children, right }: { children: ReactNode; right?: ReactNode })
 
 function TrailPage({ trail }: { trail: TrailDetail }) {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
+  const userId = useSession().session?.user.id ?? null
   const actions = useTrailActions(trail.id)
   const saved = actions.status === 'saved'
 
@@ -145,13 +149,18 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
       <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         {actions.error ? <AppText style={styles.error}>{actions.error}</AppText> : null}
         <View style={styles.buttons}>
-          <Button
-            style={styles.startButton}
-            label={actions.status === 'in_progress' ? 'Continue trail' : actions.status === 'completed' ? 'Do it again' : 'Start trail'}
-            busy={actions.busy === 'start'}
-            disabled={busy}
-            onPress={() => void actions.start()}
-          />
+          {actions.canRate && trail.creator?.id !== userId ? (
+            <Button style={styles.startButton} label="Rate this trail" onPress={() => router.push(`/trail/${trail.id}/rate`)} />
+          ) : (
+            <Button
+              style={styles.startButton}
+              label={actions.status === 'in_progress' ? 'Continue trail' : actions.status === 'completed' ? 'You finished this' : 'Start trail'}
+              busy={actions.busy === 'start'}
+              // A finished trail stays finished (the API can't restart it).
+              disabled={busy || actions.status === 'completed'}
+              onPress={() => void actions.start()}
+            />
+          )}
           {actions.canSave ? (
             <Button
               variant="secondary"

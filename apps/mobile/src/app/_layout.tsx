@@ -51,6 +51,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="trail/[id]/index" options={{ headerShown: false }} />
         <Stack.Screen name="trail/[id]/go" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="trail/[id]/rate" options={{ presentation: 'modal', title: 'Rate trail' }} />
         <Stack.Screen name="sign-in" options={{ presentation: 'modal', title: 'Log in' }} />
         <Stack.Screen name="onboarding" options={{ presentation: 'modal', title: 'Your profile', gestureEnabled: false }} />
         <Stack.Screen name="make" options={{ presentation: 'modal', title: 'Make a trail' }} />
