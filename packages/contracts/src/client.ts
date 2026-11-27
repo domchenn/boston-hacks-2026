@@ -17,6 +17,7 @@ import {
 } from './profiles.js'
 import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
 import { PhotoAdded, PhotoDeleted, TrailPhotoList, type AddPhotoQuery } from './photos.js'
+import { AccountDeleted } from './account.js'
 import { MyRatingResponse, type RatingBody } from './ratings.js'
 import { AdminStatus, OpenReportList, ReportResolved, ReportSent, type ReportBody } from './reports.js'
 import { FinishedTrailList } from './badges.js'
@@ -360,6 +361,11 @@ export function createApiClient(options: ApiClientOptions) {
     /** Hide the reported item or dismiss the report; closes every open report on that item (moderators only). */
     async resolveReport(reportId: string, action: 'hide' | 'dismiss') {
       return (await send('POST', `/v1/admin/reports/${encodeURIComponent(reportId)}/resolve`, ReportResolved, false, { action }))!
+    },
+
+    /** Delete the caller's account and everything linked to it, for good. Requires sign-in. */
+    async deleteMyAccount() {
+      return (await send('DELETE', '/v1/me', AccountDeleted, false, { confirm: true }))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */

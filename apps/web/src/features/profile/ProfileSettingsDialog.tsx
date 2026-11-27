@@ -1,14 +1,16 @@
 /**
  * Settings on your own profile, opened by the gear: Edit profile (name, photo,
  * bio: the onboarding form), Friends & privacy (private account switch and close
- * friends list, PrivacySettings) and Log out. A native <dialog> like the
+ * friends list, PrivacySettings), Log out and Delete account (with an inline
+ * confirmation; only where the website talks to the API). A native <dialog> like the
  * followers popup: Esc, the X or the backdrop closes it; centered on desktop,
  * a bottom sheet on phones. Used by ProfilePage (/me).
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { LogOut, Pencil, X } from 'lucide-react'
+import { LoaderCircle, LogOut, Pencil, Trash2, X } from 'lucide-react'
+import { canDeleteAccount, deleteMyAccount } from '@/features/account/api'
 import { PrivacySettings } from '@/features/friends/PrivacySettings'
 import { useSession } from '@/lib/useSession'
 import { cn } from '@/lib/utils'
@@ -31,6 +33,25 @@ export function ProfileSettingsDialog({ open, onClose, viewerId, isPrivate }: Pr
     onClose()
     await signOut()
     navigate('/login')
+  }
+
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  async function deleteAccount() {
+    setDeleting(true)
+    setDeleteError(null)
+    const result = await deleteMyAccount()
+    if (!result.ok) {
+      setDeleting(false)
+      setDeleteError(result.message)
+      return
+    }
+    onClose()
+    // The account is gone; signing out clears the session this browser still holds.
+    await signOut().catch(() => undefined)
+    navigate('/', { replace: true })
   }
 
   const rowClass =
@@ -73,6 +94,46 @@ export function ProfileSettingsDialog({ open, onClose, viewerId, isPrivate }: Pr
                 Log out
               </button>
             </div>
+            {canDeleteAccount() ? (
+              <div className="mt-2 border-t border-line pt-2 pb-1">
+                {confirmDelete ? (
+                  <div role="group" aria-labelledby="delete-account-title" className="rounded-[12px] border border-line bg-paper p-3">
+                    <p id="delete-account-title" className="m-0 font-bold text-ink">
+                      Delete your account?
+                    </p>
+                    <p className="mt-1 mb-3 text-sm text-ink-2">
+                      This removes it for good: your profile, the trails you made (with everyone’s progress, ratings and photos on
+                      them), your ratings, photos, progress and follows. It can’t be undone.
+                    </p>
+                    {deleteError ? (
+                      <p role="alert" className="mt-0 mb-3 text-sm text-crumb-deep">
+                        {deleteError}
+                      </p>
+                    ) : null}
+                    <div className="flex gap-2">
+                      <button type="button" className="btn btn--sm btn--ink flex-1" onClick={deleteAccount} disabled={deleting}>
+                        {deleting ? <LoaderCircle className="animate-spin" aria-hidden /> : <Trash2 aria-hidden />}
+                        Delete my account
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--sm btn--secondary flex-1"
+                        onClick={() => setConfirmDelete(false)}
+                        disabled={deleting}
+                        autoFocus
+                      >
+                        Keep it
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setConfirmDelete(true)} className={cn(rowClass, 'text-ink-2')}>
+                    <Trash2 aria-hidden className="size-5 text-ink-2" />
+                    Delete account
+                  </button>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

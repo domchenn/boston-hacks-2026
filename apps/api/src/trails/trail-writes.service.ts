@@ -18,7 +18,7 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import type { SaveTrailBody } from '@breadcrumb/contracts'
 import type { AuthUser } from '../auth/auth-user.js'
-import { removePhotoFiles, trailFolderPaths, type PhotoFile } from '../photos/photo-files.js'
+import { removePhotoFiles, trailPhotoFiles } from '../photos/photo-files.js'
 import { SupabaseClients } from '../supabase/supabase-clients.js'
 
 type DbError = { code?: string; message?: string }
@@ -88,15 +88,7 @@ export class TrailWritesService {
     if (readError) throw readError
     if (!trail || trail.creator_id !== user.id) throw new NotFoundException(NOT_YOURS)
 
-    const { data: photos, error: photosError } = await db.from('quest_photos').select('photo_url, storage_path').eq('sidequest_id', trailId).returns<PhotoFile[]>()
-    if (photosError) throw photosError
-    const folder = await trailFolderPaths(db, trailId)
-    const files: PhotoFile[] = [...new Set([...photos.flatMap((p) => (p.storage_path ? [p.storage_path] : [])), ...folder])].map((path) => ({
-      storage_path: path,
-      photo_url: null,
-    }))
-    files.push(...photos.filter((p) => !p.storage_path))
-    for (const problem of await removePhotoFiles(db, files)) this.logger.warn(`couldn't remove a deleted trail's photo file: ${problem}`)
+    for (const problem of await removePhotoFiles(db, await trailPhotoFiles(db, trailId))) this.logger.warn(`couldn't remove a deleted trail's photo file: ${problem}`)
 
     const { data, error } = await db.from('sidequests').delete().eq('id', trailId).select('id')
     if (error) throw error

@@ -4,6 +4,7 @@
  * added here as migration tasks land.
  */
 import { Module, type DynamicModule } from '@nestjs/common'
+import { AccountModule } from './account/account.module.js'
 import { AuthModule } from './auth/auth.module.js'
 import { CommunitiesModule } from './communities/communities.module.js'
 import { ConfigModule } from './config/config.module.js'
@@ -25,7 +26,7 @@ export class AppModule {
   static forRoot(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      imports: [ConfigModule.forRoot(config), AuthModule, TrailsModule, ProfilesModule, ProgressModule, RatingsModule, ExploreModule, CommunitiesModule, FriendsModule, PhotosModule, ModerationModule],
+      imports: [ConfigModule.forRoot(config), AuthModule, TrailsModule, ProfilesModule, ProgressModule, RatingsModule, ExploreModule, CommunitiesModule, FriendsModule, PhotosModule, ModerationModule, AccountModule],
       controllers: [HealthController, MetaController, MeController],
     }
   }

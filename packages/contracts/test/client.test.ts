@@ -361,6 +361,14 @@ describe('createApiClient', () => {
       [`/v1/admin/reports/${id}/resolve`, 'POST', '{"action":"dismiss"}'],
     ])
   })
+
+  it('deletes the account with an explicit confirmation', async () => {
+    const fetch = stubFetch(200, { deleted: true })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.deleteMyAccount()).toEqual({ deleted: true })
+    const [url, init] = fetch.mock.calls[0]!
+    expect([String(url), init?.method, init?.body]).toEqual(['https://api.example/v1/me', 'DELETE', '{"confirm":true}'])
+  })
 })
 
 describe('RatingBody', () => {
