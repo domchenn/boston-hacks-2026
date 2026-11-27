@@ -44,7 +44,8 @@ select policies_are('storage', 'objects', array[
   'Users delete their own trail photos; admins delete any',
   'Photos are readable by people who can see their trail',
   'Users add photos to trails they saved, started or finished',
-  'Uploaders, the trail''s creator and moderators delete photos'
+  'Uploaders, the trail''s creator and moderators delete photos',
+  'Moderators move older photos into private storage'
 ], 'no other storage.objects policies (the public read is gone; admins added by let_admins_remove_photo_files; private bucket by add_private_photo_storage)');
 
 select * from finish();

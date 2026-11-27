@@ -8,13 +8,19 @@
  *   own reports instead of refusing;
  * - "hide" archives a trail, or deletes a review or a photo, and for a photo its file
  *   too (storage policies let moderators remove files in both buckets); then every open report on
- *   that item is closed. "dismiss" only closes them.
+ *   that item is closed. "dismiss" only closes them;
+ * - moveOlderPhotos(): copies every older public photo into private storage as a
+ *   cleaned JPEG, points its row at the copy (admin_move_photo, which also makes the
+ *   uploader the file's owner) and deletes the old file. Safe to repeat; anything it
+ *   can't move is listed with a reason and left as it was.
  */
 import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { OpenReport, ReportBody, ReportReason, ReportTarget } from '@breadcrumb/contracts'
 import type { AuthUser } from '../auth/auth-user.js'
-import { photoLinks, removePhotoFiles, type PhotoFile } from '../photos/photo-files.js'
+import { randomUUID } from 'node:crypto'
+import { cleanImage } from '../photos/image-cleaner.js'
+import { LEGACY_BUCKET, PRIVATE_BUCKET, legacyPath, photoLinks, removePhotoFiles, type PhotoFile } from '../photos/photo-files.js'
 import { SupabaseClients } from '../supabase/supabase-clients.js'
 
 type DbError = { code?: string; message?: string }
@@ -150,6 +156,55 @@ export class ModerationService {
       if (error) fail(error)
       for (const problem of await removePhotoFiles(db, data)) this.logger.warn(`couldn't remove a hidden photo's file: ${problem}`)
     }
+  }
+
+  async moveOlderPhotos(user: AuthUser): Promise<{ moved: number; skipped: { photoId: string; reason: string }[] }> {
+    await this.requireAdmin(user)
+    const db = this.clients.forUser(user)
+    const { data, error } = await db
+      .from('quest_photos')
+      .select('id, sidequest_id, photo_url')
+      .is('storage_path', null)
+      .returns<{ id: string; sidequest_id: string; photo_url: string }[]>()
+    if (error) fail(error)
+    let moved = 0
+    const skipped: { photoId: string; reason: string }[] = []
+    for (const photo of data) {
+      const oldPath = legacyPath(photo.photo_url)
+      if (!oldPath) {
+        skipped.push({ photoId: photo.id, reason: 'Its link isn’t in the older photo storage.' })
+        continue
+      }
+      const download = await db.storage.from(LEGACY_BUCKET).download(oldPath)
+      if (download.error) {
+        skipped.push({ photoId: photo.id, reason: `Couldn’t read the old file: ${download.error.message}` })
+        continue
+      }
+      let clean: Buffer
+      try {
+        clean = await cleanImage(Buffer.from(await download.data.arrayBuffer()))
+      } catch {
+        skipped.push({ photoId: photo.id, reason: 'The old file isn’t a readable JPEG, PNG or WebP image.' })
+        continue
+      }
+      const newPath = `${photo.sidequest_id}/${randomUUID()}.jpg`
+      const upload = await db.storage.from(PRIVATE_BUCKET).upload(newPath, clean, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false })
+      if (upload.error) {
+        skipped.push({ photoId: photo.id, reason: `Couldn’t store the private copy: ${upload.error.message}` })
+        continue
+      }
+      const { error: moveError } = await db.rpc('admin_move_photo', { p_photo_id: photo.id, p_path: newPath })
+      if (moveError) {
+        await removePhotoFiles(db, [{ storage_path: newPath, photo_url: null }])
+        skipped.push({ photoId: photo.id, reason: `Couldn’t update the photo: ${moveError.message}` })
+        continue
+      }
+      moved += 1
+      for (const problem of await removePhotoFiles(db, [{ storage_path: null, photo_url: photo.photo_url }])) {
+        this.logger.warn(`moved photo ${photo.id}, but the old file wasn't removed: ${problem}`)
+      }
+    }
+    return { moved, skipped }
   }
 
   private async requireAdmin(user: AuthUser) {

@@ -1,7 +1,8 @@
 /**
  * Reports and moderation (M16b), all sign-in required: POST /v1/reports (anyone),
  * GET /v1/me/admin (am I a moderator?), and for moderators only (403 otherwise)
- * GET /v1/admin/reports and POST /v1/admin/reports/:reportId/resolve.
+ * GET /v1/admin/reports, POST /v1/admin/reports/:reportId/resolve and
+ * POST /v1/admin/photos/move-older (move older public photos into private storage).
  */
 import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common'
 import {
@@ -15,7 +16,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger'
-import { AdminStatus, OpenReportList, ReportBody, ReportParams, ReportResolved, ReportSent, ResolveReportBody } from '@breadcrumb/contracts'
+import { AdminStatus, OlderPhotosMoved, OpenReportList, ReportBody, ReportParams, ReportResolved, ReportSent, ResolveReportBody } from '@breadcrumb/contracts'
 import { z } from 'zod'
 import type { AuthUser } from '../auth/auth-user.js'
 import { CurrentUser } from '../auth/decorators.js'
@@ -30,6 +31,7 @@ type Reports = z.infer<typeof OpenReportList>
 type OneReport = z.infer<typeof ReportParams>
 type Resolution = z.infer<typeof ResolveReportBody>
 type Resolved = z.infer<typeof ReportResolved>
+type Moved = z.infer<typeof OlderPhotosMoved>
 
 @ApiTags('moderation')
 @ApiBearerAuth()
@@ -72,5 +74,13 @@ export class ModerationController {
     @CurrentUser() user: AuthUser,
   ): Promise<Resolved> {
     return this.moderation.resolve(params.reportId, body.action, user)
+  }
+
+  @Post('admin/photos/move-older')
+  @HttpCode(200)
+  @ApiOkResponse({ schema: openApiSchema(OlderPhotosMoved) })
+  @ApiForbiddenResponse({ description: 'Moderators only' })
+  moveOlderPhotos(@CurrentUser() user: AuthUser): Promise<Moved> {
+    return this.moderation.moveOlderPhotos(user)
   }
 }
