@@ -19,9 +19,9 @@
  * Friends tab (src/features/explore/FriendsPanel.tsx).
  *
  * With VITE_API_URL set, follows, follow lists, relationships, friends, close friends
- * and the private switch go through the API (M15b). The API always acts as the
- * signed-in user, so `viewerId` is only used without it (callers pass the session
- * user). Activity and cards still query Supabase directly (M15c).
+ * and the private switch go through the API (M15b), and so do activity and trail
+ * cards (M15c). The API always acts as the signed-in user, so `viewerId` is only
+ * used without it (callers pass the session user).
  */
 
 import type { TrailCardData } from '@/components/TrailCard'
@@ -131,6 +131,13 @@ const CARD_COLUMNS = `id, title, category, custom_category, neighborhood, estima
 export async function loadCards(ids: string[]) {
   const cards = new Map<string, TrailCardData>()
   if (ids.length === 0) return cards
+  // The API takes at most 100 ids per request.
+  const chunks = Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) => ids.slice(i * 100, i * 100 + 100))
+  const fromApi = await viaApi((api) => Promise.all(chunks.map((chunk) => api.getTrailCards(chunk))))
+  if (fromApi) {
+    for (const card of fromApi.value.flat()) cards.set(card.id, card)
+    return cards
+  }
   const [{ data, error }, stats] = await Promise.all([
     supabase.from('sidequests').select(CARD_COLUMNS).in('id', ids),
     supabase.from('sidequest_rating_stats').select('sidequest_id, avg_overall, rating_count').in('sidequest_id', ids),
@@ -161,6 +168,8 @@ export async function loadCards(ids: string[]) {
 
 /** What the people you follow made, finished or joined, newest first (at most `limit` items). */
 export async function loadFriendsActivity(limit = 30): Promise<FriendsActivity> {
+  const fromApi = await viaApi((api) => api.getFriendsActivity(limit))
+  if (fromApi) return { items: fromApi.value.items, trails: new Map(fromApi.value.trails.map((t) => [t.id, t])) }
   const { data, error } = await supabase.rpc('friends_activity', { p_limit: limit })
   if (error) throw friendlyError(error)
   // Joining dated trails was removed from the app, so old "joined" items are skipped.
