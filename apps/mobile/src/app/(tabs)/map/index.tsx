@@ -1,19 +1,20 @@
 /**
  * Map tab (Mobile-Map mockup, browsing like Resy's map): every trail as a price pin
  * ("~$8", "Free") at its first stop over Boston on Apple Maps, with your blue dot (read
- * on the phone only, never stored), and a row of trail cards along the bottom. Swiping
- * the cards glides the map to that trail's pin and highlights it; tapping a pin scrolls
- * to its card. Tapping a card opens the trail. Pins mark where trails start; no routes here.
+ * on the phone only, never stored). A sheet at the bottom has two positions: down, a row
+ * of trail cards (swiping glides the map to that trail's pin; tapping a pin scrolls to
+ * its card); up (drag the handle or tap List), every trail as a list. Tapping a card or
+ * row opens the trail. Pins mark where trails start; no routes are drawn here.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Animated, FlatList, PanResponder, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MapView, { Marker } from 'react-native-maps'
 import type { FeedTrail } from '@breadcrumb/contracts'
 import { AppText } from '@/components/AppText'
 import { StateView } from '@/components/StateView'
-import { trailFacts } from '@/components/TrailRow'
+import { TrailRow, trailFacts } from '@/components/TrailRow'
 import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
 import { categoryLabel, formatCost } from '@/lib/trailFormat'
@@ -41,6 +42,51 @@ export default function MapScreen() {
   const cardWidth = width - 48
   const side = (width - cardWidth) / 2
   const step = cardWidth + GAP
+
+  // The sheet: `open` = pulled up to the list. Its top sits `collapsedTop` above the
+  // bottom when down (cards showing) and near the top of the screen when up.
+  const { height } = useWindowDimensions()
+  const sheetHeight = height - insets.top - 12
+  const collapsedHeight = 186 + insets.bottom + 66
+  const downAt = sheetHeight - collapsedHeight
+  const [offset] = useState(() => new Animated.Value(downAt))
+  const [open, setOpen] = useState(false)
+
+  const snap = useCallback(
+    (up: boolean) => {
+      setOpen(up)
+      tapLight()
+      Animated.spring(offset, { toValue: up ? 0 : downAt, useNativeDriver: false, bounciness: 2, speed: 14 }).start()
+    },
+    [offset, downAt],
+  )
+
+  const pan = useMemo(() => {
+    // Where the sheet was when this drag began.
+    let start = downAt
+    return PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
+      onPanResponderGrant: () => {
+        offset.stopAnimation((value) => {
+          start = value
+        })
+      },
+      onPanResponderMove: (_, g) => offset.setValue(Math.min(downAt, Math.max(0, start + g.dy))),
+      onPanResponderRelease: (_, g) => {
+        // A flick decides; otherwise whichever position is closer.
+        snap(g.vy < -0.4 ? true : g.vy > 0.4 ? false : start + g.dy < downAt / 2)
+      },
+    })
+  }, [offset, downAt, snap])
+
+  // Cards fade out and the list fades in as the sheet rises; its background goes from clear to white.
+  const cardsOpacity = offset.interpolate({ inputRange: [downAt * 0.6, downAt], outputRange: [0, 1], extrapolate: 'clamp' })
+  const listOpacity = offset.interpolate({ inputRange: [0, downAt * 0.6], outputRange: [1, 0], extrapolate: 'clamp' })
+  const sheetBackground = offset.interpolate({
+    inputRange: [0, downAt * 0.7, downAt],
+    outputRange: [colors.white, colors.white, 'transparent'],
+    extrapolate: 'clamp',
+  })
 
   useEffect(() => {
     if (!api) return
@@ -111,7 +157,24 @@ export default function MapScreen() {
         })}
       </MapView>
 
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 66 }]} pointerEvents="box-none">
+      <Animated.View
+        style={[styles.sheet, { height: sheetHeight, transform: [{ translateY: offset }], backgroundColor: sheetBackground }]}
+        pointerEvents="box-none"
+      >
+        <View {...pan.panHandlers} style={styles.grab}>
+          <View style={styles.handle} />
+          {state.status === 'ready' && pins.length > 0 ? (
+            <View style={styles.grabRow}>
+              <AppText style={styles.countText}>
+                {open ? `${pins.length} ${pins.length === 1 ? 'trail' : 'trails'}` : `${selected + 1} of ${pins.length} · swipe to explore`}
+              </AppText>
+              <Pressable accessibilityRole="button" hitSlop={10} onPress={() => snap(!open)}>
+                <AppText style={styles.toggle}>{open ? 'Map' : 'List'}</AppText>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+
         {state.status === 'error' ? (
           <View style={[styles.card, styles.message, { marginHorizontal: side }]}>
             <StateView
@@ -126,37 +189,42 @@ export default function MapScreen() {
             <AppText style={styles.facts}>No trails with a location yet.</AppText>
           </View>
         ) : state.status === 'ready' ? (
-          <>
-            <View style={styles.count}>
-              <AppText style={styles.countText}>
-                {selected + 1} of {pins.length} · swipe to explore
-              </AppText>
-            </View>
-            <FlatList
-              ref={list}
-              data={pins}
-              horizontal
-              keyExtractor={(pin) => pin.trail.id}
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={step}
-              decelerationRate="fast"
-              contentContainerStyle={{ paddingHorizontal: side, gap: GAP }}
-              getItemLayout={(_, index) => ({ length: step, offset: step * index, index })}
-              // A swipe settles on a card: move the map there.
-              onMomentumScrollEnd={(e) => {
-                const index = Math.min(pins.length - 1, Math.max(0, Math.round(e.nativeEvent.contentOffset.x / step)))
-                if (index !== selected) {
-                  tapLight()
-                  focus(index)
-                }
-              }}
-              renderItem={({ item, index }) => (
-                <TrailSlide trail={item.trail} width={cardWidth} on={index === selected} onPress={() => router.push(`/trail/${item.trail.id}`)} />
-              )}
-            />
-          </>
+          <View style={styles.flex}>
+            <Animated.View style={{ opacity: cardsOpacity }} pointerEvents={open ? 'none' : 'box-none'}>
+              <FlatList
+                ref={list}
+                data={pins}
+                horizontal
+                keyExtractor={(pin) => pin.trail.id}
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={step}
+                decelerationRate="fast"
+                contentContainerStyle={{ paddingHorizontal: side, gap: GAP }}
+                getItemLayout={(_, index) => ({ length: step, offset: step * index, index })}
+                // A swipe settles on a card: move the map there.
+                onMomentumScrollEnd={(e) => {
+                  const index = Math.min(pins.length - 1, Math.max(0, Math.round(e.nativeEvent.contentOffset.x / step)))
+                  if (index !== selected) {
+                    tapLight()
+                    focus(index)
+                  }
+                }}
+                renderItem={({ item, index }) => (
+                  <TrailSlide trail={item.trail} width={cardWidth} on={index === selected} onPress={() => router.push(`/trail/${item.trail.id}`)} />
+                )}
+              />
+            </Animated.View>
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: listOpacity }]} pointerEvents={open ? 'auto' : 'none'}>
+              <FlatList
+                data={pins}
+                keyExtractor={(pin) => pin.trail.id}
+                contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 90 }]}
+                renderItem={({ item }) => <TrailRow trail={item.trail} onPress={() => router.push(`/trail/${item.trail.id}`)} />}
+              />
+            </Animated.View>
+          </View>
         ) : null}
-      </View>
+      </Animated.View>
     </View>
   )
 }
@@ -190,16 +258,30 @@ const styles = StyleSheet.create({
   pinOn: { backgroundColor: colors.crumbStrong, transform: [{ scale: 1.12 }] },
   price: { fontFamily: fonts.bold, fontSize: text.base, color: colors.ink },
   priceOn: { color: colors.white },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  count: {
-    alignSelf: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+  flex: { flex: 1 },
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+  },
+  grab: { paddingTop: 8, paddingBottom: 10, paddingHorizontal: 16 },
+  handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.lineStrong, marginBottom: 8 },
+  grabRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 999,
     backgroundColor: colors.white,
     ...floatShadow,
   },
+  toggle: { fontFamily: fonts.bold, fontSize: text.sm, color: colors.crumbStrong },
+  list: { paddingHorizontal: 16 },
   countText: { fontFamily: fonts.semibold, fontSize: text.sm, color: colors.ink2 },
   card: {
     flexDirection: 'row',
