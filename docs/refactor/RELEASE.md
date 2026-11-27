@@ -193,6 +193,30 @@ None of these are secrets.
 - **Website:** promote the previous production deployment in Vercel.
 - **Database:** none of these migrations should need undoing. If one does, write a new migration; restore backup-5 only for data loss.
 
+### Result (2026-11-27)
+
+**Released:** owner merged #145 (merge commit `8c1a19b`).
+- **Website, API still off:** deployed `main`. Checked live: production Supabase only, the new code (the friends-only "Trail not found" wording, no University field), photos and previews working.
+- **Backup-5:** encrypted, 2026-11-27T04:55Z. 6 of 6 photos match production checksums; 12 files in the manifest; it holds the 9 university values before they were dropped.
+- **Database:** the six migrations applied after a dry run, 28 of 28. Afterwards:
+  - the website's profile query works and the university column is gone;
+  - older photo links still opened;
+  - anonymous listing of the photo bucket returns nothing.
+
+  Types regenerated from production (#146).
+- **API:** first deploy by hand of `8c1a19b` to Cloud Run `breadcrumb-api` in `project-647004cf-4bb8-4512-9bb`, at https://breadcrumb-api-wze57f4q3a-ul.a.run.app.
+  - It runs as the no-role `breadcrumb-api` account: 1 CPU, 512 MiB, 0–2 instances, concurrency 80, 30 s timeout.
+  - Settings: `APP_ENV=production`, the production Supabase URL and publishable key, `CORS_ORIGINS=https://breadcrumb.boston`.
+  - Checked: `/health` 200 (about 0.2 s), `/v1/meta` production, the same 14 published trails as Supabase directly, `/v1/me` 401 signed out, and CORS allows only breadcrumb.boston.
+- **Deploy button:** Workload Identity pool `github` / provider `breadcrumb` (repository 1466641451, `refs/heads/main` only).
+  - `github-deployer` has run.developer on the service, artifactregistry.writer on the registry and serviceAccountUser on the runtime account.
+  - GitHub environment `production` (main only), plus variables `GCP_PROD_WIF_PROVIDER`, `GCP_PROD_DEPLOY_SA` and `PROD_API_URL`.
+  - The **Deploy production API** button hasn't been run yet.
+- **Switch:** `VITE_API_URL` set (Production, Config), and `main` redeployed. The live bundle `index-BuO0DgGm.js` contains the production API address and no staging address, and the privacy page shows self-serve deletion.
+  - Checked signed out through the API: trails, a trail's photos (signed links that open), neighborhoods, a profile and its stats / made trails / follow counts / followers, Trending refused signed out, shared-link previews, and no API errors in the logs.
+  - The owner clicked through signed in: save, start, tick, finish, photo add/delete and follow.
+- **Older photos:** the owner was made a moderator (`dom`), then ran the move. All 6 production photos are now in the private bucket with signed links, all open as cleaned JPEGs, and no public-link photos remain. A second run moved nothing more.
+
 ## Later releases
 
 Releases after the API is live deploy the API with **Deploy production API** before the website, so the website never calls missing endpoints. Database changes go first, after a fresh backup (see RECOVERY.md).
