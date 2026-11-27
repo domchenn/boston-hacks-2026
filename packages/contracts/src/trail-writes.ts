@@ -8,6 +8,9 @@
  * 2–8 stops to publish, your own community, remixing only what you can see) stay in
  * save_trail(), whose friendly messages the API passes through. Absent
  * `community_id` / `visibility` keys mean "leave as is" when editing.
+ *
+ * Also the editor's other calls: each stop's place-library link (Edit and Remix),
+ * unpublishing (back to draft) and deleting a trail.
  */
 import { z } from 'zod'
 import { Category, TrailVisibility, TravelMode } from './values.js'
@@ -57,3 +60,17 @@ export type SaveTrailBody = z.infer<typeof SaveTrailBody>
 /** POST /v1/trails and PUT /v1/trails/:id response. */
 export const TrailSaved = z.object({ id: Uuid })
 export type TrailSaved = z.infer<typeof TrailSaved>
+
+/** GET /v1/trails/:id/stop-library: each stop's place-library link and that place's neighborhood. */
+export const StopLibrary = z.object({
+  stops: z.array(z.object({ stopId: Uuid, experienceId: Uuid.nullable(), neighborhood: z.string().nullable() })),
+})
+export type StopLibrary = z.infer<typeof StopLibrary>
+
+/** POST /v1/trails/:id/unpublish response: the trail is a draft again. */
+export const TrailUnpublished = z.object({ id: Uuid, status: z.literal('draft') })
+export type TrailUnpublished = z.infer<typeof TrailUnpublished>
+
+/** DELETE /v1/trails/:id response. */
+export const TrailDeleted = z.object({ id: Uuid, deleted: z.literal(true) })
+export type TrailDeleted = z.infer<typeof TrailDeleted>

@@ -285,6 +285,37 @@ describe('createApiClient', () => {
       'https://api.example/v1/me/suggested-people',
     ])
   })
+
+  it('calls the profile and editor routes', async () => {
+    const id = trailDetail.id
+    const fields = { username: 'sam_k', displayName: 'Sam', university: null }
+    const calls: [string, string | undefined, string | undefined][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      const path = new URL(String(url)).pathname
+      calls.push([path, init?.method, init?.body as string | undefined])
+      const body = path.endsWith('/stop-library')
+        ? { stops: [{ stopId: id, experienceId: null, neighborhood: 'Allston' }] }
+        : path.endsWith('/unpublish')
+          ? { id, status: 'draft' }
+          : path === '/v1/me/profile'
+            ? fields
+            : { id, deleted: true }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.getStopLibrary(id)).toEqual([{ stopId: id, experienceId: null, neighborhood: 'Allston' }])
+    expect(await client.unpublishTrail(id)).toEqual({ id, status: 'draft' })
+    expect(await client.deleteTrail(id)).toEqual({ id, deleted: true })
+    expect(await client.getMyProfile()).toEqual(fields)
+    expect(await client.updateMyProfile({ username: 'sam_k', displayName: 'Sam', university: '' })).toEqual(fields)
+    expect(calls).toEqual([
+      [`/v1/trails/${id}/stop-library`, 'GET', undefined],
+      [`/v1/trails/${id}/unpublish`, 'POST', undefined],
+      [`/v1/trails/${id}`, 'DELETE', undefined],
+      ['/v1/me/profile', 'GET', undefined],
+      ['/v1/me/profile', 'PUT', '{"username":"sam_k","displayName":"Sam","university":""}'],
+    ])
+  })
 })
 
 describe('RatingBody', () => {

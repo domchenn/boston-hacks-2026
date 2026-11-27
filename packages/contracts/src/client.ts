@@ -8,9 +8,11 @@ import type { z } from 'zod'
 import { ApiErrorBody } from './errors.js'
 import {
   ProfileStats,
+  MyProfileFields,
   ProfileTrailList,
   PublicProfile,
   SavedTrailList,
+  type MyProfileBody,
   type MyTrailsQuery,
 } from './profiles.js'
 import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
@@ -30,7 +32,7 @@ import {
 } from './friends.js'
 import { CommunityList, MyCommunity } from './communities.js'
 import { NeighborhoodList, TrendingList, type TrendingQuery } from './explore.js'
-import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
+import { StopLibrary, TrailDeleted, TrailSaved, TrailUnpublished, type SaveTrailBody } from './trail-writes.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
 export class ApiError extends Error {
@@ -289,6 +291,31 @@ export function createApiClient(options: ApiClientOptions) {
     /** People the caller might follow. Requires sign-in. */
     async getSuggestedPeople(limit?: number) {
       return (await get(`/v1/me/suggested-people${limit === undefined ? '' : `?limit=${limit}`}`, PersonList)).people
+    },
+
+    /** Each stop's place-library link and neighborhood (Edit and Remix). */
+    async getStopLibrary(trailId: string) {
+      return (await get(`/v1/trails/${encodeURIComponent(trailId)}/stop-library`, StopLibrary)).stops
+    },
+
+    /** Move one of your trails back to draft. Requires sign-in. */
+    async unpublishTrail(trailId: string) {
+      return (await send('POST', `/v1/trails/${encodeURIComponent(trailId)}/unpublish`, TrailUnpublished))!
+    },
+
+    /** Delete one of your trails for good. Requires sign-in. */
+    async deleteTrail(trailId: string) {
+      return (await send('DELETE', `/v1/trails/${encodeURIComponent(trailId)}`, TrailDeleted))!
+    },
+
+    /** The caller's editable profile fields. Requires sign-in. */
+    getMyProfile() {
+      return get('/v1/me/profile', MyProfileFields)
+    },
+
+    /** Save the caller's username, display name and university. Requires sign-in. */
+    async updateMyProfile(body: MyProfileBody) {
+      return (await send('PUT', '/v1/me/profile', MyProfileFields, false, body))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */

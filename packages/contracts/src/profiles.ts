@@ -99,3 +99,21 @@ export type SavedTrail = z.infer<typeof SavedTrail>
 /** GET /v1/me/saved-trails */
 export const SavedTrailList = z.object({ trails: z.array(SavedTrail) })
 export type SavedTrailList = z.infer<typeof SavedTrailList>
+
+/** GET /v1/me/profile: the caller's editable profile fields (onboarding). */
+export const MyProfileFields = z.object({
+  username: z.string().nullable(),
+  displayName: z.string().nullable(),
+  university: z.string().nullable(),
+})
+export type MyProfileFields = z.infer<typeof MyProfileFields>
+
+/** PUT /v1/me/profile body. Blank display name / university are stored as none. */
+export const MyProfileBody = z
+  .object({
+    username: Username,
+    displayName: z.string().max(80),
+    university: z.string().max(120),
+  })
+  .strict()
+export type MyProfileBody = z.infer<typeof MyProfileBody>

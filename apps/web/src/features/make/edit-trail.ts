@@ -7,9 +7,12 @@
  * between stops, stop descriptions / planned activities / notes) is reported by
  * editLosses() and shown before saving, rather than silently lost. Unpublish and
  * Delete are plain updates/deletes on the trail row (RLS: creators only), so they
- * never touch stops or crumbs. No React here. Used by EditTrailPage.tsx.
+ * never touch stops or crumbs. No React here. Used by EditTrailPage.tsx. With
+ * VITE_API_URL set, the stop library, Unpublish and Delete go through the API
+ * (GET /v1/trails/:id/stop-library, POST …/unpublish, DELETE /v1/trails/:id).
  */
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 import { MAX_STOPS, type StopDraft, type TrailDraft } from './draft'
 
@@ -19,6 +22,24 @@ const NOT_YOURS = 'This trail isn’t yours, or it no longer exists.'
 
 /** supabase-js reports network failures as an error without a Postgres code. */
 const messageFor = (error: { code?: string } | null | undefined) => (error?.code ? GENERIC_ERROR : NETWORK_ERROR)
+
+/** An API failure as a user-facing message: 404 means not yours (or gone); no status means no connection. */
+function apiMessage(error: unknown) {
+  const status = error instanceof Error && 'status' in error ? Number((error as { status: unknown }).status) : 0
+  return status === 404 ? NOT_YOURS : status ? GENERIC_ERROR : NETWORK_ERROR
+}
+
+/** Runs an editor action through the API when VITE_API_URL is set; undefined otherwise. */
+async function viaApi(call: (api: NonNullable<Awaited<ReturnType<typeof getApi>>>) => Promise<unknown>): Promise<ActionResult | undefined> {
+  const api = getApi()
+  if (!api) return undefined
+  try {
+    await call(await api)
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, message: apiMessage(error) }
+  }
+}
 
 export type EditableTrail = {
   trail: TrailDetail
@@ -50,6 +71,15 @@ export async function loadEditableTrail(trailId: string, userId: string): Promis
 export async function loadStopLibrary(
   trailId: string,
 ): Promise<{ ok: true; data: EditableTrail['library'] } | { ok: false; message: string }> {
+  const api = getApi()
+  if (api) {
+    try {
+      const stops = await (await api).getStopLibrary(trailId)
+      return { ok: true, data: new Map(stops.map((s) => [s.stopId, { experienceId: s.experienceId, neighborhood: s.neighborhood }])) }
+    } catch (error) {
+      return { ok: false, message: apiMessage(error) === NOT_YOURS ? GENERIC_ERROR : apiMessage(error) }
+    }
+  }
   try {
     const { data, error } = await supabase
       .from('sidequest_stops')
@@ -138,6 +168,8 @@ export type ActionResult = { ok: true } | { ok: false; message: string }
 
 /** Back to draft: hidden from everyone but you. Stops and crumbs are untouched. */
 export async function unpublishTrail(trailId: string): Promise<ActionResult> {
+  const fromApi = await viaApi((api) => api.unpublishTrail(trailId))
+  if (fromApi) return fromApi
   try {
     const { data, error } = await supabase.from('sidequests').update({ status: 'draft' }).eq('id', trailId).select('id')
     if (error) return { ok: false, message: messageFor(error) }
@@ -149,6 +181,8 @@ export async function unpublishTrail(trailId: string): Promise<ActionResult> {
 
 /** Deletes the trail for good: its stops, crumbs, everyone's progress and ratings go with it. */
 export async function deleteTrail(trailId: string): Promise<ActionResult> {
+  const fromApi = await viaApi((api) => api.deleteTrail(trailId))
+  if (fromApi) return fromApi
   try {
     const { data, error } = await supabase.from('sidequests').delete().eq('id', trailId).select('id')
     if (error) return { ok: false, message: messageFor(error) }
