@@ -1,22 +1,28 @@
 /**
- * Saving and unsaving trails for the signed-in caller, with exactly the transition
- * rules of the web's lib/api/progress.ts:
+ * The signed-in caller's progress on trails, with exactly the transition rules of the
+ * web's lib/api/progress.ts:
  *
- *   current \ action   save     unsave
- *   (no row)           saved    –
- *   saved              –        removed, or aborted if it was started (keeps history)
- *   signed_up          –        –
- *   in_progress        saved    –          ("save for later")
- *   completed          –        –          (a finished trail never moves)
- *   aborted            saved    –
+ *   current \ action   save     unsave                    start        finish     abort
+ *   (no row)           saved    –                         in_progress  completed  –
+ *   saved              –        removed, or aborted (1)   in_progress  completed  aborted
+ *   signed_up          –        –                         in_progress  completed  aborted
+ *   in_progress        saved    –                         – (resume)   completed  aborted
+ *   completed          –        –                         –            –          –
+ *   aborted            saved    –                         in_progress  completed  –
  *
+ *   (1) aborted if it was started, which keeps the history and ticked crumbs.
+ *
+ * A finished trail never moves. Crumbs can be ticked only while the trail is in
+ * progress (RLS: private.can_complete_item, migration
+ * restrict_crumb_ticks_to_trails_in_progress); that refusal is a 403. Stopping keeps
+ * earlier ticks, and starting again continues with them.
  * Runs as the caller, so RLS enforces the rest: you can only write your own row,
  * and only add one for a trail you can see. Database refusals become a 404 "not
  * available"; anything unexpected is a 500.
  */
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { TrailProgress, UserSidequestStatus } from '@breadcrumb/contracts'
+import type { CrumbState, TrailAction, TrailProgress, UserSidequestStatus } from '@breadcrumb/contracts'
 import type { AuthUser } from '../auth/auth-user.js'
 import { SupabaseClients } from '../supabase/supabase-clients.js'
 
@@ -24,6 +30,13 @@ type Row = { status: UserSidequestStatus; started_at: string | null }
 type DbError = { code?: string; message?: string }
 
 const SAVE_FROM: ReadonlyArray<UserSidequestStatus | null> = [null, 'in_progress', 'aborted']
+
+/** Each action's resulting status and the statuses it may start from (null = no row). */
+const ACTIONS: Record<TrailAction, { next: UserSidequestStatus; from: ReadonlyArray<UserSidequestStatus | null> }> = {
+  start: { next: 'in_progress', from: [null, 'saved', 'signed_up', 'aborted'] },
+  finish: { next: 'completed', from: [null, 'saved', 'signed_up', 'in_progress', 'aborted'] },
+  abort: { next: 'aborted', from: ['saved', 'signed_up', 'in_progress'] },
+}
 
 /** RLS refused (hidden trail), the trail is gone, or the id is malformed: all mean "not available". */
 const UNAVAILABLE_CODES = new Set(['42501', '23503', '22P02'])
@@ -36,6 +49,48 @@ function rethrow(error: DbError): never {
 @Injectable()
 export class ProgressService {
   constructor(private readonly clients: SupabaseClients) {}
+
+  /** The caller's status on a trail, or null when they have no row. */
+  async status(trailId: string, user: AuthUser): Promise<TrailProgress> {
+    const row = await this.read(this.clients.forUser(user), user.id, trailId)
+    return { status: row?.status ?? null }
+  }
+
+  /** Start, finish or abort: moves the row only from the statuses the table allows. */
+  async act(trailId: string, action: TrailAction, user: AuthUser): Promise<TrailProgress> {
+    const db = this.clients.forUser(user)
+    const { next, from } = ACTIONS[action]
+    const row = await this.read(db, user.id, trailId)
+    if (!from.includes(row?.status ?? null)) return { status: row?.status ?? null }
+    await this.write(db, user.id, trailId, next)
+    return { status: next }
+  }
+
+  /** Ids of the crumbs the caller has ticked on a trail. */
+  async tickedCrumbs(trailId: string, user: AuthUser): Promise<string[]> {
+    const { data, error } = await this.clients
+      .forUser(user)
+      .from('checklist_completions')
+      .select('checklist_item_id, checklist_items!inner(sidequest_id)')
+      .eq('user_id', user.id)
+      .eq('checklist_items.sidequest_id', trailId)
+      .returns<{ checklist_item_id: string }[]>()
+    if (error) rethrow(error)
+    return data.map((row) => row.checklist_item_id)
+  }
+
+  /** Tick (idempotent) or untick a crumb. Ticking needs the trail in progress. */
+  async setCrumb(crumbId: string, done: boolean, user: AuthUser): Promise<CrumbState> {
+    const db = this.clients.forUser(user)
+    const { error } = done
+      ? await db
+          .from('checklist_completions')
+          .upsert({ user_id: user.id, checklist_item_id: crumbId }, { onConflict: 'user_id,checklist_item_id', ignoreDuplicates: true })
+      : await db.from('checklist_completions').delete().eq('user_id', user.id).eq('checklist_item_id', crumbId)
+    if (error?.code === '42501') throw new ForbiddenException('Start this trail before checking off its crumbs.')
+    if (error) rethrow(error)
+    return { done }
+  }
 
   async save(trailId: string, user: AuthUser): Promise<TrailProgress> {
     const db = this.clients.forUser(user)

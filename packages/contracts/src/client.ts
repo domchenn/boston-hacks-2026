@@ -13,7 +13,23 @@ import {
   SavedTrailList,
   type MyTrailsQuery,
 } from './profiles.js'
-import { TrailProgress } from './progress.js'
+import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
+import { MyRatingResponse, type RatingBody } from './ratings.js'
+import { FinishedTrailList } from './badges.js'
+import {
+  AlsoSavedList,
+  CloseFriendState,
+  FollowCounts,
+  FollowState,
+  FriendsActivity,
+  PersonIdList,
+  PersonList,
+  Privacy,
+  Relationship,
+  TrailCardList,
+} from './friends.js'
+import { CommunityList, MyCommunity } from './communities.js'
+import { NeighborhoodList, TrendingList, type TrendingQuery } from './explore.js'
 import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
@@ -138,6 +154,141 @@ export function createApiClient(options: ApiClientOptions) {
     /** Replace one of your trails (stops included) through save_trail(); returns its id. Requires sign-in. */
     async updateTrail(id: string, body: SaveTrailBody) {
       return (await send('PUT', `/v1/trails/${encodeURIComponent(id)}`, TrailSaved, false, body))!
+    },
+
+    /** The caller's status on a trail (null = none). Requires sign-in. */
+    getMyProgress(trailId: string) {
+      return send('GET', `/v1/me/trails/${encodeURIComponent(trailId)}/progress`, TrailProgress) as Promise<TrailProgress>
+    },
+
+    /** Start, finish or abort a trail; returns the new status. Requires sign-in. */
+    async trailAction(trailId: string, action: TrailAction) {
+      return (await send('POST', `/v1/me/trails/${encodeURIComponent(trailId)}/${action}`, TrailProgress))!
+    },
+
+    /** Ids of the crumbs the caller has ticked on a trail. Requires sign-in. */
+    async getTickedCrumbs(trailId: string) {
+      return (await send('GET', `/v1/me/trails/${encodeURIComponent(trailId)}/crumbs`, TickedCrumbs))!.crumbIds
+    },
+
+    /** Tick (done = true) or untick a crumb during an active trail. Requires sign-in. */
+    async setCrumb(crumbId: string, done: boolean) {
+      return (await send(done ? 'PUT' : 'DELETE', `/v1/me/crumbs/${encodeURIComponent(crumbId)}`, CrumbState))!
+    },
+
+    /** The caller's rating of a trail, or null if they haven't rated it. Requires sign-in. */
+    async getMyRating(trailId: string) {
+      return (await send('GET', `/v1/me/trails/${encodeURIComponent(trailId)}/rating`, MyRatingResponse))!.rating
+    },
+
+    /** Rate a finished trail, or edit your rating; returns the stored rating. Requires sign-in. */
+    async rateTrail(trailId: string, body: RatingBody) {
+      return (await send('PUT', `/v1/me/trails/${encodeURIComponent(trailId)}/rating`, MyRatingResponse, false, body))!.rating
+    },
+
+    /** Delete your rating of a trail (nothing happens if there isn't one). Requires sign-in. */
+    async deleteMyRating(trailId: string) {
+      await send('DELETE', `/v1/me/trails/${encodeURIComponent(trailId)}/rating`, MyRatingResponse)
+    },
+
+    /** Trails with the most recent activity, busiest first (totals only). Requires sign-in. */
+    async getTrending(query: TrendingQuery = {}) {
+      const search = new URLSearchParams()
+      if (query.days !== undefined) search.set('days', String(query.days))
+      if (query.limit !== undefined) search.set('limit', String(query.limit))
+      return (await get(`/v1/trending${search.size > 0 ? `?${search}` : ''}`, TrendingList)).trails
+    },
+
+    /** Neighborhoods with published trails the caller can see, A to Z. */
+    async getNeighborhoods() {
+      return (await get('/v1/neighborhoods', NeighborhoodList)).neighborhoods
+    },
+
+    /** Every community, by name. */
+    async getCommunities() {
+      return (await get('/v1/communities', CommunityList)).communities
+    },
+
+    /** Join a community, or leave by passing null; returns the caller's community. Requires sign-in. */
+    async setMyCommunity(communityId: string | null) {
+      return (await send('PUT', '/v1/me/community', MyCommunity, false, { communityId }))!
+    },
+
+    /** The caller's finished trails with line and neighborhood, for badges. Requires sign-in. */
+    async getFinishedTrails() {
+      return (await get('/v1/me/finished-trails', FinishedTrailList)).trails
+    },
+
+    /** How many people follow this person, and how many they follow. */
+    getFollowCounts(userId: string) {
+      return get(`/v1/profiles/${encodeURIComponent(userId)}/follow-counts`, FollowCounts)
+    },
+
+    /** Who follows this person ('followers') or whom they follow ('following'), newest first. */
+    async getFollowList(userId: string, kind: 'followers' | 'following') {
+      return (await get(`/v1/profiles/${encodeURIComponent(userId)}/${kind}`, PersonList)).people
+    },
+
+    /** Ids of everyone the caller follows. Requires sign-in. */
+    async getFollowingIds() {
+      return (await get('/v1/me/following-ids', PersonIdList)).ids
+    },
+
+    /** Follow (true) or unfollow (false) someone; repeating either is fine. Requires sign-in. */
+    async setFollowing(userId: string, following: boolean) {
+      return (await send(following ? 'PUT' : 'DELETE', `/v1/me/following/${encodeURIComponent(userId)}`, FollowState))!
+    },
+
+    /** Whether the caller follows this person and whether they follow back. Requires sign-in. */
+    getRelationship(userId: string) {
+      return get(`/v1/me/relationships/${encodeURIComponent(userId)}`, Relationship)
+    },
+
+    /** The caller's friends (mutual follows), A to Z. Requires sign-in. */
+    async getFriends() {
+      return (await get('/v1/me/friends', PersonList)).people
+    },
+
+    /** Ids on the caller's close friends list. Requires sign-in. */
+    async getCloseFriendIds() {
+      return (await get('/v1/me/close-friends', PersonIdList)).ids
+    },
+
+    /** Add (true) or remove (false) a friend from the close friends list. Requires sign-in. */
+    async setCloseFriend(userId: string, on: boolean) {
+      return (await send(on ? 'PUT' : 'DELETE', `/v1/me/close-friends/${encodeURIComponent(userId)}`, CloseFriendState))!
+    },
+
+    /** Make the caller's account private (trails visible to friends only) or public. Requires sign-in. */
+    async setPrivateAccount(isPrivate: boolean) {
+      return (await send('PUT', '/v1/me/privacy', Privacy, false, { isPrivate }))!
+    },
+
+    /** Cards for these trails (at most 100); trails the caller can't see are left out. */
+    async getTrailCards(ids: string[]) {
+      return (await get(`/v1/trail-cards?ids=${ids.map(encodeURIComponent).join(',')}`, TrailCardList)).trails
+    },
+
+    /** What the people the caller follows made or finished, newest first. Requires sign-in. */
+    getFriendsActivity(limit?: number) {
+      return get(`/v1/me/friends-activity${limit === undefined ? '' : `?limit=${limit}`}`, FriendsActivity)
+    },
+
+    /** Friends who saved the same trails as the caller, newest first. Requires sign-in. */
+    async getFriendsAlsoSaved() {
+      return (await get('/v1/me/friends-also-saved', AlsoSavedList)).saves
+    },
+
+    /** People whose @username or name contains `q` (not the caller). Requires sign-in. */
+    async searchPeople(q: string, limit?: number) {
+      const query = new URLSearchParams({ q })
+      if (limit !== undefined) query.set('limit', String(limit))
+      return (await get(`/v1/people?${query}`, PersonList)).people
+    },
+
+    /** People the caller might follow. Requires sign-in. */
+    async getSuggestedPeople(limit?: number) {
+      return (await get(`/v1/me/suggested-people${limit === undefined ? '' : `?limit=${limit}`}`, PersonList)).people
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */

@@ -2,16 +2,26 @@
  * "You both saved this": which friends (mutual follows) saved the same trails as
  * you, from friends_also_saved() (only shared saves, never a friend's other
  * saves). useFriendsAlsoSaved() loads it once per visit as a map of trail id →
- * friends, newest first. Used by the Saved page and Explore → Friends.
+ * friends, newest first. Used by the Saved page and Explore → Friends. With
+ * VITE_API_URL set, it comes from GET /v1/me/friends-also-saved.
  */
 
 import { useEffect, useState } from 'react'
 import type { TrailCreator } from '@/lib/api/trails'
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 
 export type AlsoSaved = Map<string, TrailCreator[]>
 
 export async function loadFriendsAlsoSaved(): Promise<AlsoSaved> {
+  const api = getApi()
+  if (api) {
+    const map: AlsoSaved = new Map()
+    for (const { trailId, friend } of await (await api).getFriendsAlsoSaved()) {
+      map.set(trailId, [...(map.get(trailId) ?? []), friend])
+    }
+    return map
+  }
   const { data, error } = await supabase.rpc('friends_also_saved')
   if (error) throw error
   const map: AlsoSaved = new Map()

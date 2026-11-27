@@ -6,10 +6,15 @@
  * creator; RLS lets you write only your own row. Failures throw a RatingError
  * whose `message` is ready to show.
  *
+ * With VITE_API_URL set, all three go through the API (GET / PUT / DELETE
+ * /v1/me/trails/:trailId/rating), which keeps the same rules and answers 422 for an
+ * unfinished trail and 403 for your own; the errors and messages here stay the same.
+ *
  * Owner: Jason (task J3). Used by the Rate page (/trails/:id/rate) and the Trail
  * detail page's "Rate this trail" button. Signatures are the agreed contract.
  */
 
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 
 export type RatingInput = {
@@ -91,6 +96,24 @@ function toRatingError(error: DbError): RatingError {
   return new RatingError('unknown')
 }
 
+/** Turns an API failure into a RatingError (API errors carry an HTTP status). */
+function apiRatingError(error: unknown): RatingError {
+  const status = error instanceof Error && 'status' in error ? Number((error as { status: unknown }).status) : 0
+  const codes: Record<number, RatingErrorCode> = { 400: 'invalid', 401: 'not_signed_in', 403: 'own_trail', 404: 'unavailable', 422: 'not_finished' }
+  return new RatingError(status ? (codes[status] ?? 'unknown') : 'network')
+}
+
+type Api = NonNullable<Awaited<ReturnType<typeof getApi>>>
+
+/** Runs an API call, translating its failures; callers already checked sign-in. */
+async function viaApi<T>(action: (api: Api) => Promise<T>): Promise<T> {
+  try {
+    return await action((await getApi())!)
+  } catch (error) {
+    throw apiRatingError(error)
+  }
+}
+
 /** Runs a Supabase call and rethrows anything as a RatingError. */
 async function attempt<T>(call: () => PromiseLike<{ data: T; error: DbError }>): Promise<T> {
   try {
@@ -124,6 +147,7 @@ const isScore = (n: unknown) => Number.isInteger(n) && (n as number) >= 1 && (n 
 export async function getMyRating(trailId: string): Promise<MyRating | null> {
   const userId = await currentUserId()
   if (!userId) return null
+  if (getApi()) return viaApi((api) => api.getMyRating(trailId))
   const row = await attempt(() =>
     supabase
       .from('sidequest_ratings')
@@ -153,6 +177,10 @@ export async function rateTrail(trailId: string, rating: RatingInput): Promise<v
   if (review && review.length > MAX_REVIEW_LENGTH) {
     throw new RatingError('invalid', `Keep your review under ${MAX_REVIEW_LENGTH.toLocaleString('en-US')} characters.`)
   }
+  if (getApi()) {
+    await viaApi((api) => api.rateTrail(trailId, { price, time, enjoyment, memorability, review }))
+    return
+  }
   await attempt(() =>
     supabase.from('sidequest_ratings').upsert(
       {
@@ -172,5 +200,6 @@ export async function rateTrail(trailId: string, rating: RatingInput): Promise<v
 /** Delete the current user's rating of a trail. Does nothing if there isn't one. */
 export async function deleteMyRating(trailId: string): Promise<void> {
   const userId = await requireUserId()
+  if (getApi()) return viaApi((api) => api.deleteMyRating(trailId))
   await attempt(() => supabase.from('sidequest_ratings').delete().eq('user_id', userId).eq('sidequest_id', trailId))
 }

@@ -3,7 +3,8 @@
 --
 -- Checks the rules in user_sidequests and checklist_completions: you can only
 -- sign up for scheduled sidequests, only write your own progress, only tick
--- items on a quest you've saved or started, timestamps fill in automatically, and other
+-- items on a quest that's in progress (see 17_crumb_ticks_only_while_in_progress),
+-- timestamps fill in automatically, and other
 -- people can't see your progress. Rolled back, so it leaves no data.
 --
 -- Run locally with Docker: npm run test:db. Runs in CI on every PR.
@@ -78,7 +79,7 @@ select is((select count(*)::int from public.user_sidequests), 0, 'other users ca
 select is((select count(*)::int from public.checklist_completions), 0, 'other users cannot see your checklist ticks');
 select throws_ok(
   $$insert into public.checklist_completions (user_id, checklist_item_id) values ('33333333-3333-3333-3333-333333333333', 'ca000000-0000-0000-0000-000000000001')$$,
-  '42501', null, 'cannot tick items on a quest you never saved or started');
+  '42501', null, 'cannot tick items on a quest you never started');
 
 select * from finish();
 rollback;

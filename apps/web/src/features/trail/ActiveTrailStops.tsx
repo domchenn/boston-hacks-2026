@@ -9,6 +9,8 @@
  *   (StopTransit), what to do, its crumbs and the photos you added there.
  * - The photo button on the right attaches photos from the phone's library.
  * Crumbs between stops ("Along the way") sit under the list.
+ * - On a finished trail the crumbs and rings are read-only: new ticks need the
+ *   trail in progress (RLS), so the list is only for looking back.
  */
 
 import type { CSSProperties, ReactNode } from 'react'
@@ -22,16 +24,30 @@ import type { TransitLine } from '@/types/db-values'
 import { StopPhotoButton, StopPhotoStrip } from './ActiveTrailPhotos'
 import { LegDirections } from './LegDirections'
 
-/** One crumb: a full-width toggle with a 26px ring that fills green when done. */
-function CrumbToggle({ crumb, done, saving, onToggle }: { crumb: TrailCrumb; done: boolean; saving: boolean; onToggle: () => void }) {
+/** One crumb: a full-width toggle with a 26px ring that fills green when done. Read-only on a finished trail. */
+function CrumbToggle({
+  crumb,
+  done,
+  saving,
+  readOnly,
+  onToggle,
+}: {
+  crumb: TrailCrumb
+  done: boolean
+  saving: boolean
+  readOnly: boolean
+  onToggle: () => void
+}) {
   return (
     <button
       type="button"
       aria-pressed={done}
+      disabled={readOnly}
       onClick={onToggle}
       className={cn(
-        'flex min-h-[52px] w-full cursor-pointer items-center gap-3 border-0 border-b border-line bg-transparent py-2 text-left last:border-b-0',
+        'flex min-h-[52px] w-full items-center gap-3 border-0 border-b border-line bg-transparent py-2 text-left last:border-b-0',
         'rounded-[var(--radius-sm)] focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none',
+        readOnly ? 'cursor-default' : 'cursor-pointer',
       )}
     >
       <span
@@ -115,6 +131,7 @@ export function ActiveTrailStops({
               {/* Ring: tick everything at this place. */}
               <button
                 type="button"
+                disabled={finished}
                 onClick={() => (stop.crumbs.length > 0 ? onSetStop(stop, !allDone) : onNext(i))}
                 aria-pressed={stop.crumbs.length > 0 ? allDone : undefined}
                 aria-label={
@@ -125,8 +142,9 @@ export function ActiveTrailStops({
                       : `Done at ${stop.placeName}: tick all ${stop.crumbs.length} ${stop.crumbs.length === 1 ? 'crumb' : 'crumbs'}`
                 }
                 className={cn(
-                  'num-ring relative cursor-pointer p-0 before:absolute before:-inset-2 before:content-[""]',
+                  'num-ring relative p-0 before:absolute before:-inset-2 before:content-[""]',
                   'focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none',
+                  finished ? 'cursor-default' : 'cursor-pointer',
                   allDone ? 'num-ring--done' : isNext && 'num-ring--current',
                 )}
               >
@@ -186,6 +204,7 @@ export function ActiveTrailStops({
                             crumb={crumb}
                             done={ticked.has(crumb.id)}
                             saving={pending.has(crumb.id)}
+                            readOnly={finished}
                             onToggle={() => onToggleCrumb(crumb.id)}
                           />
                         ))}
@@ -220,6 +239,7 @@ export function ActiveTrailStops({
               crumb={crumb}
               done={ticked.has(crumb.id)}
               saving={pending.has(crumb.id)}
+              readOnly={finished}
               onToggle={() => onToggleCrumb(crumb.id)}
             />
           ))}

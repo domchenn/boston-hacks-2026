@@ -4,10 +4,12 @@
  * stop with coordinates) for the map pins, and the "Near a T station" filter, which
  * checks every stop against MBTA rapid-transit stations from @/lib/mbta (straight-line
  * distance). Also the neighborhood list for the filter, and the Trending tab's
- * ranking (loadTrending). Used by ExplorePage and MapPage.
+ * ranking (loadTrending). Used by ExplorePage and MapPage. With VITE_API_URL set, the
+ * neighborhood list and Trending come from the API (GET /v1/neighborhoods, /v1/trending).
  */
 
 import { getFeed, type FeedFilters, type FeedTrail } from '@/lib/api/trails'
+import { getApi } from '@/lib/apiClient'
 import { loadStations, milesBetween } from '@/lib/mbta'
 import { supabase } from '@/lib/supabase'
 
@@ -63,6 +65,8 @@ export async function loadTrails({ nearT, ...filters }: ExploreFilters = {}): Pr
 
 /** Neighborhoods that have at least one published trail, A to Z, for the filter. */
 export async function loadNeighborhoods(): Promise<string[]> {
+  const api = getApi()
+  if (api) return (await api).getNeighborhoods()
   const { data, error } = await supabase
     .from('sidequests')
     .select('neighborhood')
@@ -90,6 +94,11 @@ export const TRENDING_DAYS = 14
 
 /** Trails with the most recent activity (trending_trails(): totals only, never who), busiest first. */
 export async function loadTrending(limit = 30): Promise<TrendingEntry[]> {
+  const api = getApi()
+  if (api) {
+    const trails = await (await api).getTrending({ days: TRENDING_DAYS, limit })
+    return trails.map((t) => ({ id: t.trailId, score: t.score, people: t.people }))
+  }
   const { data, error } = await supabase.rpc('trending_trails', { p_days: TRENDING_DAYS, p_limit: limit })
   if (error) throw error
   return (data ?? []).map((row) => ({ id: row.sidequest_id, score: row.score, people: row.people }))

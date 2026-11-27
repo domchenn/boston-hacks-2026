@@ -3,8 +3,11 @@
  * profiles.community_id. A user belongs to at most one community; trails limited
  * to a community are hidden from everyone else by RLS. Used by the Explore
  * switcher, the You page setting and Make a trail's "Who can see this" (task G6).
+ * With VITE_API_URL set, both go through the API (GET /v1/communities and
+ * PUT /v1/me/community, which only ever changes the caller's own profile).
  */
 import { useEffect, useState } from 'react'
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 
 export type Community = { id: string; name: string; slug: string }
@@ -26,6 +29,8 @@ let cache: Promise<Community[]> | null = null
 
 /** Every community, by name. Cached for the session (they rarely change). */
 export function listCommunities(): Promise<Community[]> {
+  const api = getApi()
+  if (api) cache ??= api.then((client) => client.getCommunities())
   cache ??= Promise.resolve(supabase.from('communities').select('id, name, slug').order('name')).then(
     ({ data, error }) => {
       if (error) throw error
@@ -59,6 +64,15 @@ export type SaveResult = { ok: true } | { ok: false; message: string }
 
 /** Join a community (or leave by passing null). Updates only your own profile row. */
 export async function setMyCommunity(userId: string, communityId: string | null): Promise<SaveResult> {
+  const api = getApi()
+  if (api) {
+    try {
+      await (await api).setMyCommunity(communityId)
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, message: error instanceof Error && 'status' in error ? GENERIC_ERROR : NETWORK_ERROR }
+    }
+  }
   try {
     const { data, error } = await supabase
       .from('profiles')
