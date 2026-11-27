@@ -11,6 +11,28 @@ The iOS and Android app, built with Expo (SDK 58) and Expo Router. It talks only
 
 The phone and the computer need to be on the same Wi-Fi. If they can't see each other, start with `npx expo start --tunnel` from this folder.
 
+## Install it as a real app (your own iPhone, free)
+
+This builds the app on your Mac and installs it over the cable, signed with your Apple ID. It gets its own icon and runs without the Mac. With a free Apple ID, it stops opening after **7 days**; run the command again to reinstall. (TestFlight, which needs the $99 Apple Developer Program, comes with M27.)
+
+**Once:**
+- Xcode → Settings → Accounts: add your Apple ID. Then select it → **Manage Certificates** → **+** → **Apple Development**.
+- Plug the iPhone in and tap **Trust**.
+- On the iPhone, turn on **Developer Mode** (Settings → Privacy & Security → Developer Mode); the phone restarts.
+
+**Each install:**
+```sh
+cd apps/mobile
+npx expo run:ios --device --configuration Release
+```
+Pick your iPhone and your Apple ID's team if asked. The first build takes about 10 minutes.
+
+The first time the app opens, iOS says "Untrusted Developer". Fix it in Settings → General → VPN & Device Management → your Apple ID → **Trust**.
+
+The app uses the API address from `.env`, which is staging. It's built into the app, so changing it means building again.
+
+The app's permanent ID is **`boston.breadcrumb.app`** (`ios.bundleIdentifier` / `android.package` in `app.json`). It can't change once the app is on the App Store.
+
 ## Checks
 
 From the repo root, the usual commands include the app:
