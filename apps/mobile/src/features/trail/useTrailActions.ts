@@ -2,7 +2,8 @@
  * Your status on one trail (saved, in progress, finished…) and the trail page's Start
  * and Save buttons, with the same rules as the website's useTrailActions: Save only
  * before you've started; signed out, both buttons open Log in. Start (or Continue)
- * opens the active trail (/trail/:id/go).
+ * opens the active trail (/trail/:id/go). A finished trail you haven't rated offers
+ * Rate this trail instead (canRate).
  */
 import { useCallback, useState } from 'react'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -17,7 +18,7 @@ export function useTrailActions(trailId: string) {
   const router = useRouter()
   const userId = session?.user.id ?? null
   // Tagged with the user it was loaded for, so a different account never sees a stale status.
-  const [loaded, setLoaded] = useState<{ userId: string; status: UserSidequestStatus | null } | null>(null)
+  const [loaded, setLoaded] = useState<{ userId: string; status: UserSidequestStatus | null; rated?: boolean } | null>(null)
   const [busy, setBusy] = useState<Busy>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -26,10 +27,15 @@ export function useTrailActions(trailId: string) {
     useCallback(() => {
       if (!api || !userId) return
       let cancelled = false
-      api.getMyProgress(trailId).then(
-        ({ status }) => !cancelled && setLoaded({ userId, status }),
-        () => !cancelled && setLoaded((prev) => (prev?.userId === userId ? prev : { userId, status: null })),
-      )
+      const client = api
+      client
+        .getMyProgress(trailId)
+        .then(async ({ status }) => {
+          // Only finished trails can be rated, so only then ask whether you already did.
+          const rated = status === 'completed' ? await client.getMyRating(trailId).then((r) => r !== null, () => true) : undefined
+          if (!cancelled) setLoaded({ userId, status, rated })
+        })
+        .catch(() => !cancelled && setLoaded((prev) => (prev?.userId === userId ? prev : { userId, status: null })))
       return () => {
         cancelled = true
       }
@@ -37,6 +43,8 @@ export function useTrailActions(trailId: string) {
   )
 
   const status = userId && loaded?.userId === userId ? loaded.status : null
+  /** Finished but not rated yet (false while unknown). */
+  const canRate = status === 'completed' && loaded?.rated === false
   const statusLoading = sessionLoading || (userId !== null && loaded?.userId !== userId)
 
   const run = useCallback(
@@ -67,6 +75,7 @@ export function useTrailActions(trailId: string) {
     busy,
     error,
     /** One progress row per person per trail, so Save only makes sense before you start. */
+    canRate,
     canSave: status === null || status === 'saved' || status === 'aborted',
     /** Starts the trail (or picks it back up) and opens the active trail. */
     start: async () => {
