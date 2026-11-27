@@ -7,14 +7,14 @@
  *   API checks that first (403), because RLS would otherwise show a non-admin their
  *   own reports instead of refusing;
  * - "hide" archives a trail, or deletes a review or a photo, and for a photo its file
- *   too (storage policy let_admins_remove_photo_files); then every open report on
+ *   too (storage policies let moderators remove files in both buckets); then every open report on
  *   that item is closed. "dismiss" only closes them.
  */
 import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { OpenReport, ReportBody, ReportReason, ReportTarget } from '@breadcrumb/contracts'
 import type { AuthUser } from '../auth/auth-user.js'
-import { PHOTO_BUCKET, photoStoragePath } from '../photos/photos.service.js'
+import { photoLinks, removePhotoFiles, type PhotoFile } from '../photos/photo-files.js'
 import { SupabaseClients } from '../supabase/supabase-clients.js'
 
 type DbError = { code?: string; message?: string }
@@ -84,12 +84,13 @@ export class ModerationService {
         ? db.from('sidequest_ratings').select('id, review_text, sidequest_id').in('id', ids('review')).returns<{ id: string; review_text: string | null; sidequest_id: string }[]>()
         : null,
       ids('photo').length
-        ? db.from('quest_photos').select('id, photo_url, sidequest_id').in('id', ids('photo')).returns<{ id: string; photo_url: string; sidequest_id: string }[]>()
+        ? db.from('quest_photos').select('id, photo_url, storage_path, sidequest_id').in('id', ids('photo')).returns<(PhotoFile & { id: string; sidequest_id: string })[]>()
         : null,
     ])
     const trailById = new Map((trails?.data ?? []).map((t) => [t.id, t]))
     const reviewById = new Map((reviews?.data ?? []).map((r) => [r.id, r]))
     const photoById = new Map((photos?.data ?? []).map((p) => [p.id, p]))
+    const links = await photoLinks(db, photos?.data ?? [])
     return data.map((r) => {
       let preview: OpenReport['preview'] = null
       const trail = r.target_type === 'trail' ? trailById.get(r.target_id) : undefined
@@ -97,7 +98,7 @@ export class ModerationService {
       const photo = r.target_type === 'photo' ? photoById.get(r.target_id) : undefined
       if (trail) preview = { title: trail.title, trailId: trail.id }
       else if (review) preview = { text: review.review_text, trailId: review.sidequest_id }
-      else if (photo) preview = { imageUrl: photo.photo_url, trailId: photo.sidequest_id }
+      else if (photo) preview = { ...(links.get(photo) ? { imageUrl: links.get(photo) } : {}), trailId: photo.sidequest_id }
       return {
         id: r.id,
         targetType: r.target_type,
@@ -145,13 +146,9 @@ export class ModerationService {
       const { error } = await db.from('sidequest_ratings').delete().eq('id', id)
       if (error) fail(error)
     } else {
-      const { data, error } = await db.from('quest_photos').delete().eq('id', id).select('photo_url').returns<{ photo_url: string }[]>()
+      const { data, error } = await db.from('quest_photos').delete().eq('id', id).select('photo_url, storage_path').returns<PhotoFile[]>()
       if (error) fail(error)
-      const path = data[0] ? photoStoragePath(data[0].photo_url) : null
-      if (path) {
-        const removed = await db.storage.from(PHOTO_BUCKET).remove([path])
-        if (removed.error) this.logger.warn(`couldn't remove a hidden photo's file: ${removed.error.message}`)
-      }
+      for (const problem of await removePhotoFiles(db, data)) this.logger.warn(`couldn't remove a hidden photo's file: ${problem}`)
     }
   }
 
