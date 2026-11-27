@@ -55,3 +55,16 @@ M04 merged in PR #98: the web app is in `apps/web`, and both Vercel projects nee
 ## 2026-11-26 — API hosting: Google Cloud Run (replaces Railway in D08)
 
 Status: accepted by the owner. Alternatives compared: Railway (simplest, no meaningful free tier), Render (free tier sleeps after 15 minutes and takes about a minute to wake), Fly.io (no ongoing free tier for new accounts), Cloudflare Workers (cannot run NestJS/Fastify without a rewrite). Cloud Run runs the same Docker image, scales to zero with an always-free monthly allowance and supports startup credits, at the cost of more setup. One Google Cloud project per environment: `breadcrumb-staging-515905` (new) and the existing `breadcrumb` project (which already holds the Maps keys) for production. Both have alert-only budgets ($5 staging, $10 production) that ignore credits, so they report real usage during the free trial. Spend-cap enforcement was rejected because it could pause Maps on the live site. The billing account is on the free trial and must be upgraded before the trial ends or the live site loses Maps. The image stays host-neutral, so moving later needs no code change.
+
+## 2026-11-26 — Photo privacy follows standard practice
+
+Status: accepted by the owner. For privacy, Breadcrumb adopts what well-run photo apps do by default. Any alternative gets raised with the owner first, with reasons.
+
+The practices, applied in steps:
+- metadata removed from uploads (M16a);
+- nobody can list stored photos (step 1: migration `stop_public_photo_listing`);
+- non-public photos only through short-lived links, with unguessable file names;
+- deleting a photo, trail or account deletes the files;
+- self-serve account deletion.
+
+None of these needs a service-role key: each runs as the caller under storage and table policies.
