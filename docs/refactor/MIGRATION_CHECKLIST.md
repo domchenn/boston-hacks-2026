@@ -37,7 +37,7 @@ Target implementation progress is tracked below; baseline evidence is in [BASELI
 ## Launch and later
 - [ ] M24 — Monitoring, analytics (privacy-safe), rate limits, reporting, backup and rollback checks. Depends M11; before launch.
 - [ ] M25 — Staging end-to-end regression and security checks for actual release scope. Depends migrated slices and M24.
-- [ ] M26 — Human-approved production release, backwards compatibility, smoke checks and rollback readiness. Depends M25. Release 3 (API live in production) runbook in RELEASE.md, with the one-time production Cloud Run setup and the `Deploy production API` workflow (PR from docs/release-3-runbook).
+- [ ] M26 — Human-approved production release, backwards compatibility, smoke checks and rollback readiness. Depends M25. Release 3 (API live in production) runbook in RELEASE.md, with the one-time production Cloud Run setup and the `Deploy production API` workflow (PR from docs/release-3-runbook). **Release 3 done 2026-11-27:** the API is live in production (see the RELEASE.md result); backup-5 taken; 28/28 migrations; all photos private.
 - [ ] M27 — EAS internal beta, device QA and human-approved app store release. Depends M19–M20, M24 and relevant backend readiness. Owner decision 2026-11-27: build the app first; **M24 (rate limits, alerts, uptime check) must be done before the beta goes to testers.**
 - [ ] M28 — Benchmark AI candidates only when a product feature needs AI; assess cost per successful task, quality, latency, privacy.
 - [ ] M29 — Reassess R2, Redis/BullMQ/workers, search and payments based on measured need; no mandatory adoption.
