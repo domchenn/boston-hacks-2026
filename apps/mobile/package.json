@@ -1,0 +1,34 @@
+{
+  "name": "@breadcrumb/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Breadcrumb iOS and Android app (Expo). Talks to the Breadcrumb API through @breadcrumb/contracts.",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "tsc -b ../../packages/contracts && expo start",
+    "ios": "tsc -b ../../packages/contracts && expo start --ios",
+    "typecheck": "tsc -b ../../packages/contracts && tsc --noEmit",
+    "lint": "eslint . && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-tokens.mjs",
+    "build": "tsc -b ../../packages/contracts && expo export --platform ios --output-dir dist"
+  },
+  "dependencies": {
+    "@breadcrumb/contracts": "*",
+    "expo": "~58.1.0",
+    "expo-constants": "~58.0.16",
+    "expo-linking": "~58.0.17",
+    "expo-router": "~58.0.33",
+    "expo-splash-screen": "~58.0.15",
+    "expo-status-bar": "~58.0.5",
+    "expo-system-ui": "~58.0.7",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "eslint": "^10.14.0",
+    "eslint-config-expo": "~58.0.4",
+    "typescript": "~6.0.3"
+  }
+}

@@ -98,3 +98,17 @@ None of these needs a service-role key: each runs as the caller under storage an
 **Older photos (owner decision 2026-11-26):** move into private storage during the production API release, so every photo is private. A moderator runs `POST /v1/admin/photos/move-older` (no service-role key). It cleans each file again, points the row at the private copy, makes the original uploader the owner and deletes the public file.
 
 **Also fixed:** uploaders can always see their own photo rows, which is standard (you can always delete your own content). Before, a photo on a trail you could no longer see was invisible to you, and account deletion missed its file.
+
+## 2026-11-27 — Mobile app setup (M18a)
+
+Status: accepted by the owner ("app first, M24 before the beta").
+
+- **The app** is `apps/mobile`: Expo SDK 58 with Expo Router and TypeScript strict, in the same npm workspace and lockfile. No Metro config is needed; Expo handles monorepos itself.
+- **One shared API client:** it talks only to the API, through `@breadcrumb/contracts`, like the website.
+- **React is pinned to exactly 19.3.0 in both apps.** React Native refuses to run with any other version, and npm `overrides` didn't stop it pulling in a second copy (19.3.1) for packages that accept any React. So the website moved from ^19.3.1 to 19.3.0 (a patch step down; all checks pass).
+- **Design tokens** are copied into TypeScript, since React Native can't read CSS variables. `npm run lint` checks them against docs/styles/tokens.css.
+- **Lint:** `eslint-config-expo` with ESLint 10. Because two of its plugins use APIs ESLint 10 removed, the React version is set explicitly and the import-resolution rules are off. TypeScript checks imports instead.
+- **Sign-in plan:**
+  - email and password first (M18b), with the session in the phone's secure storage (standard practice);
+  - Google next, plus Sign in with Apple, which the App Store requires when Google sign-in is offered. Both need console setup.
+- **Native projects aren't committed:** EAS generates them.

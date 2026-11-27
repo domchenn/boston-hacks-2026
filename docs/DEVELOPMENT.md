@@ -135,6 +135,15 @@ A NestJS 12 app on Fastify. It verifies Supabase logins (M08) and serves the tra
 - **Container image:** `docker build -f apps/api/Dockerfile -t breadcrumb-api .` from the repo root. Two stages: compile, then a distroless Node 22 image (no shell, non-root) with only the compiled API, `@breadcrumb/contracts` and production packages (~330 MB). Run it with the same settings as `.env.example`, e.g. `docker run -p 8080:8080 --env-file apps/api/.env breadcrumb-api`; it listens on `PORT` (8080 by default, as Cloud Run expects) and shuts down cleanly on SIGTERM. CI builds it and smoke-tests `/health` on every PR. Hosting: Google Cloud Run (staging project `breadcrumb-staging-515905`; production in the existing `breadcrumb` project). See [DECISIONS.md](refactor/DECISIONS.md).
 - Tests in `apps/api/test/` use Fastify's in-memory `inject` and a local fake Supabase key server (`test/support/fake-supabase.ts`), so they need no network.
 
+## Mobile app (`apps/mobile`)
+
+An Expo (SDK 58) app with Expo Router. It uses the API through `@breadcrumb/contracts`. To run it on an iPhone with Expo Go:
+1. `cp apps/mobile/.env.example apps/mobile/.env` (the staging API);
+2. `npm run start -w @breadcrumb/mobile`;
+3. scan the QR code.
+
+The root `lint`, `typecheck` and `build` cover it: `build` bundles iOS with `expo export`, and `lint` checks its colours against `docs/styles/tokens.css`. React is pinned to exactly 19.3.0 in both apps, because React Native requires the exact version. See [`apps/mobile/README.md`](../apps/mobile/README.md).
+
 ## Web → API switch (`VITE_API_URL`)
 
 `getFeed`/`getTrail` (`apps/web/src/lib/api/trails.ts`) and the profile and Saved page reads (`features/profile/api.ts`, `features/saved/api.ts`) go through the API when `VITE_API_URL` is set and query Supabase directly when it isn't. Signatures and return shapes are the same either way, so pages don't change. The client (`src/lib/apiClient.ts`) sends the signed-in user's Supabase token and is loaded on first use as a separate chunk, so builds without the variable don't grow. Only the staging Vercel project sets it for now; production and local dev stay on direct Supabase until the API is released. Point it only at an API that uses the same Supabase project as `VITE_SUPABASE_URL`: tokens from another project are refused (401).
