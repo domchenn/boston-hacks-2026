@@ -12,7 +12,7 @@ export default function TabsLayout() {
 
   return (
     <NativeTabs
-      tintColor={colors.crumbStrong}
+      tintColor={colors.ink}
       labelStyle={{ fontFamily: fonts.medium }}
       minimizeBehavior="onScrollDown"
     >

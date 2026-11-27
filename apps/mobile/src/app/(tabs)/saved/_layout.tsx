@@ -1,8 +1,8 @@
 /**
- * The Saved tab's stack (see TabStack): its main screen has a large "Saved" title.
+ * The Saved tab's stack (see TabStack): Saved draws its own "Your trails" header.
  */
 import { TabStack } from '@/components/TabStack'
 
 export default function SavedLayout() {
-  return <TabStack title="Saved" />
+  return <TabStack title="Saved" header={false} />
 }

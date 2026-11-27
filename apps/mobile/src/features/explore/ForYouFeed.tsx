@@ -1,8 +1,8 @@
 /**
- * Explore → For you: the greeting, a Resume banner that reopens the trail you're in
- * the middle of (signed in), the Open late / Under $10 chips (the API's lateNight and maxCost
- * filters) and the trail list, with pull-to-refresh. `header` (the top tabs) scrolls
- * with the list.
+ * Explore → For you (Mobile-Explore mockup): the greeting as a big question with a
+ * line under it, a Resume banner ("Stop 3 of 7 · …") that reopens the trail you're in
+ * the middle of, the Open late / Under $10 chips (the API's lateNight and maxCost
+ * filters) and the trails as rows, with pull-to-refresh. `header` scrolls with the list.
  */
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native'
@@ -11,14 +11,17 @@ import type { FeedTrail, SavedTrail, TrailListFilters } from '@breadcrumb/contra
 import { AppText } from '@/components/AppText'
 import { Chip } from '@/components/Chip'
 import { StateView } from '@/components/StateView'
-import { TrailCard } from '@/components/TrailCard'
+import { TrailRow } from '@/components/TrailRow'
+import { readSavedStop } from '@/features/trail/useActiveTrail'
 import { api } from '@/lib/api'
+import { tapLight } from '@/lib/haptics'
 import { useSession } from '@/lib/session'
 import { colors, fonts, radius, text } from '@/theme/tokens'
 import { exploreGreeting } from './greeting'
 
 type Filters = { late: boolean; cheap: boolean }
 type State = { status: 'loading' } | { status: 'ready'; trails: FeedTrail[] } | { status: 'error' }
+type Resume = { trail: SavedTrail; stop: number | null }
 
 /** The "Under $10" chip. */
 const CHEAP_MAX = 10
@@ -36,23 +39,34 @@ async function fetchTrails(filters: Filters): Promise<State> {
   }
 }
 
-/** The most recently touched trail you've started, for the Resume banner. Null when none (or signed out). */
-function useResumeTrail(signedIn: boolean): SavedTrail | null {
-  const [trail, setTrail] = useState<SavedTrail | null>(null)
+/** "Still out, Dom? Some trails go late." → ["Still out, Dom?", "Some trails go late."] */
+function splitGreeting(line: string): [string, string | null] {
+  const end = line.search(/[.!?](\s|$)/)
+  if (end < 0 || end === line.length - 1) return [line, null]
+  return [line.slice(0, end + 1), line.slice(end + 2) || null]
+}
+
+/** The most recent trail you've started, and the stop you were on (this phone only). */
+function useResume(userId: string | null): Resume | null {
+  const [resume, setResume] = useState<{ userId: string; value: Resume | null } | null>(null)
   useFocusEffect(
     useCallback(() => {
-      if (!api || !signedIn) return
+      if (!api || !userId) return
       let cancelled = false
-      api.getSavedTrails().then(
-        (trails) => !cancelled && setTrail(trails.find((t) => t.status === 'in_progress') ?? null),
-        () => undefined,
-      )
+      api
+        .getSavedTrails()
+        .then(async (trails) => {
+          const trail = trails.find((t) => t.status === 'in_progress')
+          const stop = trail ? await readSavedStop(userId, trail.id) : null
+          if (!cancelled) setResume({ userId, value: trail ? { trail, stop } : null })
+        })
+        .catch(() => undefined)
       return () => {
         cancelled = true
       }
-    }, [signedIn]),
+    }, [userId]),
   )
-  return signedIn ? trail : null
+  return userId && resume?.userId === userId ? resume.value : null
 }
 
 export function ForYouFeed({ header }: { header: ReactElement }) {
@@ -61,8 +75,9 @@ export function ForYouFeed({ header }: { header: ReactElement }) {
   const [filters, setFilters] = useState<Filters>({ late: false, cheap: false })
   const [state, setState] = useState<State>({ status: 'loading' })
   const [refreshing, setRefreshing] = useState(false)
-  const resume = useResumeTrail(Boolean(session))
+  const resume = useResume(session?.user.id ?? null)
   const name = profile?.displayName?.split(' ')[0] || profile?.username || null
+  const [question, line] = splitGreeting(exploreGreeting(new Date(), name))
 
   useEffect(() => {
     let cancelled = false
@@ -78,25 +93,33 @@ export function ForYouFeed({ header }: { header: ReactElement }) {
     setRefreshing(false)
   }
 
-  const open = (id: string) => router.push(`/trail/${id}`)
   const toggle = (key: keyof Filters) => {
+    tapLight()
     setState({ status: 'loading' })
     setFilters((f) => ({ ...f, [key]: !f[key] }))
   }
 
+  const stopText =
+    resume && resume.stop !== null && resume.trail.stopCount > 0
+      ? `Stop ${Math.min(resume.stop + 1, resume.trail.stopCount)} of ${resume.trail.stopCount}`
+      : 'In progress'
+
   const top = (
-    <View style={styles.top}>
+    <View>
       {header}
-      <AppText style={styles.greeting}>{exploreGreeting(new Date(), name)}</AppText>
+      <View style={styles.intro}>
+        <AppText style={styles.question}>{question}</AppText>
+        {line ? <AppText style={styles.line}>{line}</AppText> : null}
+      </View>
       {resume ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Resume ${resume.title}`}
-          onPress={() => router.push(`/trail/${resume.id}/go`)}
+          accessibilityLabel={`Resume ${resume.trail.title}, ${stopText}`}
+          onPress={() => router.push(`/trail/${resume.trail.id}/go`)}
           style={({ pressed }) => [styles.resume, pressed && styles.resumePressed]}
         >
           <AppText style={styles.resumeText} numberOfLines={1}>
-            <AppText style={styles.resumeStrong}>In progress</AppText> · {resume.title}
+            <AppText style={styles.resumeStrong}>{stopText}</AppText> · {resume.trail.title}
           </AppText>
           <AppText style={styles.resumeStrong}>Resume →</AppText>
         </Pressable>
@@ -105,6 +128,7 @@ export function ForYouFeed({ header }: { header: ReactElement }) {
         <Chip label="Open late" on={filters.late} onPress={() => toggle('late')} />
         <Chip label={`Under $${CHEAP_MAX}`} on={filters.cheap} onPress={() => toggle('cheap')} />
       </View>
+      <AppText style={styles.section}>{filters.late || filters.cheap ? 'Matching trails' : 'Trails'}</AppText>
     </View>
   )
 
@@ -113,13 +137,21 @@ export function ForYouFeed({ header }: { header: ReactElement }) {
       contentInsetAdjustmentBehavior="automatic"
       data={state.status === 'ready' ? state.trails : []}
       keyExtractor={(trail) => trail.id}
-      renderItem={({ item }) => <TrailCard trail={item} onPress={() => open(item.id)} />}
+      renderItem={({ item }) => (
+        <TrailRow
+          trail={item}
+          eyebrow={item.places.some((p) => p.openLate) ? 'Open late' : undefined}
+          onPress={() => router.push(`/trail/${item.id}`)}
+        />
+      )}
       ListHeaderComponent={top}
       contentContainerStyle={styles.list}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.crumbStrong} />}
       ListEmptyComponent={
         state.status === 'loading' ? (
-          <StateView kind="loading" />
+          <View style={styles.loading}>
+            <StateView kind="loading" />
+          </View>
         ) : state.status === 'error' ? (
           <StateView
             kind="message"
@@ -138,20 +170,24 @@ export function ForYouFeed({ header }: { header: ReactElement }) {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
-  top: { gap: 16, marginBottom: 4 },
-  greeting: { fontFamily: fonts.extrabold, fontSize: text.xxl, lineHeight: 33, color: colors.ink, letterSpacing: -0.4 },
+  list: { paddingHorizontal: 16, paddingBottom: 32 },
+  intro: { marginTop: 22, gap: 4 },
+  question: { fontFamily: fonts.extrabold, fontSize: text.xxl, lineHeight: 33, color: colors.ink, letterSpacing: -0.6 },
+  line: { fontFamily: fonts.regular, fontSize: text.md, color: colors.muted, lineHeight: 22 },
   resume: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginTop: 18,
     backgroundColor: colors.crumbTint,
-    borderRadius: radius.small,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
-  resumePressed: { opacity: 0.8 },
+  resumePressed: { opacity: 0.75 },
   resumeText: { flex: 1, color: colors.ink, fontSize: text.base },
   resumeStrong: { fontFamily: fonts.bold, color: colors.crumbStrong, fontSize: text.base },
-  chips: { flexDirection: 'row', gap: 8 },
+  chips: { flexDirection: 'row', gap: 8, marginTop: 16 },
+  section: { fontFamily: fonts.bold, fontSize: text.xl, color: colors.ink, marginTop: 28, marginBottom: 2, letterSpacing: -0.2 },
+  loading: { paddingTop: 40 },
 })

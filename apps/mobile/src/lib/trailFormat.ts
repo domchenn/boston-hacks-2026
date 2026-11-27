@@ -1,7 +1,7 @@
 /**
  * How the app words trail facts, matching the website (apps/web/src/components/
  * trailFormat.ts): short category names, cost ("~$25" / "Free"), length ("2.5 hr") and
- * how you get to a stop. Used by TrailCard and the trail page.
+ * how you get to a stop. Used by TrailRow and the trail pages.
  */
 import type { Category, TravelMode } from '@breadcrumb/contracts'
 

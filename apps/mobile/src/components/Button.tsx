@@ -1,10 +1,10 @@
 /**
- * The app's button, from the style guide: pill-shaped, 52 pt tall; "primary" is the
- * brand orange with white text, "secondary" white with an ink outline, "ghost" plain
- * text. Shows a spinner and ignores taps while `busy`.
+ * The app's button, as in the mobile mockups: a rounded rectangle 52 pt tall; "primary"
+ * is the brand orange with white text, "secondary" white with a light outline, "ghost"
+ * plain text. One primary per screen. Shows a spinner and ignores taps while `busy`.
  */
 import { ActivityIndicator, Pressable, StyleSheet, type PressableProps } from 'react-native'
-import { colors, fonts, text } from '@/theme/tokens'
+import { colors, fonts, radius, text } from '@/theme/tokens'
 import { AppText } from './AppText'
 
 type Props = Omit<PressableProps, 'children'> & {
@@ -39,10 +39,10 @@ export function Button({ label, variant = 'primary', busy = false, disabled, sty
 }
 
 const styles = StyleSheet.create({
-  base: { minHeight: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
+  base: { minHeight: 52, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
   primary: { backgroundColor: colors.crumbStrong },
   primaryPressed: { backgroundColor: colors.crumbDeep },
-  secondary: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.ink },
+  secondary: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.lineStrong },
   secondaryPressed: { backgroundColor: colors.sand },
   ghost: { backgroundColor: 'transparent' },
   ghostPressed: { backgroundColor: colors.sand },

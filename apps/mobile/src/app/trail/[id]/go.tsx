@@ -16,7 +16,8 @@ import { StateView } from '@/components/StateView'
 import { useActiveTrail } from '@/features/trail/useActiveTrail'
 import { useSession } from '@/lib/session'
 import { TRAVEL_LABELS } from '@/lib/trailFormat'
-import { colors, fonts, radius, text } from '@/theme/tokens'
+import { tapLight, tapSuccess } from '@/lib/haptics'
+import { colors, floatShadow, fonts, text } from '@/theme/tokens'
 
 export default function ActiveTrailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -109,10 +110,16 @@ function ActiveTrail({ trailId, userId }: { trailId: string; userId: string }) {
       ticked={active.ticked}
       error={active.error}
       finishing={active.finishing}
-      onToggle={(crumbId) => void active.toggle(crumbId)}
+      onToggle={(crumbId) => {
+        tapLight()
+        void active.toggle(crumbId)
+      }}
       onStop={active.goToStop}
       onFinish={async () => {
-        if (await active.finish()) setFinished(true)
+        if (await active.finish()) {
+          tapSuccess()
+          setFinished(true)
+        }
       }}
       onClose={close}
     />
@@ -167,16 +174,16 @@ function StopView({
           ))}
         </View>
 
-        <AppText variant="meta">
+        <AppText style={styles.meta} numberOfLines={1}>
           {trail.title} · stop {index + 1} of {trail.stops.length}
         </AppText>
-        <AppText variant="title">{stop.placeName}</AppText>
-        {how || what ? <AppText variant="secondary">{[how, what].filter(Boolean).join(' · ')}</AppText> : null}
-        {stop.address ? <AppText variant="meta">{stop.address}</AppText> : null}
+        <AppText style={styles.stopName}>{stop.placeName}</AppText>
+        {how || what ? <AppText style={styles.what}>{[how, what].filter(Boolean).join(' · ')}</AppText> : null}
+        {stop.address ? <AppText style={styles.address}>{stop.address}</AppText> : null}
 
         {stop.crumbs.length > 0 ? (
           <View style={styles.crumbs}>
-            <AppText variant="label">
+            <AppText style={styles.crumbsTitle}>
               Crumbs here · {doneHere} of {stop.crumbs.length}
             </AppText>
             {stop.crumbs.map((crumb) => (
@@ -187,7 +194,7 @@ function StopView({
 
         {last && trail.betweenStopCrumbs.length > 0 ? (
           <View style={styles.crumbs}>
-            <AppText variant="label">Along the way</AppText>
+            <AppText style={styles.crumbsTitle}>Along the way</AppText>
             {trail.betweenStopCrumbs.map((crumb) => (
               <CrumbRow key={crumb.id} crumb={crumb} done={ticked.has(crumb.id)} onPress={() => onToggle(crumb.id)} />
             ))}
@@ -243,40 +250,46 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: 6,
     marginLeft: 16,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    marginBottom: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
     borderRadius: 999,
-    backgroundColor: colors.sand,
+    backgroundColor: colors.white,
+    ...floatShadow,
   },
-  pausePressed: { backgroundColor: colors.line },
-  pauseLabel: { fontFamily: fonts.bold, fontSize: text.base, color: colors.ink },
-  content: { paddingHorizontal: 20, paddingTop: 8, gap: 8 },
-  progress: { flexDirection: 'row', gap: 4, marginBottom: 8 },
-  segment: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.line },
+  pausePressed: { backgroundColor: colors.sand },
+  pauseLabel: { fontFamily: fonts.bold, fontSize: text.md, color: colors.ink },
+  content: { paddingHorizontal: 16, paddingTop: 4 },
+  progress: { flexDirection: 'row', gap: 5, marginBottom: 18 },
+  segment: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.line },
   segmentDone: { backgroundColor: colors.crumb },
   segmentNow: { backgroundColor: colors.crumbTint },
-  crumbs: { marginTop: 12 },
+  meta: { fontFamily: fonts.regular, fontSize: text.base, color: colors.muted },
+  stopName: { fontFamily: fonts.extrabold, fontSize: text.xxl, lineHeight: 34, color: colors.ink, letterSpacing: -0.8, marginTop: 6 },
+  what: { fontFamily: fonts.regular, fontSize: text.md, lineHeight: 23, color: colors.ink2, marginTop: 6 },
+  address: { fontFamily: fonts.regular, fontSize: text.sm, color: colors.muted, marginTop: 4 },
+  crumbs: { marginTop: 22 },
+  crumbsTitle: { fontFamily: fonts.semibold, fontSize: text.base, color: colors.muted, marginBottom: 2 },
   crumb: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
+    paddingVertical: 15,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.lineStrong,
   },
-  crumbPressed: { backgroundColor: colors.sand },
+  crumbPressed: { opacity: 0.6 },
   box: {
     width: 26,
     height: 26,
-    borderRadius: radius.small / 2 + 2,
+    borderRadius: 7,
     borderWidth: 2,
     borderColor: colors.lineStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
   boxDone: { backgroundColor: colors.crumbStrong, borderColor: colors.crumbStrong },
-  crumbText: { flex: 1, fontSize: text.md, color: colors.ink, lineHeight: 22 },
+  crumbText: { flex: 1, fontFamily: fonts.medium, fontSize: text.lg, color: colors.ink, lineHeight: 23 },
   crumbDone: { color: colors.muted, textDecorationLine: 'line-through' },
   bar: {
     position: 'absolute',
@@ -284,7 +297,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: colors.white,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 12,
     gap: 8,
   },
