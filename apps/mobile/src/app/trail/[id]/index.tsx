@@ -1,21 +1,24 @@
 /**
  * A trail's page (Mobile-Detail mockup), full screen above the tabs: round back and
  * bookmark buttons, the category in orange, title, facts, description, then the
- * numbered stops with what to do, how you get there and their crumbs. A bottom bar has
- * Start trail (Continue once started; opens go.tsx), or Rate this trail once you've
- * finished it, and Save. The route map comes later.
+ * numbered stops with what to do, how you get there and their crumbs, then photos
+ * (add yours once you've saved, started or finished it; long-press yours to delete) and
+ * reviews. A bottom bar has Start trail (Continue once started; opens go.tsx), Rate
+ * this trail / Edit your review once finished, and Save. Reloads when shown again. The route map comes later.
  */
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Bookmark, ChevronLeft } from 'lucide-react-native'
-import type { TrailCrumb, TrailDetail, TrailStop } from '@breadcrumb/contracts'
+import { Bookmark, ChevronLeft, Star } from 'lucide-react-native'
+import type { TrailCrumb, TrailDetail, TrailReview, TrailStop } from '@breadcrumb/contracts'
 import { AppText } from '@/components/AppText'
 import { Button } from '@/components/Button'
 import { IconButton } from '@/components/IconButton'
+import { PhotoStrip } from '@/components/PhotoStrip'
 import { StateView } from '@/components/StateView'
 import { useTrailActions } from '@/features/trail/useTrailActions'
+import { useTrailPhotos } from '@/features/trail/useTrailPhotos'
 import { api } from '@/lib/api'
 import { useSession } from '@/lib/session'
 import { categoryLabel, formatCost, formatMinutes, stopCount, TRAVEL_LABELS } from '@/lib/trailFormat'
@@ -41,13 +44,20 @@ export default function TrailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const [state, setState] = useState<{ id: string; value: State } | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    fetchTrail(id).then((value) => !cancelled && setState({ id, value }))
-    return () => {
-      cancelled = true
-    }
-  }, [id])
+  // Reloaded whenever the page comes back into view, so a review you just posted shows up.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+      fetchTrail(id).then((value) => {
+        if (cancelled) return
+        // A failed refresh keeps the trail already on screen.
+        setState((prev) => (prev?.id === id && prev.value.status === 'ready' && value.status === 'error' ? prev : { id, value }))
+      })
+      return () => {
+        cancelled = true
+      }
+    }, [id]),
+  )
 
   const current = state?.id === id ? state.value : { status: 'loading' as const }
   if (current.status === 'ready') return <TrailPage trail={current.trail} />
@@ -88,7 +98,11 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const userId = useSession().session?.user.id ?? null
+  const photos = useTrailPhotos(trail.id, userId)
+  const own = trail.creator?.id === userId
   const actions = useTrailActions(trail.id)
+  // The API takes photos only from people who saved, started or finished the trail.
+  const canAddPhoto = actions.status === 'saved' || actions.status === 'in_progress' || actions.status === 'completed'
   const saved = actions.status === 'saved'
 
   const eyebrow = categoryLabel(trail.category, trail.customCategory)
@@ -144,13 +158,45 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
             ))}
           </View>
         ) : null}
+
+        {photos.photos.length > 0 || canAddPhoto ? (
+          <View style={styles.section}>
+            <AppText style={styles.sectionTitle}>Photos</AppText>
+            {photos.error ? <AppText style={styles.error}>{photos.error}</AppText> : null}
+            <PhotoStrip
+              photos={photos.photos}
+              isMine={photos.isMine}
+              onAdd={canAddPhoto ? (source) => void photos.add(null, source) : undefined}
+              uploading={photos.uploading !== null}
+              onDelete={(photo) => void photos.remove(photo)}
+            />
+          </View>
+        ) : null}
+
+        <View style={styles.section}>
+          <AppText style={styles.sectionTitle}>
+            {trail.rating.count === 0 ? 'Reviews' : `Reviews · ★ ${trail.rating.average?.toFixed(1)} (${trail.rating.count})`}
+          </AppText>
+          {trail.reviews.length === 0 ? (
+            <AppText style={styles.stopSub}>No reviews yet. Finish the trail to leave the first one.</AppText>
+          ) : (
+            trail.reviews.map((review) => <ReviewRow key={review.id} review={review} mine={review.reviewer?.id === userId} />)
+          )}
+        </View>
       </ScrollView>
 
       <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         {actions.error ? <AppText style={styles.error}>{actions.error}</AppText> : null}
         <View style={styles.buttons}>
-          {actions.canRate && trail.creator?.id !== userId ? (
+          {actions.canRate && !own ? (
             <Button style={styles.startButton} label="Rate this trail" onPress={() => router.push(`/trail/${trail.id}/rate`)} />
+          ) : actions.status === 'completed' && !own ? (
+            <Button
+              style={styles.startButton}
+              variant="secondary"
+              label="Edit your review"
+              onPress={() => router.push(`/trail/${trail.id}/rate`)}
+            />
           ) : (
             <Button
               style={styles.startButton}
@@ -194,6 +240,27 @@ function StopRow({ stop, number, last }: { stop: TrailStop; number: number; last
   )
 }
 
+/** "@maya · ★★★★☆ · Nov 2" then their note. Yours says "You". */
+function ReviewRow({ review, mine }: { review: TrailReview; mine: boolean }) {
+  const who = mine ? 'You' : review.reviewer?.username ? `@${review.reviewer.username}` : review.reviewer?.display_name || 'Someone'
+  const date = new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const stars = Math.round(review.overall)
+  return (
+    <View style={styles.review}>
+      <View style={styles.reviewHead}>
+        <AppText style={styles.reviewWho}>{who}</AppText>
+        <View style={styles.reviewStars} accessibilityLabel={`${stars} of 5 stars`}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star key={n} size={13} strokeWidth={2} color={colors.crumbStrong} fill={n <= stars ? colors.crumbStrong : 'none'} />
+          ))}
+        </View>
+        <AppText style={styles.reviewDate}>{date}</AppText>
+      </View>
+      {review.text ? <AppText style={styles.reviewText}>{review.text}</AppText> : null}
+    </View>
+  )
+}
+
 function CrumbLine({ crumb }: { crumb: TrailCrumb }) {
   return (
     <AppText style={styles.crumb}>
@@ -222,6 +289,12 @@ const styles = StyleSheet.create({
   stopSub: { fontFamily: fonts.regular, fontSize: text.base, color: colors.muted, lineHeight: 20 },
   crumb: { fontFamily: fonts.regular, fontSize: text.sm, color: colors.ink2, lineHeight: 19, marginTop: 2 },
   crumbKind: { fontFamily: fonts.semibold, fontSize: text.sm, color: colors.crumbStrong },
+  review: { paddingVertical: 12, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.lineStrong },
+  reviewHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reviewWho: { fontFamily: fonts.semibold, fontSize: text.base, color: colors.ink },
+  reviewStars: { flexDirection: 'row', gap: 1 },
+  reviewDate: { fontFamily: fonts.regular, fontSize: text.sm, color: colors.muted },
+  reviewText: { fontFamily: fonts.regular, fontSize: text.base, color: colors.ink2, lineHeight: 21 },
   bar: {
     position: 'absolute',
     left: 0,

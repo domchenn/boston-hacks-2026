@@ -1,16 +1,19 @@
 /**
- * Your photos on a trail, by stop, for the active trail (like the website's
- * useStopPhotos): add() takes a photo or picks one from the library, shrinks it to
- * 1600 px as a fresh JPEG on the phone (under the API's 5 MB limit, with no location or
- * camera data; the API cleans it again) and uploads it captioned "At <place>". remove() deletes one.
+ * A trail's photos you can see (GET /v1/trails/:id/photos), for the trail page and the
+ * active trail's stops. add() takes a photo or picks one from the library, shrinks it
+ * to 1600 px as a fresh JPEG on the phone (under the API's 5 MB limit, with no location
+ * or camera data; the API cleans it again) and uploads it, at a stop ("At <place>") or
+ * for the whole trail. remove() deletes one of yours. Adding needs a saved, started or
+ * finished trail (the API checks).
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useFocusEffect } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
 import type { TrailPhoto, TrailStop } from '@breadcrumb/contracts'
+import type { PhotoSource } from '@/components/PhotoStrip'
 import { api, statusOf } from '@/lib/api'
 
-export type PhotoSource = 'camera' | 'library'
 
 /** Longest side of an uploaded photo, as the API stores it. */
 const MAX_SIDE = 1600
@@ -33,26 +36,29 @@ async function pickPhoto(source: PhotoSource): Promise<string | null | 'denied'>
   return saved.uri
 }
 
-export function useStopPhotos(trailId: string, userId: string) {
+export function useTrailPhotos(trailId: string, userId: string | null) {
   const [photos, setPhotos] = useState<TrailPhoto[]>([])
   /** The stop a photo is uploading for, if any. */
   const [uploading, setUploading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!api) return
-    let cancelled = false
-    api.getTrailPhotos(trailId).then(
-      (all) => !cancelled && setPhotos(all.filter((p) => p.uploader?.id === userId)),
-      () => undefined,
-    )
-    return () => {
-      cancelled = true
-    }
-  }, [trailId, userId])
+  // Reloaded whenever the screen comes back into view (e.g. after adding photos on the trail).
+  useFocusEffect(
+    useCallback(() => {
+      if (!api) return
+      let cancelled = false
+      api.getTrailPhotos(trailId).then(
+        (all) => !cancelled && setPhotos(all),
+        () => undefined,
+      )
+      return () => {
+        cancelled = true
+      }
+    }, [trailId]),
+  )
 
   const add = useCallback(
-    async (stop: TrailStop, source: PhotoSource) => {
+    async (stop: TrailStop | null, source: PhotoSource) => {
       if (!api) return
       setError(null)
       let uri: string | null | 'denied'
@@ -67,10 +73,14 @@ export function useStopPhotos(trailId: string, userId: string) {
         return
       }
       if (!uri) return
-      setUploading(stop.id)
+      setUploading(stop?.id ?? 'trail')
       try {
         const image = await (await fetch(uri)).blob()
-        const photo = await api.addTrailPhoto(trailId, image, { stopId: stop.id, caption: `At ${stop.placeName}`.slice(0, 300) })
+        const photo = await api.addTrailPhoto(
+          trailId,
+          image,
+          stop ? { stopId: stop.id, caption: `At ${stop.placeName}`.slice(0, 300) } : {},
+        )
         setPhotos((prev) => [photo, ...prev])
       } catch (err) {
         setError(statusOf(err) === 413 ? 'That photo is too big. Try another one.' : 'Your photo didn’t upload. Check your connection and try again.')
@@ -93,5 +103,8 @@ export function useStopPhotos(trailId: string, userId: string) {
     }
   }, [photos])
 
-  return { photos, uploading, error, add, remove }
+  /** Whether a photo is one of yours (you can delete it). */
+  const isMine = useCallback((photo: TrailPhoto) => userId !== null && photo.uploader?.id === userId, [userId])
+
+  return { photos, uploading, error, add, remove, isMine }
 }
