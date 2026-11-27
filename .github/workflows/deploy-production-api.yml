@@ -1,0 +1,80 @@
+# Deploy production API: a manual, owner-run deploy of `main`'s API to the production
+# Cloud Run service. Run it from GitHub → Actions → "Deploy production API" → Run
+# workflow (branch: main), typing "deploy" to confirm. It only deploys the API and
+# checks it answers; the website is deployed by hand in Vercel (see
+# docs/refactor/RELEASE.md), because turning the API on for the website is a setting.
+#
+# Google login uses Workload Identity Federation in the production project: GitHub's
+# short-lived OIDC token is exchanged for access as a production deployer account
+# that Google only allows for this repository on refs/heads/main. No key is stored.
+# The GitHub environment `production` (main only) guards it.
+#
+# Needs (one-time setup in RELEASE.md, release 3): repository variables
+# GCP_PROD_WIF_PROVIDER, GCP_PROD_DEPLOY_SA and PROD_API_URL.
+name: Deploy production API
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "deploy" to deploy main's API to production
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production-api
+  cancel-in-progress: false
+
+env:
+  PROJECT: project-647004cf-4bb8-4512-9bb
+  REGION: us-east5
+  SERVICE: breadcrumb-api
+
+jobs:
+  deploy:
+    name: Deploy main's API to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Only deploy main, and only when confirmed
+        if: github.ref != 'refs/heads/main' || inputs.confirm != 'deploy'
+        run: |
+          echo "::error::Run this on main and type deploy to confirm (got ${{ github.ref }}, confirm=${{ inputs.confirm }})."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - name: Sign in to Google Cloud (no stored keys)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_PROD_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_PROD_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push the API image
+        id: image
+        run: |
+          image="${REGION}-docker.pkg.dev/${PROJECT}/breadcrumb/api:${GITHUB_SHA::7}"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker buildx build --platform linux/amd64 --provenance=false --sbom=false \
+            -f apps/api/Dockerfile -t "$image" --push .
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy the API to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" \
+            --image "${{ steps.image.outputs.image }}" --quiet
+
+      - name: Check the API answers as production
+        env:
+          API_URL: ${{ vars.PROD_API_URL }}
+        run: |
+          for _ in $(seq 1 10); do curl -fsS "$API_URL/health" && break; sleep 3; done
+          curl -fsS "$API_URL/health" | grep -q '"ok"'
+          curl -fsS "$API_URL/v1/meta" | grep -q '"production"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/v1/trails")" = 200
