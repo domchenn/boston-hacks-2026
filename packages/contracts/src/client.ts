@@ -16,7 +16,18 @@ import {
 import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
 import { MyRatingResponse, type RatingBody } from './ratings.js'
 import { FinishedTrailList } from './badges.js'
-import { CloseFriendState, FollowCounts, FollowState, PersonIdList, PersonList, Privacy, Relationship } from './friends.js'
+import {
+  AlsoSavedList,
+  CloseFriendState,
+  FollowCounts,
+  FollowState,
+  FriendsActivity,
+  PersonIdList,
+  PersonList,
+  Privacy,
+  Relationship,
+  TrailCardList,
+} from './friends.js'
 import { CommunityList, MyCommunity } from './communities.js'
 import { NeighborhoodList, TrendingList, type TrendingQuery } from './explore.js'
 import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
@@ -251,6 +262,33 @@ export function createApiClient(options: ApiClientOptions) {
     /** Make the caller's account private (trails visible to friends only) or public. Requires sign-in. */
     async setPrivateAccount(isPrivate: boolean) {
       return (await send('PUT', '/v1/me/privacy', Privacy, false, { isPrivate }))!
+    },
+
+    /** Cards for these trails (at most 100); trails the caller can't see are left out. */
+    async getTrailCards(ids: string[]) {
+      return (await get(`/v1/trail-cards?ids=${ids.map(encodeURIComponent).join(',')}`, TrailCardList)).trails
+    },
+
+    /** What the people the caller follows made or finished, newest first. Requires sign-in. */
+    getFriendsActivity(limit?: number) {
+      return get(`/v1/me/friends-activity${limit === undefined ? '' : `?limit=${limit}`}`, FriendsActivity)
+    },
+
+    /** Friends who saved the same trails as the caller, newest first. Requires sign-in. */
+    async getFriendsAlsoSaved() {
+      return (await get('/v1/me/friends-also-saved', AlsoSavedList)).saves
+    },
+
+    /** People whose @username or name contains `q` (not the caller). Requires sign-in. */
+    async searchPeople(q: string, limit?: number) {
+      const query = new URLSearchParams({ q })
+      if (limit !== undefined) query.set('limit', String(limit))
+      return (await get(`/v1/people?${query}`, PersonList)).people
+    },
+
+    /** People the caller might follow. Requires sign-in. */
+    async getSuggestedPeople(limit?: number) {
+      return (await get(`/v1/me/suggested-people${limit === undefined ? '' : `?limit=${limit}`}`, PersonList)).people
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */

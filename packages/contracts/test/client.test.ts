@@ -236,6 +236,55 @@ describe('createApiClient', () => {
       ['/v1/me/privacy', 'PUT', '{"isPrivate":true}'],
     ])
   })
+
+  it('calls the activity, also-saved, trail card and people routes', async () => {
+    const id = trailDetail.id
+    const person = { id, username: 'sam', display_name: 'Sam', avatar_url: null }
+    const card = {
+      id,
+      title: 'Walk',
+      category: null,
+      customCategory: null,
+      neighborhood: null,
+      estimatedCost: null,
+      estimatedMinutes: null,
+      scheduledAt: null,
+      stopCount: 0,
+      firstStopName: null,
+      lastStopName: null,
+      rating: { average: null, count: 0 },
+      creator: null,
+    }
+    const urls: string[] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {
+      urls.push(String(url))
+      const path = new URL(String(url)).pathname
+      const body =
+        path === '/v1/trail-cards'
+          ? { trails: [card] }
+          : path === '/v1/me/friends-activity'
+            ? { items: [{ person, kind: 'made', trailId: id, at: '2026-11-20T12:00:00Z' }], trails: [card] }
+            : path === '/v1/me/friends-also-saved'
+              ? { saves: [{ trailId: id, friend: person }] }
+              : { people: [person] }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.getTrailCards([id, id])).toEqual([card])
+    expect((await client.getFriendsActivity(12)).items).toHaveLength(1)
+    expect(await client.getFriendsActivity()).toBeTruthy()
+    expect(await client.getFriendsAlsoSaved()).toEqual([{ trailId: id, friend: person }])
+    expect(await client.searchPeople('@sam b', 5)).toEqual([person])
+    expect(await client.getSuggestedPeople()).toEqual([person])
+    expect(urls).toEqual([
+      `https://api.example/v1/trail-cards?ids=${id},${id}`,
+      'https://api.example/v1/me/friends-activity?limit=12',
+      'https://api.example/v1/me/friends-activity',
+      'https://api.example/v1/me/friends-also-saved',
+      'https://api.example/v1/people?q=%40sam+b&limit=5',
+      'https://api.example/v1/me/suggested-people',
+    ])
+  })
 })
 
 describe('RatingBody', () => {
