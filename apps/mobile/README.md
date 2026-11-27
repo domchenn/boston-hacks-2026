@@ -42,8 +42,17 @@ From the repo root, the usual commands include the app:
 
 `npx expo-doctor` (in this folder) checks Expo's dependencies and settings.
 
+## What's in the app so far
+
+- **Tabs**, as in the style guide: **Explore · Map · + · Saved · You**. The **+** (Make a trail) is a raised orange button.
+- **Explore:** the trail list. **Saved:** your saved and started trails (signed in). **You:** your name, Edit profile and Log out.
+- **Map** and **Make a trail** are placeholders for now.
+- **Log in / Create account** with email and password. New accounts pick a username next, as on the website.
+- **The login session is stored encrypted on the phone,** as Supabase's Expo guide recommends: the key is in the iPhone Keychain (expo-secure-store), and the encrypted session is in AsyncStorage. Everything else goes through the API, which gets the signed-in user's access token.
+- **Shared building blocks** in `src/components`: `AppText` (the type scale), `Button`, `TextField`, `StateView` (loading, empty and error states), `TrailCard` and `TabBar`. Use them instead of styling screens directly, so restyling later stays a small change.
+
 ## Notes
 
-- **Settings** are `EXPO_PUBLIC_` variables, built into the app and readable by anyone who has it. Only public values belong there (the API address).
+- **Settings** are `EXPO_PUBLIC_` variables, built into the app and readable by anyone who has it. Only public values belong there: the API address and the Supabase URL and publishable key, which the website ships too.
 - **React is pinned to exactly 19.3.0** in both apps, because React Native requires the exact React version it was built with. Change the two together, using the version Expo's SDK expects.
 - **Native folders** (`ios/`, `android/`) aren't committed. EAS builds generate them (M27).

@@ -21,11 +21,10 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 96
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-font"
     ],
-    "experiments": {
-      "typedRoutes": true
-    },
     "android": {
       "package": "boston.breadcrumb.app"
     }
