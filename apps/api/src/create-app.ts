@@ -2,7 +2,8 @@
  * Builds the configured API app without starting it, so main.ts and the tests share
  * one setup: Fastify with Pino JSON logging (Nest's own messages included), request IDs, the CORS allow-list, the error
  * filter and the OpenAPI document (served at /v1/openapi.json; docs page at /docs
- * outside production).
+ * outside production). JSON bodies are capped at 1 MB; image bodies (photo uploads)
+ * arrive as a Buffer and may be up to 5 MB.
  */
 import 'reflect-metadata'
 import { randomUUID } from 'node:crypto'
@@ -13,6 +14,7 @@ import type { IncomingMessage } from 'node:http'
 import { LogController } from 'fastify'
 import { AppModule } from './app.module.js'
 import { ErrorFilter } from './common/error.filter.js'
+import { MAX_UPLOAD_BYTES } from './photos/image-cleaner.js'
 import { PinoNestLogger } from './common/pino-nest-logger.js'
 import type { AppConfig } from './config/env.js'
 import { API_VERSION } from './version.js'
@@ -45,6 +47,8 @@ export async function createApp(config: AppConfig): Promise<NestFastifyApplicati
 
   const fastify = app.getHttpAdapter().getInstance()
   app.useLogger(new PinoNestLogger(fastify.log))
+  // Photo uploads send the image itself as the body; the photos module checks and cleans it.
+  fastify.addContentTypeParser(/^image\//, { parseAs: 'buffer', bodyLimit: MAX_UPLOAD_BYTES }, (_request, body, done) => done(null, body))
   fastify.addHook('onRequest', async (request, reply) => {
     reply.header(REQUEST_ID_HEADER, request.id)
   })

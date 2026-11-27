@@ -52,10 +52,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Start local Supabase (database, auth, PostgREST, gateway)
+      - name: Start local Supabase (database, auth, PostgREST, Storage, gateway)
         run: >-
           npx supabase start
-          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Apply all migrations and seed.sql
         run: npx supabase db reset --yes
       - name: Run database tests

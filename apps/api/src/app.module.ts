@@ -13,6 +13,7 @@ import { FriendsModule } from './friends/friends.module.js'
 import { HealthController } from './health/health.controller.js'
 import { MeController } from './me/me.controller.js'
 import { MetaController } from './meta/meta.controller.js'
+import { PhotosModule } from './photos/photos.module.js'
 import { ProfilesModule } from './profiles/profiles.module.js'
 import { ProgressModule } from './progress/progress.module.js'
 import { RatingsModule } from './ratings/ratings.module.js'
@@ -23,7 +24,7 @@ export class AppModule {
   static forRoot(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      imports: [ConfigModule.forRoot(config), AuthModule, TrailsModule, ProfilesModule, ProgressModule, RatingsModule, ExploreModule, CommunitiesModule, FriendsModule],
+      imports: [ConfigModule.forRoot(config), AuthModule, TrailsModule, ProfilesModule, ProgressModule, RatingsModule, ExploreModule, CommunitiesModule, FriendsModule, PhotosModule],
       controllers: [HealthController, MetaController, MeController],
     }
   }
