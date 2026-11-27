@@ -23,7 +23,15 @@
         }
       ],
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Breadcrumb uses your photo library so you can add photos of the places on a trail.",
+          "cameraPermission": "Breadcrumb uses the camera so you can take photos of the places on a trail.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "android": {
       "package": "boston.breadcrumb.app"
