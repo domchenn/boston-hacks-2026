@@ -1,7 +1,7 @@
 /**
  * Root layout: loads Inter (the splash screen stays up until it's ready), provides the
  * signed-in session to every screen, and stacks the tabs with the screens that open
- * over them: a trail's page, Log in, Choose a username (onboarding) and Make a trail. New accounts
+ * over them: a trail's page, the active trail, Log in, Choose a username (onboarding) and Make a trail. New accounts
  * without a username are sent to onboarding, as on the website.
  */
 import { useEffect } from 'react'
@@ -49,7 +49,8 @@ export default function RootLayout() {
       <OnboardingGate />
       <Stack screenOptions={stackScreenOptions}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="trail/[id]" options={{ title: '', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="trail/[id]/index" options={{ title: '', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="trail/[id]/go" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="sign-in" options={{ presentation: 'modal', title: 'Log in' }} />
         <Stack.Screen name="onboarding" options={{ presentation: 'modal', title: 'Your profile', gestureEnabled: false }} />
         <Stack.Screen name="make" options={{ presentation: 'modal', title: 'Make a trail' }} />

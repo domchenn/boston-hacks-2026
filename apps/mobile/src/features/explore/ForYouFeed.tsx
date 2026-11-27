@@ -1,6 +1,6 @@
 /**
- * Explore → For you: the greeting, a Resume banner for a trail you're in the middle
- * of (signed in), the Open late / Under $10 chips (the API's lateNight and maxCost
+ * Explore → For you: the greeting, a Resume banner that reopens the trail you're in
+ * the middle of (signed in), the Open late / Under $10 chips (the API's lateNight and maxCost
  * filters) and the trail list, with pull-to-refresh. `header` (the top tabs) scrolls
  * with the list.
  */
@@ -92,7 +92,7 @@ export function ForYouFeed({ header }: { header: ReactElement }) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Resume ${resume.title}`}
-          onPress={() => open(resume.id)}
+          onPress={() => router.push(`/trail/${resume.id}/go`)}
           style={({ pressed }) => [styles.resume, pressed && styles.resumePressed]}
         >
           <AppText style={styles.resumeText} numberOfLines={1}>
