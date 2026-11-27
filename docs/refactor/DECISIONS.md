@@ -119,5 +119,5 @@ Status: accepted by the owner for now ("keep it for now"); whether Make a trail 
 
 - **The tab bar is Apple's** (UITabBarController through `expo-router/native-tabs`), replacing the hand-drawn one from M18b. It gets Liquid Glass on iOS 26, system animations and SF Symbols icons, and stays up to date with iOS.
 - **Cost:** the style guide's raised orange + circle can't be drawn in Apple's bar. The + is a plain tab icon; the tab is blocked from being selected and its press opens Make a trail as a modal.
-- **Each tab has its own stack** (`TabStack`), so a trail's page opens inside the tab with the tab bar still showing, like other iOS apps.
+- **Each tab has its own stack** (`TabStack`) for its large title and any screens that belong to that tab. A trail's page opens full screen above the tabs, as in the mockups.
 
