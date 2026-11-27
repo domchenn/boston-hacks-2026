@@ -285,6 +285,97 @@ describe('createApiClient', () => {
       'https://api.example/v1/me/suggested-people',
     ])
   })
+
+  it('calls the profile and editor routes', async () => {
+    const id = trailDetail.id
+    const fields = { username: 'sam_k', displayName: 'Sam' }
+    const calls: [string, string | undefined, string | undefined][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      const path = new URL(String(url)).pathname
+      calls.push([path, init?.method, init?.body as string | undefined])
+      const body = path.endsWith('/stop-library')
+        ? { stops: [{ stopId: id, experienceId: null, neighborhood: 'Allston' }] }
+        : path.endsWith('/unpublish')
+          ? { id, status: 'draft' }
+          : path === '/v1/me/profile'
+            ? fields
+            : { id, deleted: true }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.getStopLibrary(id)).toEqual([{ stopId: id, experienceId: null, neighborhood: 'Allston' }])
+    expect(await client.unpublishTrail(id)).toEqual({ id, status: 'draft' })
+    expect(await client.deleteTrail(id)).toEqual({ id, deleted: true })
+    expect(await client.getMyProfile()).toEqual(fields)
+    expect(await client.updateMyProfile({ username: 'sam_k', displayName: 'Sam' })).toEqual(fields)
+    expect(calls).toEqual([
+      [`/v1/trails/${id}/stop-library`, 'GET', undefined],
+      [`/v1/trails/${id}/unpublish`, 'POST', undefined],
+      [`/v1/trails/${id}`, 'DELETE', undefined],
+      ['/v1/me/profile', 'GET', undefined],
+      ['/v1/me/profile', 'PUT', '{"username":"sam_k","displayName":"Sam"}'],
+    ])
+  })
+
+  it('lists, uploads (raw image body) and deletes photos', async () => {
+    const id = trailDetail.id
+    const photo = { id, url: 'https://x.example/p.jpg', caption: 'Hi', createdAt: '2026-11-26T12:00:00Z', stopId: null, uploader: null }
+    const calls: [string, string | undefined, string | undefined, unknown][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      const u = new URL(String(url))
+      calls.push([u.pathname + u.search, init?.method, (init?.headers as Record<string, string>)['content-type'], init?.body])
+      const body = init?.method === 'POST' ? { photo } : init?.method === 'DELETE' ? { id, deleted: true } : { photos: [photo] }
+      return new Response(JSON.stringify(body), { status: init?.method === 'POST' ? 201 : 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    const image = new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/png' })
+    expect(await client.getTrailPhotos(id)).toEqual([photo])
+    expect(await client.addTrailPhoto(id, image, { caption: 'Hi there', stopId: id })).toEqual(photo)
+    expect(await client.deletePhoto(id)).toEqual({ id, deleted: true })
+    expect(calls).toEqual([
+      [`/v1/trails/${id}/photos`, 'GET', undefined, undefined],
+      [`/v1/trails/${id}/photos?caption=Hi+there&stopId=${id}`, 'POST', 'image/png', image],
+      [`/v1/photos/${id}`, 'DELETE', undefined, undefined],
+    ])
+  })
+
+  it('reports content and calls the moderation routes', async () => {
+    const id = trailDetail.id
+    const calls: [string, string | undefined, string | undefined][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      const path = new URL(String(url)).pathname
+      calls.push([path, init?.method, init?.body as string | undefined])
+      const body =
+        path === '/v1/reports' ? { reported: true } : path === '/v1/me/admin' ? { isAdmin: false } : path === '/v1/admin/reports' ? { reports: [] } : { id, status: 'dismissed' }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.report({ targetType: 'photo', targetId: id, reason: 'spam' })).toEqual({ reported: true })
+    expect(await client.getAdminStatus()).toBe(false)
+    expect(await client.getOpenReports()).toEqual([])
+    expect(await client.resolveReport(id, 'dismiss')).toEqual({ id, status: 'dismissed' })
+    expect(calls).toEqual([
+      ['/v1/reports', 'POST', JSON.stringify({ targetType: 'photo', targetId: id, reason: 'spam' })],
+      ['/v1/me/admin', 'GET', undefined],
+      ['/v1/admin/reports', 'GET', undefined],
+      [`/v1/admin/reports/${id}/resolve`, 'POST', '{"action":"dismiss"}'],
+    ])
+  })
+
+  it('deletes the account with an explicit confirmation', async () => {
+    const fetch = stubFetch(200, { deleted: true })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.deleteMyAccount()).toEqual({ deleted: true })
+    const [url, init] = fetch.mock.calls[0]!
+    expect([String(url), init?.method, init?.body]).toEqual(['https://api.example/v1/me', 'DELETE', '{"confirm":true}'])
+  })
+
+  it('asks the API to move older photos', async () => {
+    const fetch = stubFetch(200, { moved: 6, skipped: [] })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.moveOlderPhotos()).toEqual({ moved: 6, skipped: [] })
+    expect([String(fetch.mock.calls[0]![0]), fetch.mock.calls[0]![1]?.method]).toEqual(['https://api.example/v1/admin/photos/move-older', 'POST'])
+  })
 })
 
 describe('RatingBody', () => {

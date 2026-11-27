@@ -8,6 +8,7 @@
 
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { canDeleteAccount } from '@/features/account/api'
 
 function LegalPage({ title, updated, children }: { title: string; updated: string; children: ReactNode }) {
   return (
@@ -30,7 +31,7 @@ export function PrivacyPage() {
       <ul>
         <li>
           <b>Your account:</b> your email, and your name and photo if you sign in with Google. Your username, display
-          name, university and bio if you add them.
+          name and bio if you add them.
         </li>
         <li>
           <b>What you make:</b> trails you create, ratings and reviews you write, and photos you add to trails. Trails,
@@ -79,7 +80,11 @@ export function PrivacyPage() {
           Choose who sees each trail (everyone, friends or close friends) and make your account private. Friends, meaning
           people you follow who follow you back, can see when you&apos;ve both saved the same trail; unfollowing ends that.
         </li>
-        <li>To delete your account and everything linked to it, contact the team and we'll remove it.</li>
+        <li>
+          {canDeleteAccount()
+            ? 'Delete your account and everything linked to it yourself, in Settings on your profile (Delete account). Reports you filed are kept without your name.'
+            : "To delete your account and everything linked to it, contact the team and we'll remove it."}
+        </li>
       </ul>
 
       <p className="mt-8">

@@ -67,6 +67,132 @@ Released: owner merged #123 (merge commit), set the live project's Root Director
 - **Website:** promote the previous production deployment in Vercel, as in release 1.
 - **Database:** only needed if the crumb rule itself is the problem. Restore the previous `private.can_complete_item` (any progress row except aborted) with a new migration. The function change touches no data, so restoring the backup isn't needed for it.
 
+### Result (2026-11-26)
+
+**Released:** the owner merged #132 (merge commit `4a156a8`, which includes #130 and #131) and deployed `main`.
+
+**The owner checked breadcrumb.boston** and reported everything working.
+
+**Agent checks of the live site:**
+- **Bundle:** `index-CfjJnU-E.js` uses the production Supabase project only. It has no staging project, no API address and no `/v1/` routes.
+- **Shared links:** a link with the share message stuck to the id, fetched as a link-preview bot, returns the trail's own title and the clean `/trails/<id>` URL. `/api/og-image` answers 200.
+- **Branches:** `main` and `develop` are identical after the release.
+
+## Release 3: the API goes live in production
+
+**What ships:** the website talks to the production API (`VITE_API_URL`) instead of Supabase directly. With it come:
+- M14–M16 (everything goes through the API);
+- private photos with signed links;
+- self-serve account deletion;
+- the university removal.
+
+**Database changes**, all in one push after a fresh backup:
+- `drop_profile_university` deletes data: the university values;
+- `stop_public_photo_listing`;
+- `let_admins_remove_photo_files`;
+- `add_private_photo_storage`;
+- `add_self_serve_account_deletion`;
+- `let_moderators_move_older_photos`.
+
+**Order matters:**
+1. The website goes out first, while the API is still off. Its code no longer reads `profiles.university`, so the column can then be dropped.
+2. Then the database changes.
+3. Then the API.
+4. Then the switch.
+5. The older photos move last.
+
+### One-time setup (owner, before the release)
+
+Production Google Cloud project `project-647004cf-4bb8-4512-9bb`, region `us-east5` (close to Supabase's us-east-2). It mirrors staging (STAGING.md). Run in a terminal signed in to gcloud as the owner:
+
+```sh
+P=project-647004cf-4bb8-4512-9bb
+R=us-east5
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com iamcredentials.googleapis.com sts.googleapis.com --project "$P"
+gcloud artifacts repositories create breadcrumb --repository-format=docker --location="$R" --project="$P"
+cat > /tmp/cleanup.json <<'JSON'
+[{"name":"keep-5-recent","action":{"type":"Keep"},"mostRecentVersions":{"keepCount":5}},
+ {"name":"delete-older-than-14d","action":{"type":"Delete"},"condition":{"tagState":"any","olderThan":"14d"}}]
+JSON
+gcloud artifacts repositories set-cleanup-policies breadcrumb --location="$R" --project="$P" --policy=/tmp/cleanup.json
+gcloud iam service-accounts create breadcrumb-api --display-name="Breadcrumb API runtime (no roles)" --project="$P"
+gcloud iam service-accounts create github-deployer --display-name="GitHub Actions production deployer" --project="$P"
+```
+
+**First deploy by hand.** It creates the service with its settings; later deploys keep them. Use the production publishable key (`sb_publishable_…`, the same one the live website uses). It's not a secret.
+
+```sh
+cd ~/hackathons/boston-hacks-2026 && git checkout main && git pull
+TAG=$(git rev-parse --short HEAD)
+IMG=$R-docker.pkg.dev/$P/breadcrumb/api:$TAG
+gcloud auth configure-docker $R-docker.pkg.dev
+docker buildx build --platform linux/amd64 --provenance=false --sbom=false -f apps/api/Dockerfile -t "$IMG" --push .
+gcloud run deploy breadcrumb-api --project "$P" --region "$R" --image "$IMG" \
+  --service-account "breadcrumb-api@$P.iam.gserviceaccount.com" --allow-unauthenticated \
+  --cpu 1 --memory 512Mi --min-instances 0 --max-instances 2 --concurrency 80 --timeout 30 \
+  --set-env-vars "APP_ENV=production,SUPABASE_URL=https://gekcvmzpahocsxnvsdyy.supabase.co,SUPABASE_PUBLISHABLE_KEY=sb_publishable_REPLACE,CORS_ORIGINS=https://breadcrumb.boston"
+```
+
+The deploy prints the service URL (`https://breadcrumb-api-….us-east5.run.app`). That's the production API URL.
+
+**The one-click deploy (`deploy-production-api.yml`).** Same trust setup as staging, but only `main` may deploy:
+
+```sh
+PN=$(gcloud projects describe "$P" --format='value(projectNumber)')
+gcloud iam workload-identity-pools create github --location=global --project="$P" --display-name=GitHub
+gcloud iam workload-identity-pools providers create-oidc breadcrumb --location=global --workload-identity-pool=github --project="$P" \
+  --issuer-uri=https://token.actions.githubusercontent.com \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.ref=assertion.ref" \
+  --attribute-condition="assertion.repository_id == '1466641451' && assertion.ref == 'refs/heads/main'"
+gcloud iam service-accounts add-iam-policy-binding "github-deployer@$P.iam.gserviceaccount.com" --project="$P" \
+  --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/projects/$PN/locations/global/workloadIdentityPools/github/attribute.repository_id/1466641451"
+gcloud run services add-iam-policy-binding breadcrumb-api --region "$R" --project "$P" \
+  --member="serviceAccount:github-deployer@$P.iam.gserviceaccount.com" --role=roles/run.developer
+gcloud artifacts repositories add-iam-policy-binding breadcrumb --location="$R" --project="$P" \
+  --member="serviceAccount:github-deployer@$P.iam.gserviceaccount.com" --role=roles/artifactregistry.writer
+gcloud iam service-accounts add-iam-policy-binding "breadcrumb-api@$P.iam.gserviceaccount.com" --project="$P" \
+  --member="serviceAccount:github-deployer@$P.iam.gserviceaccount.com" --role=roles/iam.serviceAccountUser
+echo "GCP_PROD_WIF_PROVIDER=projects/$PN/locations/global/workloadIdentityPools/github/providers/breadcrumb"
+echo "GCP_PROD_DEPLOY_SA=github-deployer@$P.iam.gserviceaccount.com"
+```
+
+In GitHub → Settings:
+- **Environments:** add `production`, with deployment branches limited to `main`.
+- **Variables:** add `GCP_PROD_WIF_PROVIDER` and `GCP_PROD_DEPLOY_SA` (printed above), and `PROD_API_URL` (the service URL).
+
+None of these are secrets.
+
+### Steps (owner)
+
+1. **Merge the release PR** (`develop` → `main`) with "Create a merge commit".
+2. **Deploy the website with the API still off:** Vercel → `breadcrumb` → Create Deployment → `main` → Production. Don't add `VITE_API_URL` yet. Check that the site loads, a profile opens and a trail opens.
+3. **Fresh backup:** `breadcrumb-backup-5`, the same steps as backup-4 (RECOVERY.md). It's needed because the university values are deleted.
+4. **Database:**
+   - run `npx supabase db push --remote=gekcvmzpahocsxnvsdyy --dry-run` from the repo; it should list exactly the six migrations above;
+   - then run it without `--dry-run`;
+   - then regenerate types with `npm run db:types` (the linked project is production) and open a PR with the result.
+5. **API:** do the one-time setup and first deploy if they aren't done. Otherwise run **Actions → Deploy production API** on `main` and type `deploy`. Check:
+   - `curl $PROD_API_URL/v1/meta` says `production`;
+   - `curl $PROD_API_URL/v1/trails` lists the live trails.
+6. **Switch the website to the API:**
+   - Vercel → `breadcrumb` → Settings → Environment Variables → add `VITE_API_URL` = the production API URL (Production);
+   - redeploy `main` (variables only apply to new builds);
+   - check on breadcrumb.boston: Explore, a trail, sign-in, save, start / tick / finish, rate, a profile, follow, make a trail, add and delete a photo, Settings (Delete account shows), and a shared-link preview.
+7. **Move the older photos into private storage.** You must be a moderator in production (`profiles.is_admin = true`, set in the SQL editor, like staging). On breadcrumb.boston, signed in, open the browser console and run:
+   ```js
+   const t = JSON.parse(localStorage.getItem('sb-gekcvmzpahocsxnvsdyy-auth-token')).access_token
+   await (await fetch('PROD_API_URL/v1/admin/photos/move-older', { method: 'POST', headers: { authorization: `Bearer ${t}` } })).json()
+   ```
+   Replace `PROD_API_URL` with the real URL. Expect `{ moved: 6, skipped: [] }` (production has 6 older photos), then check their trails still show them. It's safe to run again.
+
+### Rollback
+
+- **Before step 7:** remove `VITE_API_URL` and redeploy `main`. The website goes back to talking to Supabase directly, and the new database rules are compatible with that. The one exception: photos added through the API in the meantime don't show in that mode, because they're private.
+- **After step 7:** the moved photos only show through the API. So prefer fixing forward, or roll the API back to the previous Cloud Run revision (Cloud Run → `breadcrumb-api` → Revisions → route traffic to the earlier one).
+- **Website:** promote the previous production deployment in Vercel.
+- **Database:** none of these migrations should need undoing. If one does, write a new migration; restore backup-5 only for data loss.
+
 ## Later releases
 
-Turning the API on in production is its own release: deploy the API to a production Cloud Run service in the production Google Cloud project, verify it, then set `VITE_API_URL` on the production Vercel project and redeploy the website. Database changes, if any, go first, after a fresh backup (see RECOVERY.md).
+Releases after the API is live deploy the API with **Deploy production API** before the website, so the website never calls missing endpoints. Database changes go first, after a fresh backup (see RECOVERY.md).

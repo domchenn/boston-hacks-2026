@@ -8,13 +8,18 @@ import type { z } from 'zod'
 import { ApiErrorBody } from './errors.js'
 import {
   ProfileStats,
+  MyProfileFields,
   ProfileTrailList,
   PublicProfile,
   SavedTrailList,
+  type MyProfileBody,
   type MyTrailsQuery,
 } from './profiles.js'
 import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
+import { PhotoAdded, PhotoDeleted, TrailPhotoList, type AddPhotoQuery } from './photos.js'
+import { AccountDeleted } from './account.js'
 import { MyRatingResponse, type RatingBody } from './ratings.js'
+import { AdminStatus, OlderPhotosMoved, OpenReportList, ReportResolved, ReportSent, type ReportBody } from './reports.js'
 import { FinishedTrailList } from './badges.js'
 import {
   AlsoSavedList,
@@ -30,7 +35,7 @@ import {
 } from './friends.js'
 import { CommunityList, MyCommunity } from './communities.js'
 import { NeighborhoodList, TrendingList, type TrendingQuery } from './explore.js'
-import { TrailSaved, type SaveTrailBody } from './trail-writes.js'
+import { StopLibrary, TrailDeleted, TrailSaved, TrailUnpublished, type SaveTrailBody } from './trail-writes.js'
 import { TrailDetail, TrailList, type TrailListFilters } from './trails.js'
 
 export class ApiError extends Error {
@@ -71,17 +76,17 @@ export function createApiClient(options: ApiClientOptions) {
     schema: T,
     allowNotFound = false,
     payload?: unknown,
+    /** A raw body (e.g. an image) sent as-is with its own content type, instead of JSON. */
+    raw?: { body: Blob; contentType: string },
   ): Promise<z.infer<T> | null> {
     const headers: Record<string, string> = { accept: 'application/json' }
     const token = await options.getAccessToken?.()
     if (token) headers.authorization = `Bearer ${token}`
-    if (payload !== undefined) headers['content-type'] = 'application/json'
+    if (raw) headers['content-type'] = raw.contentType
+    else if (payload !== undefined) headers['content-type'] = 'application/json'
 
-    const response = await doFetch(`${baseUrl}${path}`, {
-      method,
-      headers,
-      ...(payload !== undefined ? { body: JSON.stringify(payload) } : {}),
-    })
+    const requestBody = raw ? raw.body : payload !== undefined ? JSON.stringify(payload) : undefined
+    const response = await doFetch(`${baseUrl}${path}`, { method, headers, ...(requestBody !== undefined ? { body: requestBody } : {}) })
     const requestId = response.headers.get('x-request-id')
     if (allowNotFound && response.status === 404) return null
 
@@ -289,6 +294,83 @@ export function createApiClient(options: ApiClientOptions) {
     /** People the caller might follow. Requires sign-in. */
     async getSuggestedPeople(limit?: number) {
       return (await get(`/v1/me/suggested-people${limit === undefined ? '' : `?limit=${limit}`}`, PersonList)).people
+    },
+
+    /** Each stop's place-library link and neighborhood (Edit and Remix). */
+    async getStopLibrary(trailId: string) {
+      return (await get(`/v1/trails/${encodeURIComponent(trailId)}/stop-library`, StopLibrary)).stops
+    },
+
+    /** Move one of your trails back to draft. Requires sign-in. */
+    async unpublishTrail(trailId: string) {
+      return (await send('POST', `/v1/trails/${encodeURIComponent(trailId)}/unpublish`, TrailUnpublished))!
+    },
+
+    /** Delete one of your trails for good. Requires sign-in. */
+    async deleteTrail(trailId: string) {
+      return (await send('DELETE', `/v1/trails/${encodeURIComponent(trailId)}`, TrailDeleted))!
+    },
+
+    /** The caller's editable profile fields. Requires sign-in. */
+    getMyProfile() {
+      return get('/v1/me/profile', MyProfileFields)
+    },
+
+    /** Save the caller's username and display name. Requires sign-in. */
+    async updateMyProfile(body: MyProfileBody) {
+      return (await send('PUT', '/v1/me/profile', MyProfileFields, false, body))!
+    },
+
+    /** A trail's public photos, newest first. */
+    async getTrailPhotos(trailId: string) {
+      return (await get(`/v1/trails/${encodeURIComponent(trailId)}/photos`, TrailPhotoList)).photos
+    },
+
+    /**
+     * Add a photo to a trail you've saved, started or finished (optionally at one of its
+     * stops). The image is sent as the body; the API stores a clean JPEG. Requires sign-in.
+     */
+    async addTrailPhoto(trailId: string, image: Blob, query: AddPhotoQuery = {}) {
+      const search = new URLSearchParams()
+      if (query.caption) search.set('caption', query.caption)
+      if (query.stopId) search.set('stopId', query.stopId)
+      const path = `/v1/trails/${encodeURIComponent(trailId)}/photos${search.size > 0 ? `?${search}` : ''}`
+      return (await send('POST', path, PhotoAdded, false, undefined, { body: image, contentType: image.type || 'image/jpeg' }))!.photo
+    },
+
+    /** Delete one of your own photos. Requires sign-in. */
+    async deletePhoto(photoId: string) {
+      return (await send('DELETE', `/v1/photos/${encodeURIComponent(photoId)}`, PhotoDeleted))!
+    },
+
+    /** Report a trail, review or photo (repeating is fine). Requires sign-in. */
+    async report(body: ReportBody) {
+      return (await send('POST', '/v1/reports', ReportSent, false, body))!
+    },
+
+    /** Whether the caller is a team moderator. Requires sign-in. */
+    async getAdminStatus() {
+      return (await get('/v1/me/admin', AdminStatus)).isAdmin
+    },
+
+    /** Open reports with a preview of each item (moderators only). */
+    async getOpenReports() {
+      return (await get('/v1/admin/reports', OpenReportList)).reports
+    },
+
+    /** Hide the reported item or dismiss the report; closes every open report on that item (moderators only). */
+    async resolveReport(reportId: string, action: 'hide' | 'dismiss') {
+      return (await send('POST', `/v1/admin/reports/${encodeURIComponent(reportId)}/resolve`, ReportResolved, false, { action }))!
+    },
+
+    /** Delete the caller's account and everything linked to it, for good. Requires sign-in. */
+    async deleteMyAccount() {
+      return (await send('DELETE', '/v1/me', AccountDeleted, false, { confirm: true }))!
+    },
+
+    /** Move every older public photo into private storage (moderators only; safe to repeat). */
+    async moveOlderPhotos() {
+      return (await send('POST', '/v1/admin/photos/move-older', OlderPhotosMoved))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */

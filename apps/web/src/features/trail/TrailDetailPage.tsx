@@ -17,6 +17,7 @@ import { TransitAlerts } from '@/components/TransitAlerts'
 import { categoryLabel, formatCost, formatMinutes } from '@/components/trailFormat'
 import { getTrail, type TrailDetail } from '@/lib/api/trails'
 import { YourTrailBar } from '@/features/make/YourTrailBar'
+import { useSession } from '@/lib/useSession'
 import { TrailRemixRow } from '@/features/make/TrailRemixRow'
 import { TrailActions } from './TrailActions'
 import { TrailCreatorCard, TrailGoodToKnow } from './TrailGoodToKnow'
@@ -24,7 +25,7 @@ import { BackLink, TrailMessage } from './TrailPageMessage'
 import { TrailPhotos } from './TrailPhotos'
 import { TrailReviews } from './TrailReviews'
 import { TrailStops } from './TrailStops'
-import { isTrailId, leadingTrailId, type TrailNotice } from './trailLinks'
+import { isTrailId, leadingTrailId, loginPath, type TrailNotice } from './trailLinks'
 import { useTrailActions } from './useTrailActions'
 
 type LoadResult = { key: string; trail?: TrailDetail | null; error?: string }
@@ -60,6 +61,7 @@ export function TrailDetailPage() {
   const valid = isTrailId(id)
   // "Thanks! Your rating is posted." etc., handed over by the Rate page.
   const location = useLocation()
+  const signedIn = Boolean(useSession().session)
   const notice = (location.state as TrailNotice | null)?.notice
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<LoadResult | null>(null)
@@ -111,11 +113,22 @@ export function TrailDetailPage() {
 
   if (!trail) {
     return (
+      // The same message whether the trail is gone or just hidden from this person, so a
+      // stranger can't tell that a friends-only trail exists.
       <TrailMessage title="Trail not found">
-        <p>It may have been removed, or it isn't published yet.</p>
-        <Link to="/" className="btn btn--sm btn--secondary mt-4">
-          Browse trails
-        </Link>
+        <p>It may have been removed, it isn't published yet, or only the creator's friends can see it.</p>
+        {signedIn ? (
+          <Link to="/" className="btn btn--sm btn--secondary mt-4">
+            Browse trails
+          </Link>
+        ) : (
+          <>
+            <p>If someone sent you this link, log in to see it.</p>
+            <Link to={loginPath(location.pathname)} className="btn btn--sm mt-4">
+              Log in
+            </Link>
+          </>
+        )}
       </TrailMessage>
     )
   }

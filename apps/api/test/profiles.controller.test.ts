@@ -16,7 +16,6 @@ const profile: PublicProfile = {
   username: 'test1',
   display_name: 'Test One',
   avatar_url: null,
-  university: null,
   bio: null,
   is_private: false,
   community: null,

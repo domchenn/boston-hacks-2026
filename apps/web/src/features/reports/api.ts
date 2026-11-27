@@ -5,8 +5,13 @@
  * - isCurrentUserAdmin(), listOpenReports(), resolveReport(): for team
  *   moderators (profiles.is_admin). "Hide" archives the trail or deletes the
  *   review / photo; RLS only allows this for admins.
+ *
+ * With VITE_API_URL set, all four go through the API (POST /v1/reports,
+ * GET /v1/me/admin, GET /v1/admin/reports, POST /v1/admin/reports/:id/resolve),
+ * which also deletes a hidden photo's file.
  */
 
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 
 export type ReportTarget = 'trail' | 'review' | 'photo'
@@ -22,6 +27,9 @@ export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
 
 export type ReportResult = { ok: true } | { ok: false; message: string }
 
+/** The HTTP status of an API error, or 0 when the request never got an answer. */
+const statusOf = (error: unknown) => (error instanceof Error && 'status' in error ? Number((error as { status: unknown }).status) : 0)
+
 export async function reportContent(
   targetType: ReportTarget,
   targetId: string,
@@ -31,6 +39,15 @@ export async function reportContent(
   const { data } = await supabase.auth.getSession()
   const userId = data.session?.user.id
   if (!userId) return { ok: false, message: 'Log in to report something.' }
+  const api = getApi()
+  if (api) {
+    try {
+      await (await api).report({ targetType, targetId, reason, note: note.trim() || undefined })
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, message: statusOf(error) === 401 ? 'Log in to report something.' : 'Couldn’t send the report. Please try again.' }
+    }
+  }
   const { error } = await supabase.from('reports').insert({
     reporter_id: userId,
     target_type: targetType,
@@ -51,6 +68,8 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
   const { data } = await supabase.auth.getSession()
   const userId = data.session?.user.id
   if (!userId) return false
+  const api = getApi()
+  if (api) return (await api).getAdminStatus().catch(() => false)
   const { data: row } = await supabase.from('profiles').select('is_admin').eq('id', userId).maybeSingle()
   return Boolean(row?.is_admin)
 }
@@ -69,6 +88,8 @@ export type OpenReport = {
 
 /** Open reports, newest first, with a preview of each reported item. */
 export async function listOpenReports(): Promise<OpenReport[]> {
+  const api = getApi()
+  if (api) return (await api).getOpenReports()
   const { data, error } = await supabase
     .from('reports')
     .select('id, target_type, target_id, reason, note, created_at, reporter:profiles!reports_reporter_id_fkey(username)')
@@ -117,9 +138,20 @@ export async function listOpenReports(): Promise<OpenReport[]> {
 /**
  * "hide": archive the trail, or delete the review / photo record, then mark
  * every open report on that item resolved. "dismiss": just close the report.
- * (A deleted photo's file stays in storage; only its owner can delete files.)
+ * Without the API a deleted photo's file stays in storage; the API deletes it too.
  */
 export async function resolveReport(report: OpenReport, action: 'hide' | 'dismiss'): Promise<void> {
+  const api = getApi()
+  if (api) {
+    try {
+      await (await api).resolveReport(report.id, action)
+    } catch (error) {
+      const status = statusOf(error)
+      if (status === 409) return // another moderator already handled it
+      throw new Error(status === 403 ? 'Couldn’t hide that. Are you signed in as an admin?' : 'Couldn’t update the report.', { cause: error })
+    }
+    return
+  }
   const { data } = await supabase.auth.getSession()
   const adminId = data.session?.user.id ?? null
   if (action === 'hide') {
