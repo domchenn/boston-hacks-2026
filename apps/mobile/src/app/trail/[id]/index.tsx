@@ -1,10 +1,10 @@
 /**
- * A trail's page (Mobile-Detail mockup), full screen above the tabs: round back and
- * bookmark buttons, the category in orange, title, facts, description, then the
- * numbered stops with what to do, how you get there and their crumbs, then photos
- * (add yours once you've saved, started or finished it; long-press yours to delete) and
- * reviews. A bottom bar has Start trail (Continue once started; opens go.tsx), Rate
- * this trail / Edit your review once finished, and Save. Reloads when shown again. The route map comes later.
+ * A trail's page (Mobile-Detail mockup), full screen above the tabs: the map of its
+ * stops (TrailMap) under round back and bookmark buttons, the category, title, facts,
+ * description, numbered stops with what to do and their crumbs, then photos (add yours
+ * once you've saved, started or finished it; long-press yours to delete) and reviews.
+ * A bottom bar has Start trail (Continue once started; opens go.tsx), Rate this trail /
+ * Edit your review once finished, and Save. Reloads when shown again.
  */
 import { useCallback, useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
@@ -17,6 +17,7 @@ import { Button } from '@/components/Button'
 import { IconButton } from '@/components/IconButton'
 import { PhotoStrip } from '@/components/PhotoStrip'
 import { StateView } from '@/components/StateView'
+import { mappableStops, TrailMap } from '@/components/TrailMap'
 import { useTrailActions } from '@/features/trail/useTrailActions'
 import { useTrailPhotos } from '@/features/trail/useTrailPhotos'
 import { api } from '@/lib/api'
@@ -101,6 +102,7 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
   const photos = useTrailPhotos(trail.id, userId)
   const own = trail.creator?.id === userId
   const actions = useTrailActions(trail.id)
+  const hasMap = mappableStops(trail.stops).length > 0
   // The API takes photos only from people who saved, started or finished the trail.
   const canAddPhoto = actions.status === 'saved' || actions.status === 'in_progress' || actions.status === 'completed'
   const saved = actions.status === 'saved'
@@ -128,7 +130,8 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
         ) : null
       }
     >
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 68, paddingBottom: 120 + insets.bottom }]}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: hasMap ? 0 : insets.top + 68, paddingBottom: 120 + insets.bottom }]}>
+        {hasMap ? <TrailMap stops={trail.stops} style={[styles.map, { height: insets.top + 250 }]} /> : null}
         <View style={styles.head}>
           {eyebrow ? <AppText style={styles.eyebrow}>{eyebrow}</AppText> : null}
           <AppText style={styles.title}>{trail.title}</AppText>
@@ -274,6 +277,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
   topBar: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' },
   content: { paddingHorizontal: 16 },
+  map: { marginHorizontal: -16, marginBottom: 20 },
   head: { gap: 6 },
   eyebrow: { fontFamily: fonts.semibold, fontSize: text.base, color: colors.crumbStrong },
   title: { fontFamily: fonts.extrabold, fontSize: text.xxl, lineHeight: 33, color: colors.ink, letterSpacing: -0.8 },
