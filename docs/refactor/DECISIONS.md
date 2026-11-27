@@ -121,3 +121,19 @@ Status: accepted by the owner for now ("keep it for now"); whether Make a trail 
 - **Cost:** the style guide's raised orange + circle can't be drawn in Apple's bar. The + is a plain tab icon; the tab is blocked from being selected and its press opens Make a trail as a modal.
 - **Each tab has its own stack** (`TabStack`) for its large title and any screens that belong to that tab. A trail's page opens full screen above the tabs, as in the mockups.
 
+## 2026-11-27 — Mobile app follows the mobile mockups (design pass)
+
+Status: accepted by the owner ("this is the design we're going to use").
+
+- **The mobile mockups (breadcrumb-mobile.pdf) set the app's look** where they differ from the style guide's web components:
+  - buttons are rounded rectangles (`--radius-md`), not pills;
+  - lists are rows with a square tile and hairlines, not cards;
+  - Explore and Saved draw their own headers (the logo row, "Your trails") instead of iOS large titles.
+- **Colours, type and spacing still come from tokens.css.** Two tokens were added to the app: `--radius-md` / `--radius-sheet`, and `--shadow-float` for round buttons.
+- **Left out until real data exists**, so nothing is invented:
+  - map thumbnails and route maps (a category icon stands in);
+  - "Similar to…" reasons;
+  - By day;
+  - walking times.
+- **Haptics** (expo-haptics): a light tap for crumbs, chips and tabs; a success buzz for finishing a trail.
+

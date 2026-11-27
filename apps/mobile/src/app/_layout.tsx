@@ -49,7 +49,7 @@ export default function RootLayout() {
       <OnboardingGate />
       <Stack screenOptions={stackScreenOptions}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="trail/[id]/index" options={{ title: '', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="trail/[id]/index" options={{ headerShown: false }} />
         <Stack.Screen name="trail/[id]/go" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="sign-in" options={{ presentation: 'modal', title: 'Log in' }} />
         <Stack.Screen name="onboarding" options={{ presentation: 'modal', title: 'Your profile', gestureEnabled: false }} />

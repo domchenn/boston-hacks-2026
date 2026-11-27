@@ -17,6 +17,13 @@ type Load =
 
 const stopKey = (userId: string, trailId: string) => `active-stop:${userId}:${trailId}`
 
+/** The stop (0-based) you were last on in a trail on this phone, or null if unknown. */
+export async function readSavedStop(userId: string, trailId: string): Promise<number | null> {
+  const saved = await AsyncStorage.getItem(stopKey(userId, trailId)).catch(() => null)
+  const n = Number(saved)
+  return saved !== null && Number.isInteger(n) && n >= 0 ? n : null
+}
+
 /** The stop to show first: the saved one if it's still valid, else the first with crumbs left. */
 function firstStop(trail: TrailDetail, ticked: Set<string>, saved: string | null): number {
   const n = Number(saved)

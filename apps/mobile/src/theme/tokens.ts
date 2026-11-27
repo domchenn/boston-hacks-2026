@@ -42,8 +42,17 @@ export const cssNames: Record<keyof typeof colors, string> = {
 /** --text-* in tokens.css, in points. */
 export const text = { xxs: 11, xs: 12, sm: 13, base: 15, md: 16, lg: 17, xl: 21, xxl: 28, xxxl: 32 } as const
 
-/** --radius-card in tokens.css, and a smaller radius for inputs and chips. */
-export const radius = { card: 20, small: 10 } as const
+/** --radius-sm / -md / -card / -sheet in tokens.css. */
+export const radius = { small: 10, md: 14, card: 20, sheet: 24 } as const
+
+/** --shadow-float in tokens.css: round buttons floating over content. */
+export const floatShadow = {
+  shadowColor: colors.ink,
+  shadowOpacity: 0.14,
+  shadowRadius: 7,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 4,
+} as const
 
 /** Inter, the style guide's typeface (--font-sans), loaded in src/app/_layout.tsx. */
 export const fonts = {
