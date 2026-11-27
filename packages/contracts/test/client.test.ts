@@ -338,6 +338,29 @@ describe('createApiClient', () => {
       [`/v1/photos/${id}`, 'DELETE', undefined, undefined],
     ])
   })
+
+  it('reports content and calls the moderation routes', async () => {
+    const id = trailDetail.id
+    const calls: [string, string | undefined, string | undefined][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      const path = new URL(String(url)).pathname
+      calls.push([path, init?.method, init?.body as string | undefined])
+      const body =
+        path === '/v1/reports' ? { reported: true } : path === '/v1/me/admin' ? { isAdmin: false } : path === '/v1/admin/reports' ? { reports: [] } : { id, status: 'dismissed' }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    expect(await client.report({ targetType: 'photo', targetId: id, reason: 'spam' })).toEqual({ reported: true })
+    expect(await client.getAdminStatus()).toBe(false)
+    expect(await client.getOpenReports()).toEqual([])
+    expect(await client.resolveReport(id, 'dismiss')).toEqual({ id, status: 'dismissed' })
+    expect(calls).toEqual([
+      ['/v1/reports', 'POST', JSON.stringify({ targetType: 'photo', targetId: id, reason: 'spam' })],
+      ['/v1/me/admin', 'GET', undefined],
+      ['/v1/admin/reports', 'GET', undefined],
+      [`/v1/admin/reports/${id}/resolve`, 'POST', '{"action":"dismiss"}'],
+    ])
+  })
 })
 
 describe('RatingBody', () => {
