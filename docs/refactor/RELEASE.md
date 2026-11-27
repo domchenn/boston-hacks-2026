@@ -67,6 +67,17 @@ Released: owner merged #123 (merge commit), set the live project's Root Director
 - **Website:** promote the previous production deployment in Vercel, as in release 1.
 - **Database:** only needed if the crumb rule itself is the problem. Restore the previous `private.can_complete_item` (any progress row except aborted) with a new migration. The function change touches no data, so restoring the backup isn't needed for it.
 
+### Result (2026-11-26)
+
+**Released:** the owner merged #132 (merge commit `4a156a8`, which includes #130 and #131) and deployed `main`.
+
+**The owner checked breadcrumb.boston** and reported everything working.
+
+**Agent checks of the live site:**
+- **Bundle:** `index-CfjJnU-E.js` uses the production Supabase project only. It has no staging project, no API address and no `/v1/` routes.
+- **Shared links:** a link with the share message stuck to the id, fetched as a link-preview bot, returns the trail's own title and the clean `/trails/<id>` URL. `/api/og-image` answers 200.
+- **Branches:** `main` and `develop` are identical after the release.
+
 ## Later releases
 
 Turning the API on in production is its own release: deploy the API to a production Cloud Run service in the production Google Cloud project, verify it, then set `VITE_API_URL` on the production Vercel project and redeploy the website. Database changes, if any, go first, after a fresh backup (see RECOVERY.md).
