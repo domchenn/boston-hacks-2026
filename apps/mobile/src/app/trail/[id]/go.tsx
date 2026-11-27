@@ -23,6 +23,7 @@ import { useActiveTrail } from '@/features/trail/useActiveTrail'
 import { useTrailPhotos } from '@/features/trail/useTrailPhotos'
 import { useSession } from '@/lib/session'
 import { TRAVEL_LABELS } from '@/lib/trailFormat'
+import { useWalkingRoutes, walkMinutes } from '@/lib/walkingRoutes'
 import { tapLight, tapSuccess } from '@/lib/haptics'
 import { colors, floatShadow, fonts, radius, text } from '@/theme/tokens'
 
@@ -193,7 +194,9 @@ function StopView({
   const stop = trail.stops[index]!
   const last = index === trail.stops.length - 1
   const doneHere = stop.crumbs.filter((c) => ticked.has(c.id)).length
-  const how = index > 0 && stop.travelModeToStop ? TRAVEL_LABELS[stop.travelModeToStop] : null
+  const routes = useWalkingRoutes(trail.stops)
+  const route = routes[stop.id]
+  const how = index > 0 ? (route ? walkMinutes(route) : stop.travelModeToStop ? TRAVEL_LABELS[stop.travelModeToStop] : null) : null
   const what = stop.plannedActivity || stop.description
   const directions = directionsUrl(stop)
   const hasMap = mappableStops(trail.stops).length > 0
@@ -201,7 +204,7 @@ function StopView({
   return (
     <Shell
       onClose={onClose}
-      map={hasMap ? <TrailMap stops={trail.stops} current={index} showsUser style={styles.flex} edgePadding={MAP_EDGE} /> : undefined}
+      map={hasMap ? <TrailMap stops={trail.stops} routes={routes} current={index} showsUser style={styles.flex} edgePadding={MAP_EDGE} /> : undefined}
     >
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 + insets.bottom }]}>
         <View style={styles.progress} accessibilityLabel={`Stop ${index + 1} of ${trail.stops.length}`}>

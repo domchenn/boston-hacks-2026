@@ -49,7 +49,8 @@ From the repo root, the usual commands include the app:
 - **Map** and **Make a trail** are placeholders for now.
 - **Log in / Create account** with email and password. New accounts pick a username next, as on the website.
 - **The login session is stored encrypted on the phone,** as Supabase's Expo guide recommends: the key is in the iPhone Keychain (expo-secure-store), and the encrypted session is in AsyncStorage. Everything else goes through the API, which gets the signed-in user's access token.
-- **Shared building blocks** in `src/components`: `AppText` (the type scale), `Button`, `TextField`, `StateView` (loading, empty and error states), `TrailCard` and `TabStack` (the stack inside each tab). The tab bar is Apple's own (`expo-router/native-tabs`). Use them instead of styling screens directly, so restyling later stays a small change.
+- **Shared building blocks** in `src/components`: `AppText` (the type scale), `Button`, `TextField`, `StateView` (loading, empty and error states), `TrailRow`, `TopTabs`, `Chip`, `IconButton`, `PhotoStrip`, `TrailMap` and `TabStack` (the stack inside each tab). The tab bar is Apple's own (`expo-router/native-tabs`). Use them instead of styling screens directly, so restyling later stays a small change.
+- **Native code of our own** lives in `modules/` (Expo local modules, linked automatically): `apple-directions` asks Apple Maps for walking routes between stops. Changing it needs a new native build (`rm -rf ios`, then `npx expo run:ios`).
 
 ## Notes
 
