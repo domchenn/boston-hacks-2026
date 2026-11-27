@@ -22,6 +22,7 @@ import { useTrailActions } from '@/features/trail/useTrailActions'
 import { useTrailPhotos } from '@/features/trail/useTrailPhotos'
 import { api } from '@/lib/api'
 import { useSession } from '@/lib/session'
+import { useWalkingRoutes, walkMinutes, type WalkingRoute } from '@/lib/walkingRoutes'
 import { categoryLabel, formatCost, formatMinutes, stopCount, TRAVEL_LABELS } from '@/lib/trailFormat'
 import { colors, fonts, text } from '@/theme/tokens'
 
@@ -103,6 +104,7 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
   const own = trail.creator?.id === userId
   const actions = useTrailActions(trail.id)
   const hasMap = mappableStops(trail.stops).length > 0
+  const routes = useWalkingRoutes(trail.stops)
   // The API takes photos only from people who saved, started or finished the trail.
   const canAddPhoto = actions.status === 'saved' || actions.status === 'in_progress' || actions.status === 'completed'
   const saved = actions.status === 'saved'
@@ -131,7 +133,7 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
       }
     >
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: hasMap ? 0 : insets.top + 68, paddingBottom: 120 + insets.bottom }]}>
-        {hasMap ? <TrailMap stops={trail.stops} style={[styles.map, { height: insets.top + 250 }]} /> : null}
+        {hasMap ? <TrailMap stops={trail.stops} routes={routes} style={[styles.map, { height: insets.top + 250 }]} /> : null}
         <View style={styles.head}>
           {eyebrow ? <AppText style={styles.eyebrow}>{eyebrow}</AppText> : null}
           <AppText style={styles.title}>{trail.title}</AppText>
@@ -149,7 +151,7 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
           <AppText style={styles.sectionTitle}>{stopCount(trail.stops.length)}</AppText>
           {trail.stops.length === 0 ? <AppText variant="secondary">This trail doesn’t have any stops yet.</AppText> : null}
           {trail.stops.map((stop, i) => (
-            <StopRow key={stop.id} stop={stop} number={i + 1} last={i === trail.stops.length - 1} />
+            <StopRow key={stop.id} stop={stop} number={i + 1} last={i === trail.stops.length - 1} route={routes[stop.id]} />
           ))}
         </View>
 
@@ -225,9 +227,10 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
   )
 }
 
-function StopRow({ stop, number, last }: { stop: TrailStop; number: number; last: boolean }) {
+function StopRow({ stop, number, last, route }: { stop: TrailStop; number: number; last: boolean; route?: WalkingRoute }) {
   const what = stop.plannedActivity || stop.description
-  const how = number > 1 && stop.travelModeToStop ? TRAVEL_LABELS[stop.travelModeToStop] : null
+  // Apple's walking time when there's a real route, else just how you get here.
+  const how = number > 1 ? (route ? walkMinutes(route) : stop.travelModeToStop ? TRAVEL_LABELS[stop.travelModeToStop] : null) : null
   const subline = [what, how].filter(Boolean).join(' · ')
   return (
     <View style={[styles.stop, !last && styles.stopLine]}>

@@ -1,0 +1,7 @@
+{
+  "name": "apple-directions",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Walking routes between two points from Apple MapKit (MKDirections), for Breadcrumb's trail maps.",
+  "main": "index.ts"
+}

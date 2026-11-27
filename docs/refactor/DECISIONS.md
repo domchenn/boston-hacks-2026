@@ -146,6 +146,10 @@ Status: proposed in the PR; the owner asked for the map.
   - pins mark stops and where trails start;
   - **no lines are drawn between stops** until we have real routes (PRD §5.5: never straight lines as routes);
   - Directions opens Apple Maps with the real route.
-- **Real route lines** need a directions service in the app (Apple MapKit directions in a small native module, or Google Routes through the API). That's left for later.
+- **Real route lines (owner decision 2026-11-27: option A, Apple's directions).** A local Expo module (`apps/mobile/modules/apple-directions`, MKDirections) returns walking routes between stops. It's free and needs no key, but works on iPhone only.
+  - **Walking legs** get Apple's line and time ("4 min walk").
+  - **T, bus and bike legs** get no line. Apple's public API has no transit or cycling route shapes, so they keep "Take the T here" and Directions.
+  - **Privacy:** only stop coordinates are sent to Apple, never the user's location.
+  - **Later:** Google Routes through the API if we need transit lines or Android.
 - **Your location:** the blue dot shows on the Map tab and the active trail after iOS's "while using" permission prompt. It's read on the phone only and never stored or sent, which matches the existing privacy rule (live location is not stored).
 
