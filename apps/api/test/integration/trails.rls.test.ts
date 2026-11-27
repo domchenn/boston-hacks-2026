@@ -234,6 +234,15 @@ describe('details and filters', () => {
     expect(ids).toEqual(late.rowCount ? [trail.public] : [])
   })
 
+  it('feed places carry each stop’s travel mode, for map thumbnails', async () => {
+    const feed = await service.list({ neighborhood: tag }, users.owner)
+    const places = feed.find((t) => t.id === trail.public)?.places ?? []
+    expect(places.map((p) => [p.name, p.travelModeToStop])).toEqual([
+      ['First stop', null],
+      ['Second stop', 'walk'],
+    ])
+  })
+
   it('an unknown id is null, not an error', async () => {
     expect(await service.get(randomUUID(), users.owner)).toBeNull()
   })

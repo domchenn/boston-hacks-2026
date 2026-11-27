@@ -32,7 +32,7 @@ const CREATOR_FIELDS = 'id, username, display_name, avatar_url'
 const FEED_SELECT = `id, title, description, category, custom_category, neighborhood, cover_image_url, estimated_cost,
   estimated_duration_minutes, scheduled_at, primary_line, is_curated, created_at,
   creator:profiles!sidequests_creator_id_fkey(${CREATOR_FIELDS}),
-  sidequest_stops(place_name, stop_order, latitude, longitude, experience:experiences(open_late)),
+  sidequest_stops(place_name, stop_order, latitude, longitude, travel_mode_to_stop, experience:experiences(open_late)),
   checklist_items(count)`
 
 const DETAIL_SELECT = `id, title, description, category, custom_category, neighborhood, cover_image_url, estimated_cost,
@@ -70,6 +70,7 @@ type FeedRow = SummaryRow & {
     stop_order: number
     latitude: number | null
     longitude: number | null
+    travel_mode_to_stop: string | null
     experience: { open_late: boolean | null } | null
   }[]
   checklist_items: { count: number }[]
@@ -162,6 +163,7 @@ export class TrailsService {
           latitude: stop.latitude,
           longitude: stop.longitude,
           openLate: stop.experience?.open_late === true,
+          travelModeToStop: stop.travel_mode_to_stop as TravelMode | null,
         })),
       }
     })
