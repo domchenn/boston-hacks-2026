@@ -1,5 +1,5 @@
 /**
- * /onboarding: a new user picks a username (plus display name and university)
+ * /onboarding: a new user picks a username (plus an optional display name)
  * before using the app. AuthPage sends signed-in users here while
  * profile.username is empty; afterwards it doubles as "Edit profile" (the You
  * page's settings button links here). Saves with an UPDATE, refreshes the shared
@@ -15,7 +15,6 @@ import {
   DISPLAY_NAME_MAX,
   loadProfileFields,
   saveProfileFields,
-  UNIVERSITY_MAX,
   USERNAME_PATTERN,
   type ProfileFields,
 } from './onboarding-api'
@@ -35,9 +34,6 @@ function validate(fields: ProfileFields): FieldErrors {
   }
   if (fields.displayName.trim().length > DISPLAY_NAME_MAX) {
     errors.displayName = `Use ${DISPLAY_NAME_MAX} characters or fewer.`
-  }
-  if (fields.university.trim().length > UNIVERSITY_MAX) {
-    errors.university = `Use ${UNIVERSITY_MAX} characters or fewer.`
   }
   return errors
 }
@@ -69,7 +65,7 @@ function OnboardingForm({ userId }: { userId: string }) {
 
   const [load, setLoad] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [fields, setFields] = useState<ProfileFields>({ username: '', displayName: '', university: '' })
+  const [fields, setFields] = useState<ProfileFields>({ username: '', displayName: '' })
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -134,7 +130,7 @@ function OnboardingForm({ userId }: { userId: string }) {
     setSubmitted(true)
     setFormError(null)
 
-    const firstInvalid = (['username', 'displayName', 'university'] as const).find((f) => errors[f])
+    const firstInvalid = (['username', 'displayName'] as const).find((f) => errors[f])
     if (firstInvalid) {
       const input = event.currentTarget.elements.namedItem(firstInvalid)
       if (input instanceof HTMLInputElement) input.focus()
@@ -211,26 +207,6 @@ function OnboardingForm({ userId }: { userId: string }) {
             onChange={update('displayName')}
             disabled={saving}
             {...describedBy('displayName')}
-          />
-        </AuthField>
-
-        <AuthField
-          id={`${id}-university`}
-          label="University"
-          error={visibleError('university')}
-          hint="Optional."
-        >
-          <input
-            id={`${id}-university`}
-            name="university"
-            type="text"
-            autoComplete="organization"
-            maxLength={UNIVERSITY_MAX}
-            placeholder="Northeastern"
-            value={fields.university}
-            onChange={update('university')}
-            disabled={saving}
-            {...describedBy('university', true)}
           />
         </AuthField>
 

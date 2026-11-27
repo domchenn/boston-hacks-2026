@@ -13,7 +13,7 @@
   color: var(--color-text);
 }
 
-/* ---------- Header: avatar, name, @username · university, edit ----------- */
+/* ---------- Header: avatar, name, @username · community, edit ----------- */
 .profile-head { display: flex; align-items: center; gap: 14px; }
 .profile-head__text { min-width: 0; flex: 1; }
 .profile-head__edit { margin-left: auto; }

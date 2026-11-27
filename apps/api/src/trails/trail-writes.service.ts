@@ -9,13 +9,19 @@
  *   22023 (a bad value)                                          → 400
  *   42501 (not yours, not your community, can't see the remix)   → 403
  *   23503 (a referenced place or community no longer exists)    → 422
+ *
+ * Also the editor's other calls, ported from the web's features/make/edit-trail.ts:
+ * each stop's place-library link (sign-in optional, RLS decides), and unpublishing
+ * or deleting a trail (RLS: its creator, or an admin). When nothing matched, the
+ * trail isn't yours or is gone, which is a 404.
  */
-import { BadRequestException, ForbiddenException, Injectable, UnprocessableEntityException } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import type { SaveTrailBody } from '@breadcrumb/contracts'
 import type { AuthUser } from '../auth/auth-user.js'
 import { SupabaseClients } from '../supabase/supabase-clients.js'
 
 type DbError = { code?: string; message?: string }
+const NOT_YOURS = 'This trail isn’t yours, or it no longer exists.'
 
 function rethrow(error: DbError): never {
   const message = error.message ?? 'This trail couldn’t be saved.'
@@ -45,5 +51,33 @@ export class TrailWritesService {
       .rpc('save_trail', { p_trail: body, ...(id ? { p_trail_id: id } : {}) })
     if (error) rethrow(error)
     return { id: data as string }
+  }
+
+  /** Each stop's place-library link and that place's neighborhood. */
+  async stopLibrary(trailId: string, user: AuthUser | null) {
+    const { data, error } = await this.clients
+      .forUser(user)
+      .from('sidequest_stops')
+      .select('id, experience_id, experiences(neighborhood)')
+      .eq('sidequest_id', trailId)
+      .returns<{ id: string; experience_id: string | null; experiences: { neighborhood: string | null } | null }[]>()
+    if (error) throw error
+    return data.map((row) => ({ stopId: row.id, experienceId: row.experience_id, neighborhood: row.experiences?.neighborhood ?? null }))
+  }
+
+  /** Back to draft: hidden from everyone but its creator. Stops and crumbs are untouched. */
+  async unpublish(trailId: string, user: AuthUser): Promise<{ id: string; status: 'draft' }> {
+    const { data, error } = await this.clients.forUser(user).from('sidequests').update({ status: 'draft' }).eq('id', trailId).select('id')
+    if (error) throw error
+    if (data.length === 0) throw new NotFoundException(NOT_YOURS)
+    return { id: trailId, status: 'draft' }
+  }
+
+  /** Deletes the trail for good: its stops, crumbs, everyone's progress and ratings go with it. */
+  async remove(trailId: string, user: AuthUser): Promise<{ id: string; deleted: true }> {
+    const { data, error } = await this.clients.forUser(user).from('sidequests').delete().eq('id', trailId).select('id')
+    if (error) throw error
+    if (data.length === 0) throw new NotFoundException(NOT_YOURS)
+    return { id: trailId, deleted: true }
   }
 }
