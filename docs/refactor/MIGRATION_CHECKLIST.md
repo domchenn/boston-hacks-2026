@@ -27,7 +27,7 @@ Target implementation progress is tracked below; baseline evidence is in [BASELI
 - [ ] M17 — Evaluate Drizzle and PostGIS adoption with least-privilege/RLS tests and additive SQL migrations. Depends M08. Introduce only as needed; do not rewrite working RPCs.
 
 ## Clients (prioritize mobile or web based on product needs)
-- [ ] M18 — Expo scaffold, native auth/session persistence, API client. Depends M04, M08–M09.
+- [ ] M18 — Expo scaffold, native auth/session persistence, API client. Depends M04, M08–M09. M18a in review (PR from feat/m18a-expo-app): `apps/mobile` Expo SDK 58 app (Expo Router, TypeScript strict) in the npm workspace, using `@breadcrumb/contracts`; first screen lists trails from the API; design tokens copied from docs/styles/tokens.css with a drift check; app icon from the logo; CI lint/typecheck/build include it (`expo export` iOS bundle); expo-doctor 20/20. React pinned to exactly 19.3.0 in both apps (React Native needs the exact version). Next: M18b email sign-in with the session in secure storage; Google and Sign in with Apple later (console setup).
 - [ ] M19 — Expo discovery and details; device tests. Depends M18, M10.
 - [ ] M20 — Expo active trail, location/camera/photos/completion; device tests. Depends M19, M14, M16.
 - [ ] M21 — Expo saved/profile/social/create and push as needed. Depends relevant APIs.
@@ -38,7 +38,7 @@ Target implementation progress is tracked below; baseline evidence is in [BASELI
 - [ ] M24 — Monitoring, analytics (privacy-safe), rate limits, reporting, backup and rollback checks. Depends M11; before launch.
 - [ ] M25 — Staging end-to-end regression and security checks for actual release scope. Depends migrated slices and M24.
 - [ ] M26 — Human-approved production release, backwards compatibility, smoke checks and rollback readiness. Depends M25. Release 3 (API live in production) runbook in RELEASE.md, with the one-time production Cloud Run setup and the `Deploy production API` workflow (PR from docs/release-3-runbook). **Release 3 done 2026-11-27:** the API is live in production (see the RELEASE.md result); backup-5 taken; 28/28 migrations; all photos private.
-- [ ] M27 — EAS internal beta, device QA and human-approved app store release. Depends M19–M20, M24 and relevant backend readiness.
+- [ ] M27 — EAS internal beta, device QA and human-approved app store release. Depends M19–M20, M24 and relevant backend readiness. Owner decision 2026-11-27: build the app first; **M24 (rate limits, alerts, uptime check) must be done before the beta goes to testers.**
 - [ ] M28 — Benchmark AI candidates only when a product feature needs AI; assess cost per successful task, quality, latency, privacy.
 - [ ] M29 — Reassess R2, Redis/BullMQ/workers, search and payments based on measured need; no mandatory adoption.
 
