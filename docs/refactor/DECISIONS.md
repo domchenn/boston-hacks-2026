@@ -56,6 +56,23 @@ M04 merged in PR #98: the web app is in `apps/web`, and both Vercel projects nee
 
 Status: accepted by the owner. Alternatives compared: Railway (simplest, no meaningful free tier), Render (free tier sleeps after 15 minutes and takes about a minute to wake), Fly.io (no ongoing free tier for new accounts), Cloudflare Workers (cannot run NestJS/Fastify without a rewrite). Cloud Run runs the same Docker image, scales to zero with an always-free monthly allowance and supports startup credits, at the cost of more setup. One Google Cloud project per environment: `breadcrumb-staging-515905` (new) and the existing `breadcrumb` project (which already holds the Maps keys) for production. Both have alert-only budgets ($5 staging, $10 production) that ignore credits, so they report real usage during the free trial. Spend-cap enforcement was rejected because it could pause Maps on the live site. The billing account is on the free trial and must be upgraded before the trial ends or the live site loses Maps. The image stays host-neutral, so moving later needs no code change.
 
+## 2026-11-26 — M16a photo uploads go through the API
+
+Status: accepted by the owner.
+
+**Problem:** the web shrank photos in the browser, which removed their metadata, but small JPEGs and HEIC files it couldn't decode were uploaded as taken, GPS included. The app also stored whatever photo URL the browser sent.
+
+**Decision:** photos are uploaded to the API as the request body (image/*, at most 5 MB; no new upload library).
+- The API decodes the photo with `sharp`, applies the camera rotation, shrinks it to 1600 px and re-encodes it as JPEG with no metadata.
+- It then stores the file and records the row as the caller, so the storage folder rule and RLS still apply and no service-role key is involved. The URL is built by the API.
+- HEIC is refused (prebuilt `sharp` has no HEVC decoder); browsers usually convert it to JPEG first.
+
+**Rejected:** direct-to-Storage uploads with a later clean-up step, which would need the background workers that are deferred.
+
+**Existing photos:** a read-only check found all 6 production photos already free of GPS data (browser-re-encoded), so no clean-up is needed.
+
+**Open finding for the "private photos" decision:** the `trail-photos` bucket is public and anonymous callers can list it, so file names (user-id folders) and photos from friends-only trails can be found without seeing the trail.
+
 ## 2026-11-26 — Photo privacy follows standard practice
 
 Status: accepted by the owner. For privacy, Breadcrumb adopts what well-run photo apps do by default. Any alternative gets raised with the owner first, with reasons.

@@ -13,8 +13,13 @@
  *
  * Used by: Active trail (photos per stop), Trail detail and the
  * Finished / Rate screen (photo grid).
+ *
+ * With VITE_API_URL set, listing, adding and deleting trail photos go through the
+ * API (M16a). The photo is still shrunk here first (smaller upload); the API then
+ * re-encodes it as a JPEG with no GPS or camera data and builds its URL itself.
  */
 
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 import type { TrailCreator } from '@/lib/api/trails'
 
@@ -82,6 +87,27 @@ function friendlyStorageError(message: string) {
   return 'Couldn’t upload that photo. Please try again.'
 }
 
+/** A user-facing message for an API failure while adding or deleting a photo. */
+function apiPhotoError(error: unknown, action: 'add' | 'delete'): Error {
+  const status = error instanceof Error && 'status' in error ? Number((error as { status: unknown }).status) : 0
+  const message = !status
+    ? 'Couldn’t reach Breadcrumb. Check your connection and try again.'
+    : status === 401
+      ? 'Log in to add photos.'
+      : status === 413
+        ? 'That photo is too big (max 5 MB).'
+        : status === 415
+          ? 'Use a JPEG, PNG or WebP photo.'
+          : status === 403 && action === 'add'
+            ? 'Start or save this trail before adding photos.'
+            : status === 404 && action === 'delete'
+              ? 'You can only delete your own photos.'
+              : action === 'add'
+                ? 'Couldn’t save that photo. Please try again.'
+                : 'Couldn’t delete that photo. Please try again.'
+  return new Error(message, { cause: error })
+}
+
 /** The storage path of one of our public URLs (…/object/public/trail-photos/<path>). */
 function pathFromUrl(url: string): string | null {
   const marker = `/object/public/${BUCKET}/`
@@ -118,6 +144,15 @@ export async function addTrailPhoto(
   stopId?: string,
 ): Promise<TrailPhoto> {
   const userId = await currentUserId()
+  const api = getApi()
+  if (api) {
+    const image = await shrinkImage(file)
+    try {
+      return await (await api).addTrailPhoto(trailId, image, { caption: caption?.trim() || undefined, stopId })
+    } catch (error) {
+      throw apiPhotoError(error, 'add')
+    }
+  }
   const { path, url } = await upload(file, `trails/${trailId}`)
   const { data, error } = await supabase
     .from('quest_photos')
@@ -142,6 +177,8 @@ export async function addTrailPhoto(
 
 /** Public photos on a trail, newest first. */
 export async function getTrailPhotos(trailId: string): Promise<TrailPhoto[]> {
+  const api = getApi()
+  if (api) return (await api).getTrailPhotos(trailId)
   const { data, error } = await supabase
     .from('quest_photos')
     .select('id, photo_url, caption, created_at, stop_id, uploader:profiles!quest_photos_user_id_fkey(id, username, display_name, avatar_url)')
@@ -160,6 +197,15 @@ export async function getTrailPhotos(trailId: string): Promise<TrailPhoto[]> {
 
 /** Delete one of your own trail photos (the row, then the file). */
 export async function deletePhoto(photoId: string): Promise<void> {
+  const api = getApi()
+  if (api) {
+    try {
+      await (await api).deletePhoto(photoId)
+      return
+    } catch (error) {
+      throw apiPhotoError(error, 'delete')
+    }
+  }
   const { data, error } = await supabase.from('quest_photos').delete().eq('id', photoId).select('photo_url')
   if (error) throw new Error('Couldn’t delete that photo. Please try again.')
   if (!data?.length) throw new Error('You can only delete your own photos.')
