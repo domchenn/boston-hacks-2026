@@ -72,3 +72,20 @@ Status: accepted by the owner.
 **Existing photos:** a read-only check found all 6 production photos already free of GPS data (browser-re-encoded), so no clean-up is needed.
 
 **Open finding for the "private photos" decision:** the `trail-photos` bucket is public and anonymous callers can list it, so file names (user-id folders) and photos from friends-only trails can be found without seeing the trail.
+
+## 2026-11-26 — Photo privacy follows standard practice
+
+Status: accepted by the owner. For privacy, Breadcrumb adopts what well-run photo apps do by default. Any alternative gets raised with the owner first, with reasons.
+
+The practices, applied in steps:
+- metadata removed from uploads (M16a);
+- nobody can list stored photos (step 1: migration `stop_public_photo_listing`);
+- non-public photos only through short-lived links, with unguessable file names;
+- deleting a photo, trail or account deletes the files;
+- self-serve account deletion.
+
+None of these needs a service-role key: each runs as the caller under storage and table policies.
+
+**Step 2 (implemented):** the private `photos` bucket with one-hour signed links and random file names (`<trail id>/<random>.jpg`). Deleting a photo, a moderator-hidden photo or a trail removes the files.
+- **Older photos** stay in the public bucket with their links. All 6 on production are on public trails, so none is private content exposed.
+- **Not covered:** an older photo on a trail that later becomes friends-only would still open by its link. Moving older photos needs the uploaders' or a moderator's action, so that's left for later.

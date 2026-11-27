@@ -40,9 +40,9 @@ select ok(
   exists (
     select 1 from pg_policies
     where schemaname = 'storage' and tablename = 'objects' and cmd = 'DELETE'
-      and policyname = 'Users delete their own trail photos'
-      and qual like '%foldername%' and qual like '%auth.uid()%'),
-  'users can only delete photos in their own folder (policy check)');
+      and policyname = 'Users delete their own trail photos; admins delete any'
+      and qual like '%foldername%' and qual like '%auth.uid()%' and qual like '%is_admin()%'),
+  'users can only delete photos in their own folder, plus admins (policy check; renamed by let_admins_remove_photo_files)');
 
 -- ---------------------------------------------------------------- photo records
 select throws_ok(
