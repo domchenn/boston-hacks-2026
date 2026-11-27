@@ -85,3 +85,7 @@ The practices, applied in steps:
 - self-serve account deletion.
 
 None of these needs a service-role key: each runs as the caller under storage and table policies.
+
+**Step 2 (implemented):** the private `photos` bucket with one-hour signed links and random file names (`<trail id>/<random>.jpg`). Deleting a photo, a moderator-hidden photo or a trail removes the files.
+- **Older photos** stay in the public bucket with their links. All 6 on production are on public trails, so none is private content exposed.
+- **Not covered:** an older photo on a trail that later becomes friends-only would still open by its link. Moving older photos needs the uploaders' or a moderator's action, so that's left for later.

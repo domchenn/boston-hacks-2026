@@ -15,9 +15,10 @@
  * or deleting a trail (RLS: its creator, or an admin). When nothing matched, the
  * trail isn't yours or is gone, which is a 404.
  */
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import type { SaveTrailBody } from '@breadcrumb/contracts'
 import type { AuthUser } from '../auth/auth-user.js'
+import { removePhotoFiles, trailFolderPaths, type PhotoFile } from '../photos/photo-files.js'
 import { SupabaseClients } from '../supabase/supabase-clients.js'
 
 type DbError = { code?: string; message?: string }
@@ -42,6 +43,8 @@ function rethrow(error: DbError): never {
 
 @Injectable()
 export class TrailWritesService {
+  private readonly logger = new Logger(TrailWritesService.name)
+
   constructor(private readonly clients: SupabaseClients) {}
 
   /** Creates (id null) or replaces (id set) the caller's trail; returns its id. */
@@ -74,8 +77,28 @@ export class TrailWritesService {
   }
 
   /** Deletes the trail for good: its stops, crumbs, everyone's progress and ratings go with it. */
+  /**
+   * Deletes the trail and, first, every photo file on it, anyone's (storage policy: a
+   * trail's creator can delete the files in its folder). Older public photos can only
+   * be removed by their uploader, so other people's are left until they're moved.
+   */
   async remove(trailId: string, user: AuthUser): Promise<{ id: string; deleted: true }> {
-    const { data, error } = await this.clients.forUser(user).from('sidequests').delete().eq('id', trailId).select('id')
+    const db = this.clients.forUser(user)
+    const { data: trail, error: readError } = await db.from('sidequests').select('creator_id').eq('id', trailId).returns<{ creator_id: string }[]>().maybeSingle()
+    if (readError) throw readError
+    if (!trail || trail.creator_id !== user.id) throw new NotFoundException(NOT_YOURS)
+
+    const { data: photos, error: photosError } = await db.from('quest_photos').select('photo_url, storage_path').eq('sidequest_id', trailId).returns<PhotoFile[]>()
+    if (photosError) throw photosError
+    const folder = await trailFolderPaths(db, trailId)
+    const files: PhotoFile[] = [...new Set([...photos.flatMap((p) => (p.storage_path ? [p.storage_path] : [])), ...folder])].map((path) => ({
+      storage_path: path,
+      photo_url: null,
+    }))
+    files.push(...photos.filter((p) => !p.storage_path))
+    for (const problem of await removePhotoFiles(db, files)) this.logger.warn(`couldn't remove a deleted trail's photo file: ${problem}`)
+
+    const { data, error } = await db.from('sidequests').delete().eq('id', trailId).select('id')
     if (error) throw error
     if (data.length === 0) throw new NotFoundException(NOT_YOURS)
     return { id: trailId, deleted: true }
