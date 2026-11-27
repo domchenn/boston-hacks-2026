@@ -70,3 +70,24 @@ export async function trailFolderPaths(db: SupabaseClient, trailId: string): Pro
     if (data.length < 1000) return paths
   }
 }
+
+/** Every photo file on a trail: its private folder plus older public photos recorded on it. */
+export async function trailPhotoFiles(db: SupabaseClient, trailId: string): Promise<PhotoFile[]> {
+  const { data, error } = await db.from('quest_photos').select('photo_url, storage_path').eq('sidequest_id', trailId).returns<PhotoFile[]>()
+  if (error) throw Object.assign(new Error(error.message), { code: error.code })
+  const privatePaths = new Set([...data.flatMap((p) => (p.storage_path ? [p.storage_path] : [])), ...(await trailFolderPaths(db, trailId))])
+  return [...[...privatePaths].map((path) => ({ storage_path: path, photo_url: null })), ...data.filter((p) => !p.storage_path)]
+}
+
+/** Every file under a folder of the legacy public bucket, at any depth (e.g. "<user id>/"). */
+export async function legacyFolderFiles(db: SupabaseClient, folder: string): Promise<PhotoFile[]> {
+  const files: PhotoFile[] = []
+  const { data, error } = await db.storage.from(LEGACY_BUCKET).list(folder, { limit: 1000 })
+  if (error) throw Object.assign(new Error(error.message), { code: 'storage' })
+  for (const entry of data) {
+    const path = `${folder}/${entry.name}`
+    if (entry.id) files.push({ storage_path: null, photo_url: `/object/public/${LEGACY_BUCKET}/${path}` })
+    else files.push(...(await legacyFolderFiles(db, path)))
+  }
+  return files
+}

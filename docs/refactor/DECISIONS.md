@@ -89,3 +89,8 @@ None of these needs a service-role key: each runs as the caller under storage an
 **Step 2 (implemented):** the private `photos` bucket with one-hour signed links and random file names (`<trail id>/<random>.jpg`). Deleting a photo, a moderator-hidden photo or a trail removes the files.
 - **Older photos** stay in the public bucket with their links. All 6 on production are on public trails, so none is private content exposed.
 - **Not covered:** an older photo on a trail that later becomes friends-only would still open by its link. Moving older photos needs the uploaders' or a moderator's action, so that's left for later.
+
+**Step 3 (implemented): self-serve account deletion.** Settings → Delete account (`DELETE /v1/me`).
+- **What's removed:** the account and everything linked to it, including photo files on the person's trails and their photos elsewhere.
+- **One thing kept, without the person's name:** reports they filed (`reports.reporter_id` is set to null instead of deleting the report). That's standard practice, so open safety reports about others aren't lost.
+- **Available with the API only.** Until the production API release, the production privacy page keeps saying "contact the team".
