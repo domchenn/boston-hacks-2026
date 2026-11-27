@@ -1,7 +1,8 @@
 /**
  * The Breadcrumb logo: the three-crumb mark (same paths as the website's CrumbMark and
  * docs/assets/svg/logo-mark.svg) in crumb orange, with the "breadcrumb" wordmark.
- * Used in Explore's header, as in the mockups.
+ * Used in Explore's header, as in the mockups. The viewBox has a little room around the
+ * crumbs so their edges aren't clipped.
  */
 import { StyleSheet, View } from 'react-native'
 import Svg, { G, Path } from 'react-native-svg'
@@ -10,7 +11,7 @@ import { AppText } from './AppText'
 
 export function CrumbMark({ size }: { size: number }) {
   return (
-    <Svg width={size} height={size} viewBox="20 29 401 409" accessibilityElementsHidden importantForAccessibility="no">
+    <Svg width={size} height={size} viewBox="10 19 421 429" accessibilityElementsHidden importantForAccessibility="no">
       <G fill={colors.crumb}>
         <Path d="m235.41 300.7c-8.53 16.25-17.71 36.75-32.17 46.34-14.6 9.54-36.75 8.64-55.04 11.39-18.26 2.42-36.11 6.33-54.22 3.57-18.35-2.6-42.7-7.31-54.69-19.99-12.22-12.52-17.59-37.73-18.37-55.15-0.77-17.67 8.69-35.11 13.46-49.81 4.79-14.53 9.81-24.67 15.23-37.87 5.43-13.46 7.7-29.21 17.21-42.5 9.36-13.33 23.37-31.02 39.52-37.73 16.22-6.95 40.31-9.16 57.45-3.62 16.83 5.44 32.75 22.3 43.81 36.43 11.24 13.85 15.12 30.85 23.02 46.99 7.88 15.96 23.4 32.76 24.31 49.55 0.61 16.94-10.69 36.01-19.52 52.4z" />
         <Path d="m414.45 170.64c-5.58 15.86-15.19 35.41-28.74 45.22-13.44 9.62-35.77 14.36-52.17 13.06-16.34-1.07-37.02-9.11-45.95-20.68-8.99-11.47-4.5-35.71-7.71-48.13-3.1-12.61-5.2-15.08-11.52-26.8-6.19-11.5-25.58-28.26-26.32-43.68-0.64-15.37 9.83-38.3 22.26-48.29 12.39-9.82 35.73-12.11 52.34-11.28 16.63 0.65 31.49 9.16 47.34 15.58 15.59 6.4 37.33 10.84 46.75 23.26 9.38 12.6 8.58 34.65 9.17 51.6 0.67 16.93 0.38 34.3-5.45 50.14z" />
@@ -23,7 +24,7 @@ export function CrumbMark({ size }: { size: number }) {
 export function Logo() {
   return (
     <View style={styles.row} accessibilityRole="header" accessibilityLabel="Breadcrumb">
-      <CrumbMark size={26} />
+      <CrumbMark size={30} />
       <AppText style={styles.word}>breadcrumb</AppText>
     </View>
   )
