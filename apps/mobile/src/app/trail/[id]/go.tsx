@@ -1,25 +1,27 @@
 /**
  * The active trail (Mobile-Run mockup), full screen: progress bar, "stop N of M", the
  * stop's name and what to do, its crumbs to tick, then Directions (Apple Maps, with
- * the real route) and "I'm here, next stop →" / "Finish trail", which leads to rating
+ * the real route), your photos at the stop (Add photo: camera or library) and
+ * "I'm here, next stop →" / "Finish trail", which leads to rating
  * the trail (RateTrail; not for your own trail). Pause closes it; the
  * trail stays in progress. Your location is never read here. The map comes later.
  */
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { ActionSheetIOS, ActivityIndicator, Alert, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Check, X } from 'lucide-react-native'
+import { Camera, Check, X } from 'lucide-react-native'
 import { useState, type ReactNode } from 'react'
-import type { TrailCrumb, TrailDetail, TrailStop, TravelMode } from '@breadcrumb/contracts'
+import type { TrailCrumb, TrailDetail, TrailPhoto, TrailStop, TravelMode } from '@breadcrumb/contracts'
 import { AppText } from '@/components/AppText'
 import { Button } from '@/components/Button'
 import { StateView } from '@/components/StateView'
 import { RateTrail } from '@/features/trail/RateTrail'
 import { useActiveTrail } from '@/features/trail/useActiveTrail'
+import { useStopPhotos } from '@/features/trail/useStopPhotos'
 import { useSession } from '@/lib/session'
 import { TRAVEL_LABELS } from '@/lib/trailFormat'
 import { tapLight, tapSuccess } from '@/lib/haptics'
-import { colors, floatShadow, fonts, text } from '@/theme/tokens'
+import { colors, floatShadow, fonts, radius, text } from '@/theme/tokens'
 
 export default function ActiveTrailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -60,6 +62,7 @@ function Shell({ onClose, children, label = 'Pause' }: { onClose: () => void; ch
 function ActiveTrail({ trailId, userId }: { trailId: string; userId: string }) {
   const router = useRouter()
   const active = useActiveTrail(trailId, userId)
+  const photos = useStopPhotos(trailId, userId)
   const [finished, setFinished] = useState(false)
   const close = () => router.back()
 
@@ -111,7 +114,8 @@ function ActiveTrail({ trailId, userId }: { trailId: string; userId: string }) {
       trail={trail}
       index={stopIndex}
       ticked={active.ticked}
-      error={active.error}
+      error={active.error ?? photos.error}
+      photos={<StopPhotos photos={photos} stop={active.load.trail.stops[stopIndex]!} />}
       finishing={active.finishing}
       onToggle={(crumbId) => {
         tapLight()
@@ -144,6 +148,7 @@ function StopView({
   index,
   ticked,
   error,
+  photos,
   finishing,
   onToggle,
   onStop,
@@ -154,6 +159,8 @@ function StopView({
   index: number
   ticked: Set<string>
   error: string | null
+  /** The stop's photo row. */
+  photos: ReactNode
   finishing: boolean
   onToggle: (crumbId: string) => void
   onStop: (index: number) => void
@@ -204,6 +211,8 @@ function StopView({
           </View>
         ) : null}
 
+ {photos}
+
         {index > 0 ? <Button variant="ghost" label="← Previous stop" onPress={() => onStop(index - 1)} /> : null}
       </ScrollView>
 
@@ -225,6 +234,62 @@ function StopView({
         </View>
       </View>
     </Shell>
+  )
+}
+
+/** Your photos at this stop, then an Add photo tile. Long-press a photo to delete it. */
+function StopPhotos({ stop, photos }: { stop: TrailStop; photos: ReturnType<typeof useStopPhotos> }) {
+  const mine = photos.photos.filter((p) => p.stopId === stop.id)
+  const busy = photos.uploading === stop.id
+
+  function choose() {
+    const options = ['Take photo', 'Choose from library', 'Cancel']
+    const pick = (i: number) => {
+      if (i === 0) void photos.add(stop, 'camera')
+      if (i === 1) void photos.add(stop, 'library')
+    }
+    if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 2 }, pick)
+    else Alert.alert('Add a photo', undefined, [
+      { text: options[0], onPress: () => pick(0) },
+      { text: options[1], onPress: () => pick(1) },
+      { text: 'Cancel', style: 'cancel' },
+    ])
+  }
+
+  function confirmDelete(photo: TrailPhoto) {
+    Alert.alert('Delete this photo?', 'It’s removed from the trail for everyone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => void photos.remove(photo) },
+    ])
+  }
+
+  return (
+    <View style={styles.crumbs}>
+      <AppText style={styles.crumbsTitle}>Your photos here</AppText>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a photo"
+          disabled={busy}
+          onPress={choose}
+          style={({ pressed }) => [styles.addPhoto, pressed && styles.crumbPressed]}
+        >
+          {busy ? <ActivityIndicator color={colors.crumbStrong} /> : <Camera size={24} strokeWidth={2} color={colors.crumbStrong} />}
+          <AppText style={styles.addPhotoLabel}>{busy ? 'Uploading' : 'Add photo'}</AppText>
+        </Pressable>
+        {mine.map((photo) => (
+          <Pressable
+            key={photo.id}
+            accessibilityRole="image"
+            accessibilityLabel={photo.caption ?? 'Your photo'}
+            accessibilityHint="Long-press to delete"
+            onLongPress={() => confirmDelete(photo)}
+          >
+            <Image source={{ uri: photo.url }} style={styles.photo} />
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
   )
 }
 
@@ -307,4 +372,18 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: 'row', gap: 12 },
   next: { flex: 1 },
   error: { color: colors.crumbDeep, fontSize: text.sm },
+  photoRow: { gap: 10, paddingTop: 10 },
+  addPhoto: {
+    width: 88,
+    height: 88,
+    borderRadius: radius.small,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.lineStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  addPhotoLabel: { fontFamily: fonts.semibold, fontSize: text.xs, color: colors.crumbStrong },
+  photo: { width: 88, height: 88, borderRadius: radius.small, backgroundColor: colors.sand },
 })

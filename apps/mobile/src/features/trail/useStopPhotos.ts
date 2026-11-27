@@ -1,0 +1,97 @@
+/**
+ * Your photos on a trail, by stop, for the active trail (like the website's
+ * useStopPhotos): add() takes a photo or picks one from the library, shrinks it to
+ * 1600 px as a fresh JPEG on the phone (under the API's 5 MB limit, with no location or
+ * camera data; the API cleans it again) and uploads it captioned "At <place>". remove() deletes one.
+ */
+import { useCallback, useEffect, useState } from 'react'
+import * as ImagePicker from 'expo-image-picker'
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
+import type { TrailPhoto, TrailStop } from '@breadcrumb/contracts'
+import { api, statusOf } from '@/lib/api'
+
+export type PhotoSource = 'camera' | 'library'
+
+/** Longest side of an uploaded photo, as the API stores it. */
+const MAX_SIDE = 1600
+
+/** Asks for the camera or the library, then returns a small clean JPEG's file URI, or null if cancelled. */
+async function pickPhoto(source: PhotoSource): Promise<string | null | 'denied'> {
+  const permission =
+    source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync()
+  if (!permission.granted) return 'denied'
+  const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1, exif: false }
+  const result = source === 'camera' ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options)
+  const asset = result.canceled ? null : result.assets[0]
+  if (!asset) return null
+  const context = ImageManipulator.manipulate(asset.uri)
+  if (Math.max(asset.width, asset.height) > MAX_SIDE) {
+    context.resize(asset.width >= asset.height ? { width: MAX_SIDE } : { height: MAX_SIDE })
+  }
+  const image = await context.renderAsync()
+  const saved = await image.saveAsync({ compress: 0.82, format: SaveFormat.JPEG })
+  return saved.uri
+}
+
+export function useStopPhotos(trailId: string, userId: string) {
+  const [photos, setPhotos] = useState<TrailPhoto[]>([])
+  /** The stop a photo is uploading for, if any. */
+  const [uploading, setUploading] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!api) return
+    let cancelled = false
+    api.getTrailPhotos(trailId).then(
+      (all) => !cancelled && setPhotos(all.filter((p) => p.uploader?.id === userId)),
+      () => undefined,
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [trailId, userId])
+
+  const add = useCallback(
+    async (stop: TrailStop, source: PhotoSource) => {
+      if (!api) return
+      setError(null)
+      let uri: string | null | 'denied'
+      try {
+        uri = await pickPhoto(source)
+      } catch {
+        setError('Couldn’t open that photo. Try another one.')
+        return
+      }
+      if (uri === 'denied') {
+        setError(source === 'camera' ? 'Allow camera access in Settings to take photos.' : 'Allow photo access in Settings to add photos.')
+        return
+      }
+      if (!uri) return
+      setUploading(stop.id)
+      try {
+        const image = await (await fetch(uri)).blob()
+        const photo = await api.addTrailPhoto(trailId, image, { stopId: stop.id, caption: `At ${stop.placeName}`.slice(0, 300) })
+        setPhotos((prev) => [photo, ...prev])
+      } catch (err) {
+        setError(statusOf(err) === 413 ? 'That photo is too big. Try another one.' : 'Your photo didn’t upload. Check your connection and try again.')
+      } finally {
+        setUploading(null)
+      }
+    },
+    [trailId],
+  )
+
+  const remove = useCallback(async (photo: TrailPhoto) => {
+    if (!api) return
+    const before = photos
+    setPhotos((prev) => prev.filter((p) => p.id !== photo.id))
+    try {
+      await api.deletePhoto(photo.id)
+    } catch {
+      setPhotos(before)
+      setError('Couldn’t delete that photo. Try again.')
+    }
+  }, [photos])
+
+  return { photos, uploading, error, add, remove }
+}
