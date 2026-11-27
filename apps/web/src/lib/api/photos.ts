@@ -167,7 +167,7 @@ export async function addTrailPhoto(
   }
   return {
     id: data.id,
-    url: data.photo_url,
+    url: data.photo_url ?? url,
     caption: data.caption,
     createdAt: data.created_at,
     stopId: data.stop_id,
@@ -185,7 +185,8 @@ export async function getTrailPhotos(trailId: string): Promise<TrailPhoto[]> {
     .eq('sidequest_id', trailId)
     .order('created_at', { ascending: false })
   if (error) throw error
-  return (data ?? []).map((p) => ({
+  // Without the API, privately stored photos (no public link) can't be shown, so they're skipped.
+  return (data ?? []).flatMap((p) => (p.photo_url ? [{ ...p, photo_url: p.photo_url }] : [])).map((p) => ({
     id: p.id,
     url: p.photo_url,
     caption: p.caption,
@@ -209,6 +210,6 @@ export async function deletePhoto(photoId: string): Promise<void> {
   const { data, error } = await supabase.from('quest_photos').delete().eq('id', photoId).select('photo_url')
   if (error) throw new Error('Couldn’t delete that photo. Please try again.')
   if (!data?.length) throw new Error('You can only delete your own photos.')
-  const path = pathFromUrl(data[0].photo_url)
+  const path = data[0].photo_url ? pathFromUrl(data[0].photo_url) : null
   if (path) await supabase.storage.from(BUCKET).remove([path])
 }

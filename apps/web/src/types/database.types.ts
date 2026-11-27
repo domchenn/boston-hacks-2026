@@ -321,7 +321,6 @@ export type Database = {
           id: string
           is_admin: boolean
           is_private: boolean
-          university: string | null
           username: string | null
         }
         Insert: {
@@ -333,7 +332,6 @@ export type Database = {
           id: string
           is_admin?: boolean
           is_private?: boolean
-          university?: string | null
           username?: string | null
         }
         Update: {
@@ -345,7 +343,6 @@ export type Database = {
           id?: string
           is_admin?: boolean
           is_private?: boolean
-          university?: string | null
           username?: string | null
         }
         Relationships: [
@@ -363,27 +360,30 @@ export type Database = {
           caption: string | null
           created_at: string
           id: string
-          photo_url: string
+          photo_url: string | null
           sidequest_id: string
           stop_id: string | null
+          storage_path: string | null
           user_id: string
         }
         Insert: {
           caption?: string | null
           created_at?: string
           id?: string
-          photo_url: string
+          photo_url?: string | null
           sidequest_id: string
           stop_id?: string | null
+          storage_path?: string | null
           user_id: string
         }
         Update: {
           caption?: string | null
           created_at?: string
           id?: string
-          photo_url?: string
+          photo_url?: string | null
           sidequest_id?: string
           stop_id?: string | null
+          storage_path?: string | null
           user_id?: string
         }
         Relationships: [
@@ -416,7 +416,7 @@ export type Database = {
           id: string
           note: string | null
           reason: string
-          reporter_id: string
+          reporter_id: string | null
           resolved_at: string | null
           resolved_by: string | null
           status: string
@@ -428,7 +428,7 @@ export type Database = {
           id?: string
           note?: string | null
           reason: string
-          reporter_id: string
+          reporter_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
@@ -440,7 +440,7 @@ export type Database = {
           id?: string
           note?: string | null
           reason?: string
-          reporter_id?: string
+          reporter_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
@@ -757,6 +757,11 @@ export type Database = {
       }
     }
     Functions: {
+      admin_move_photo: {
+        Args: { p_path: string; p_photo_id: string }
+        Returns: undefined
+      }
+      delete_my_account: { Args: never; Returns: undefined }
       friends_activity: {
         Args: { p_limit?: number }
         Returns: {
