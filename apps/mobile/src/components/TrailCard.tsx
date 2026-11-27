@@ -2,9 +2,11 @@
  * One trail in a list, as in the style guide's trail card: the neighborhood as an
  * orange eyebrow, an optional status on the right (blue "In progress"), the title, then
  * stops, cost, time and rating, on a white card with the guide's border and radius.
- * Works for any API list item with these fields (feed, saved, profile lists).
+ * Works for any API list item with these fields (feed, saved, profile lists); tapping
+ * it calls onPress (lists open the trail page).
  */
-import { StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
+import { formatCost, formatMinutes, stopCount } from '@/lib/trailFormat'
 import { colors, fonts, radius } from '@/theme/tokens'
 import { AppText } from './AppText'
 
@@ -18,26 +20,28 @@ export type CardTrail = {
 }
 
 function facts(trail: CardTrail): string {
-  const parts = [`${trail.stopCount} ${trail.stopCount === 1 ? 'stop' : 'stops'}`]
-  if (trail.estimatedCost !== null) parts.push(trail.estimatedCost === 0 ? 'Free' : `~$${Math.round(trail.estimatedCost)}`)
-  if (trail.estimatedMinutes !== null) {
-    const hours = trail.estimatedMinutes / 60
-    parts.push(hours >= 1 ? `${Number.isInteger(hours) ? hours : hours.toFixed(1)} hr` : `${trail.estimatedMinutes} min`)
-  }
+  const parts = [stopCount(trail.stopCount)]
+  if (trail.estimatedCost !== null) parts.push(formatCost(trail.estimatedCost))
+  if (trail.estimatedMinutes !== null) parts.push(formatMinutes(trail.estimatedMinutes))
   if (trail.rating.average !== null) parts.push(`★ ${trail.rating.average.toFixed(1)}`)
   return parts.join('  ·  ')
 }
 
-export function TrailCard({ trail, badge }: { trail: CardTrail; badge?: string }) {
+export function TrailCard({ trail, badge, onPress }: { trail: CardTrail; badge?: string; onPress?: () => void }) {
   return (
-    <View style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
       <View style={styles.top}>
         {trail.neighborhood ? <AppText variant="eyebrow">{trail.neighborhood}</AppText> : <View />}
         {badge ? <AppText variant="meta" style={styles.badge}>{badge}</AppText> : null}
       </View>
       <AppText variant="cardTitle">{trail.title}</AppText>
       <AppText variant="secondary">{facts(trail)}</AppText>
-    </View>
+    </Pressable>
   )
 }
 
@@ -50,6 +54,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 4,
   },
+  pressed: { backgroundColor: colors.sand },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   badge: { color: colors.blue, fontFamily: fonts.semibold },
 })
