@@ -3,10 +3,13 @@
  * - searchPeople: people whose @username or name contains the search.
  * - suggestPeopleToFollow: people who follow you that you don't follow back
  *   first, then people who've made published trails, then recent members.
- * Profiles and follows are public tables, so plain queries are enough.
+ * Profiles and follows are public tables, so plain queries are enough. With
+ * VITE_API_URL set, both come from the API (GET /v1/people, /v1/me/suggested-people),
+ * which always acts as the signed-in user (callers pass the session user as viewerId).
  */
 
 import type { TrailCreator } from '@/lib/api/trails'
+import { getApi } from '@/lib/apiClient'
 import { supabase } from '@/lib/supabase'
 
 /** supabase-js reports network failures without a Postgres code. */
@@ -19,11 +22,25 @@ function friendlyError(error: { code?: string; message?: string } | null) {
 
 const PERSON_FIELDS = 'id, username, display_name, avatar_url'
 
+type Api = NonNullable<Awaited<ReturnType<typeof getApi>>>
+
+/** Runs `call` through the API, with the same messages as friendlyError (API errors carry a status). */
+async function viaApi<T>(api: Promise<Api>, call: (client: Api) => Promise<T>): Promise<T> {
+  try {
+    return await call(await api)
+  } catch (error) {
+    const status = error instanceof Error && 'status' in error
+    throw friendlyError(status ? { code: 'api' } : { message: 'network' })
+  }
+}
+
 /** People whose @username or name contains `query` (you excluded), up to `limit`. */
 export async function searchPeople(viewerId: string, query: string, limit = 8): Promise<TrailCreator[]> {
   // Keep only characters that are safe inside a PostgREST or() filter.
   const q = query.trim().replace(/^@/, '').replace(/[^\p{L}\p{N} _.'-]/gu, '').slice(0, 40)
   if (q.length < 2) return []
+  const api = getApi()
+  if (api) return viaApi(api, (client) => client.searchPeople(q, limit))
   const { data, error } = await supabase
     .from('profiles')
     .select(PERSON_FIELDS)
@@ -42,6 +59,8 @@ export async function searchPeople(viewerId: string, query: string, limit = 8): 
  * published trails, then other recent members. Each has a username (for a profile link).
  */
 export async function suggestPeopleToFollow(viewerId: string, limit = 6): Promise<TrailCreator[]> {
+  const api = getApi()
+  if (api) return viaApi(api, (client) => client.getSuggestedPeople(limit))
   const [makers, follows, followers, recent] = await Promise.all([
     supabase
       .from('sidequests')
