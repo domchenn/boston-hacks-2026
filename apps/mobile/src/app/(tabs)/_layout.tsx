@@ -1,27 +1,46 @@
 /**
- * The four tabs (Explore, Map, Saved, You) with the style guide's tab bar (TabBar,
- * which also holds the + for Make a trail). Each tab has its own header in the app's
- * colours.
+ * The tab bar: Apple's own (UITabBarController through expo-router/native-tabs, Liquid
+ * Glass on iOS 26), with Explore · Map · + · Saved · You and SF Symbols icons. The + is
+ * a blocked tab whose press opens Make a trail as a modal. Each tab has its own stack.
  */
-import { Tabs } from 'expo-router'
-import { TabBar } from '@/components/TabBar'
+import { useRouter } from 'expo-router'
+import { NativeTabs } from 'expo-router/native-tabs'
 import { colors, fonts } from '@/theme/tokens'
 
 export default function TabsLayout() {
+  const router = useRouter()
+
   return (
-    <Tabs
-      tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.paper },
-        headerTitleStyle: { color: colors.ink, fontFamily: fonts.bold },
-        headerShadowVisible: false,
-        sceneStyle: { backgroundColor: colors.paper },
-      }}
+    <NativeTabs
+      tintColor={colors.crumbStrong}
+      labelStyle={{ fontFamily: fonts.medium }}
+      minimizeBehavior="onScrollDown"
     >
-      <Tabs.Screen name="index" options={{ title: 'Explore' }} />
-      <Tabs.Screen name="map" options={{ title: 'Map' }} />
-      <Tabs.Screen name="saved" options={{ title: 'Saved' }} />
-      <Tabs.Screen name="me" options={{ title: 'You' }} />
-    </Tabs>
+      <NativeTabs.Trigger name="(explore)">
+        <NativeTabs.Trigger.Icon sf={{ default: 'safari', selected: 'safari.fill' }} md="explore" />
+        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="map">
+        <NativeTabs.Trigger.Icon sf={{ default: 'map', selected: 'map.fill' }} md="map" />
+        <NativeTabs.Trigger.Label>Map</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
+        name="new"
+        disabled
+        accessibilityLabel="Make a trail"
+        listeners={{ tabPress: () => router.push('/make') }}
+      >
+        <NativeTabs.Trigger.Icon sf="plus.circle.fill" md="add_circle" />
+        <NativeTabs.Trigger.Label hidden>Make a trail</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="saved">
+        <NativeTabs.Trigger.Icon sf={{ default: 'bookmark', selected: 'bookmark.fill' }} md="bookmark" />
+        <NativeTabs.Trigger.Label>Saved</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="me">
+        <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />
+        <NativeTabs.Trigger.Label>You</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   )
 }

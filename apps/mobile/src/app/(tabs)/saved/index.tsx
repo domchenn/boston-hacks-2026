@@ -55,6 +55,7 @@ export default function SavedScreen() {
 
   return (
     <FlatList
+      contentInsetAdjustmentBehavior="automatic"
       data={state.trails}
       keyExtractor={(trail) => trail.id}
       renderItem={({ item }) => <TrailCard trail={item} badge={item.status === 'in_progress' ? 'In progress' : undefined} />}

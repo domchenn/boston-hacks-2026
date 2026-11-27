@@ -17,7 +17,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter'
 import { SessionProvider, useSession } from '@/lib/session'
-import { colors, fonts } from '@/theme/tokens'
+import { stackScreenOptions } from '@/theme/navigation'
 
 void SplashScreen.preventAutoHideAsync()
 
@@ -47,15 +47,7 @@ export default function RootLayout() {
     <SessionProvider>
       <StatusBar style="dark" />
       <OnboardingGate />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.paper },
-          headerTintColor: colors.crumbStrong,
-          headerTitleStyle: { color: colors.ink, fontFamily: fonts.bold },
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: colors.paper },
-        }}
-      >
+      <Stack screenOptions={stackScreenOptions}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="sign-in" options={{ presentation: 'modal', title: 'Log in' }} />
         <Stack.Screen name="onboarding" options={{ presentation: 'modal', title: 'Your profile', gestureEnabled: false }} />
