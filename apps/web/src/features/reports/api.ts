@@ -120,7 +120,7 @@ export async function listOpenReports(): Promise<OpenReport[]> {
       preview = { text: v.review_text, trailId: v.sidequest_id }
     } else if (r.target_type === 'photo' && photoById.has(r.target_id)) {
       const p = photoById.get(r.target_id)!
-      preview = { imageUrl: p.photo_url, trailId: p.sidequest_id }
+      preview = { ...(p.photo_url ? { imageUrl: p.photo_url } : {}), trailId: p.sidequest_id }
     }
     return {
       id: r.id,
