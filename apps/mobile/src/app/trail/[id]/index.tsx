@@ -1,8 +1,8 @@
 /**
  * A trail's page (Mobile-Detail mockup), full screen above the tabs: category, title,
  * facts, description, then the numbered stops with what to do and their crumbs, and a
- * bottom bar with Start trail and Save. The route map and the step-by-step active
- * trail come later (M20); "In progress" shows once you've started.
+ * bottom bar with Start trail (Continue trail once started) and Save. Start opens the
+ * active trail (go.tsx). The route map comes later.
  */
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
@@ -14,7 +14,7 @@ import { Button } from '@/components/Button'
 import { StateView } from '@/components/StateView'
 import { api } from '@/lib/api'
 import { categoryLabel, formatCost, formatMinutes, stopCount, TRAVEL_LABELS } from '@/lib/trailFormat'
-import { useTrailActions } from '@/lib/useTrailActions'
+import { useTrailActions } from '@/features/trail/useTrailActions'
 import { colors, fonts, text } from '@/theme/tokens'
 
 type State =
@@ -115,9 +115,9 @@ function TrailPage({ trail }: { trail: TrailDetail }) {
         <View style={styles.buttons}>
           <Button
             style={styles.startButton}
-            label={actions.status === 'in_progress' ? 'In progress' : actions.status === 'completed' ? 'Do it again' : 'Start trail'}
+            label={actions.status === 'in_progress' ? 'Continue trail' : actions.status === 'completed' ? 'Do it again' : 'Start trail'}
             busy={actions.busy === 'start'}
-            disabled={actions.statusLoading || actions.busy !== null || actions.status === 'in_progress'}
+            disabled={actions.statusLoading || actions.busy !== null}
             onPress={() => void actions.start()}
           />
           {actions.canSave ? (
