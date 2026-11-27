@@ -316,6 +316,28 @@ describe('createApiClient', () => {
       ['/v1/me/profile', 'PUT', '{"username":"sam_k","displayName":"Sam"}'],
     ])
   })
+
+  it('lists, uploads (raw image body) and deletes photos', async () => {
+    const id = trailDetail.id
+    const photo = { id, url: 'https://x.example/p.jpg', caption: 'Hi', createdAt: '2026-11-26T12:00:00Z', stopId: null, uploader: null }
+    const calls: [string, string | undefined, string | undefined, unknown][] = []
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      const u = new URL(String(url))
+      calls.push([u.pathname + u.search, init?.method, (init?.headers as Record<string, string>)['content-type'], init?.body])
+      const body = init?.method === 'POST' ? { photo } : init?.method === 'DELETE' ? { id, deleted: true } : { photos: [photo] }
+      return new Response(JSON.stringify(body), { status: init?.method === 'POST' ? 201 : 200, headers: { 'content-type': 'application/json' } })
+    })
+    const client = createApiClient({ baseUrl: 'https://api.example', getAccessToken: () => 'tok', fetch })
+    const image = new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/png' })
+    expect(await client.getTrailPhotos(id)).toEqual([photo])
+    expect(await client.addTrailPhoto(id, image, { caption: 'Hi there', stopId: id })).toEqual(photo)
+    expect(await client.deletePhoto(id)).toEqual({ id, deleted: true })
+    expect(calls).toEqual([
+      [`/v1/trails/${id}/photos`, 'GET', undefined, undefined],
+      [`/v1/trails/${id}/photos?caption=Hi+there&stopId=${id}`, 'POST', 'image/png', image],
+      [`/v1/photos/${id}`, 'DELETE', undefined, undefined],
+    ])
+  })
 })
 
 describe('RatingBody', () => {

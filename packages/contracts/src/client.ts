@@ -16,6 +16,7 @@ import {
   type MyTrailsQuery,
 } from './profiles.js'
 import { CrumbState, TickedCrumbs, TrailProgress, type TrailAction } from './progress.js'
+import { PhotoAdded, PhotoDeleted, TrailPhotoList, type AddPhotoQuery } from './photos.js'
 import { MyRatingResponse, type RatingBody } from './ratings.js'
 import { FinishedTrailList } from './badges.js'
 import {
@@ -73,17 +74,17 @@ export function createApiClient(options: ApiClientOptions) {
     schema: T,
     allowNotFound = false,
     payload?: unknown,
+    /** A raw body (e.g. an image) sent as-is with its own content type, instead of JSON. */
+    raw?: { body: Blob; contentType: string },
   ): Promise<z.infer<T> | null> {
     const headers: Record<string, string> = { accept: 'application/json' }
     const token = await options.getAccessToken?.()
     if (token) headers.authorization = `Bearer ${token}`
-    if (payload !== undefined) headers['content-type'] = 'application/json'
+    if (raw) headers['content-type'] = raw.contentType
+    else if (payload !== undefined) headers['content-type'] = 'application/json'
 
-    const response = await doFetch(`${baseUrl}${path}`, {
-      method,
-      headers,
-      ...(payload !== undefined ? { body: JSON.stringify(payload) } : {}),
-    })
+    const requestBody = raw ? raw.body : payload !== undefined ? JSON.stringify(payload) : undefined
+    const response = await doFetch(`${baseUrl}${path}`, { method, headers, ...(requestBody !== undefined ? { body: requestBody } : {}) })
     const requestId = response.headers.get('x-request-id')
     if (allowNotFound && response.status === 404) return null
 
@@ -316,6 +317,28 @@ export function createApiClient(options: ApiClientOptions) {
     /** Save the caller's username and display name. Requires sign-in. */
     async updateMyProfile(body: MyProfileBody) {
       return (await send('PUT', '/v1/me/profile', MyProfileFields, false, body))!
+    },
+
+    /** A trail's public photos, newest first. */
+    async getTrailPhotos(trailId: string) {
+      return (await get(`/v1/trails/${encodeURIComponent(trailId)}/photos`, TrailPhotoList)).photos
+    },
+
+    /**
+     * Add a photo to a trail you've saved, started or finished (optionally at one of its
+     * stops). The image is sent as the body; the API stores a clean JPEG. Requires sign-in.
+     */
+    async addTrailPhoto(trailId: string, image: Blob, query: AddPhotoQuery = {}) {
+      const search = new URLSearchParams()
+      if (query.caption) search.set('caption', query.caption)
+      if (query.stopId) search.set('stopId', query.stopId)
+      const path = `/v1/trails/${encodeURIComponent(trailId)}/photos${search.size > 0 ? `?${search}` : ''}`
+      return (await send('POST', path, PhotoAdded, false, undefined, { body: image, contentType: image.type || 'image/jpeg' }))!.photo
+    },
+
+    /** Delete one of your own photos. Requires sign-in. */
+    async deletePhoto(photoId: string) {
+      return (await send('DELETE', `/v1/photos/${encodeURIComponent(photoId)}`, PhotoDeleted))!
     },
 
     /** The caller's Saved page: saved and in-progress trails (requires sign-in). */
